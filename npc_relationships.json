@@ -14,6 +14,7 @@
         "quest-giver",
         "important"
       ],
+      "notes": "High-ranking elven noble, owner of The Gilded Cage",
       "relationships": {
         "enemy": [
           "The Warden of the North",
@@ -41,8 +42,7 @@
           "Maelis Thornbrush of Thread & Thorn",
           "Durn Greathammer"
         ]
-      },
-      "notes": "High-ranking elven noble, owner of The Gilded Cage"
+      }
     },
     "The Warden of the North": {
       "name": "The Warden of the North (Aethonwyld)",
@@ -58,6 +58,7 @@
         "mystical",
         "important"
       ],
+      "notes": "Eladrin Guardian, true name cannot be spoken",
       "relationships": {
         "enemy": [
           "Lord Caravel Deyros"
@@ -69,8 +70,7 @@
         "connected_to": [
           "Elaris of the Widow's Veil"
         ]
-      },
-      "notes": "Eladrin Guardian, true name cannot be spoken"
+      }
     },
     "Lady Isolde Frostwhisper": {
       "name": "Lady Isolde Frostwhisper",
@@ -85,6 +85,7 @@
         "refugee",
         "important"
       ],
+      "notes": "Deyros's stolen bride, now living in Feywild",
       "relationships": {
         "ally": [
           "The Warden of the North"
@@ -92,175 +93,7 @@
         "stolen_from": [
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Deyros's stolen bride, now living in Feywild"
-    },
-    "Madame Zilla": {
-      "name": "Madame Zilla",
-      "faction": "The Gilded Cage / Zuggtmoy",
-      "location": "The Gilded Cage",
-      "status": "alive",
-      "tags": [
-        "hag",
-        "bheur-hag",
-        "antagonist",
-        "demon-servant",
-        "performer",
-        "ringmaster",
-        "controller",
-        "powerful",
-        "important"
-      ],
-      "relationships": {
-        "serves": [
-          "Zuggtmoy"
-        ],
-        "works_with": [
-          "The Pandemime",
-          "Venturlock"
-        ],
-        "enemy": [
-          "Party"
-        ],
-        "controls": [
-          "Anya",
-          "Lenor",
-          "Elara (acolyte)"
-        ]
-      },
-      "notes": "Bheur Hag disguised as ringmaster"
-    },
-    "The Pandemime": {
-      "name": "The Pandemime",
-      "faction": "The Gilded Cage / Zuggtmoy",
-      "location": "The Gilded Cage",
-      "status": "alive",
-      "tags": [
-        "demon",
-        "antagonist",
-        "entity",
-        "circus",
-        "powerful",
-        "mystical",
-        "important"
-      ],
-      "relationships": {
-        "serves": [
-          "Zuggtmoy"
-        ],
-        "is": [
-          "The Gilded Cage"
-        ],
-        "works_with": [
-          "Madame Zilla",
-          "Venturlock"
-        ]
-      },
-      "notes": "Demon of Zuggtmoy, IS the circus itself"
-    },
-    "Venturlock": {
-      "name": "Venturlock",
-      "faction": "Dispater's Court",
-      "location": "The Gilded Cage",
-      "status": "alive",
-      "tags": [
-        "devil",
-        "antagonist",
-        "fortune-teller",
-        "performer",
-        "infernal",
-        "important"
-      ],
-      "relationships": {
-        "serves": [
-          "Dispater"
-        ],
-        "works_with": [
-          "Madame Zilla",
-          "The Pandemime"
-        ],
-        "enemy": [
-          "Party"
-        ]
-      },
-      "notes": "Devil, fortune teller at circus"
-    },
-    "Anya": {
-      "name": "Anya",
-      "faction": "The Gilded Cage",
-      "location": "The Gilded Cage",
-      "status": "alive",
-      "tags": [
-        "acrobat",
-        "performer",
-        "informant",
-        "ally",
-        "victim",
-        "young",
-        "important"
-      ],
-      "relationships": {
-        "controlled_by": [
-          "Madame Zilla"
-        ],
-        "ally": [
-          "Party"
-        ],
-        "friend_of": [
-          "Lenor"
-        ]
-      },
-      "notes": "Young acrobat, key informant for the party"
-    },
-    "Lenor": {
-      "name": "Lenor",
-      "faction": "The Gilded Cage",
-      "location": "The Gilded Cage / Asmelhorion",
-      "status": "alive (catatonic)",
-      "tags": [
-        "human",
-        "performer",
-        "musician",
-        "victim",
-        "catatonic",
-        "controlled"
-      ],
-      "relationships": {
-        "controlled_by": [
-          "Madame Zilla"
-        ],
-        "friend_of": [
-          "Anya"
-        ]
-      },
-      "notes": "Human flute player, victim of the circus, catatonic"
-    },
-    "Elara (acolyte)": {
-      "name": "Elara (acolyte)",
-      "faction": "Sunspire of Lathander",
-      "location": "Asmelhorion",
-      "status": "alive",
-      "tags": [
-        "acolyte",
-        "cleric",
-        "healer",
-        "religious",
-        "controlled",
-        "victim"
-      ],
-      "relationships": {
-        "controlled_by": [
-          "Madame Zilla"
-        ],
-        "serves": [
-          "Sunspire of Lathander"
-        ],
-        "tends_to": [
-          "Lenor",
-          "Hollowed Ones"
-        ]
-      },
-      "notes": "Acolyte from Sunspire of Lathander, healer"
+      }
     },
     "Elaris of the Widow's Veil": {
       "name": "Elaris of the Widow's Veil",
@@ -277,6 +110,7 @@
         "visionary",
         "important"
       ],
+      "notes": "Seer with dream visions, related to Elara of the Silver Quill",
       "relationships": {
         "connected_to": [
           "The Warden of the North"
@@ -308,8 +142,7 @@
         "enemy": [
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Seer with dream visions, related to Elara of the Silver Quill"
+      }
     },
     "Sylwen the Wayfarer": {
       "name": "Sylwen the Wayfarer",
@@ -325,6 +158,7 @@
         "ally",
         "has-portrait"
       ],
+      "notes": "Nymph guardian of the Great Green",
       "relationships": {
         "ally": [
           "The Warden of the North"
@@ -332,14 +166,23 @@
         "guides": [
           "Travelers"
         ]
-      },
-      "notes": "Nymph guardian of the Great Green"
+      }
     },
     "Zirithon the Forsaken": {
       "name": "Zirithon the Forsaken",
       "faction": "Independent / Psionic",
       "location": "Consciousness in The Crimson Gaze",
       "status": "deceased (consciousness preserved)",
+      "tags": [
+        "mind-flayer",
+        "psionic",
+        "deceased",
+        "consciousness",
+        "creator",
+        "rebel",
+        "important"
+      ],
+      "notes": "Mind Flayer who broke free from hive mind",
       "relationships": {
         "created": [
           "The Crimson Gaze"
@@ -350,17 +193,7 @@
         "related_to": [
           "Yelthar'xun, The Unshackled"
         ]
-      },
-      "notes": "Mind Flayer who broke free from hive mind",
-      "tags": [
-        "mind-flayer",
-        "psionic",
-        "deceased",
-        "consciousness",
-        "creator",
-        "rebel",
-        "important"
-      ]
+      }
     },
     "Yelthar'xun, The Unshackled": {
       "name": "Yelthar'xun, The Unshackled",
@@ -368,6 +201,16 @@
       "location": "Unknown",
       "status": "alive",
       "portrait": "../Images/Yelthar'xun..png",
+      "tags": [
+        "mind-flayer",
+        "psionic",
+        "rebel",
+        "enemy",
+        "powerful",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Mind Flayer who broke free Ally/user/neutral to party.",
       "relationships": {
         "related_to": [
           "Zirithon the Forsaken"
@@ -387,51 +230,7 @@
           "Sketra the Eye-Drinker",
           "Chief Goruk The Twice-Burned"
         ]
-      },
-      "notes": "Mind Flayer who broke free Ally/user/neutral to party.",
-      "tags": [
-        "mind-flayer",
-        "psionic",
-        "rebel",
-        "enemy",
-        "powerful",
-        "has-portrait",
-        "important"
-      ]
-    },
-    "The Crone of Black Veils": {
-      "name": "The Crone of Black Veils (Arch-Hag)",
-      "faction": "Hag Coven",
-      "location": "Feywild / Material Plane (shifts)",
-      "status": "alive",
-      "relationships": {
-        "controls": [
-          "Chief Goruk",
-          "Sketra the Eye-Drinker",
-          "Cinderfang Tribe"
-        ],
-        "captured": [
-          "Zyl'veth, The Trapped Scholar"
-        ],
-        "enemy": [
-          "Party",
-          "Yelthar'xun, The Unshackled",
-          "Tivarnis Fal"
-        ],
-        "interested_in": [
-          "Veris Mallor"
-        ]
-      },
-      "notes": "Ancient hag, master of bargains",
-      "tags": [
-        "hag",
-        "arch-hag",
-        "antagonist",
-        "powerful",
-        "controller",
-        "bargain-master",
-        "important"
-      ]
+      }
     },
     "Chief Goruk The Twice-Burned": {
       "name": "Chief Goruk The Twice-Burned",
@@ -439,6 +238,16 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Goruk.bmp",
+      "tags": [
+        "hobgoblin",
+        "warlord",
+        "leader",
+        "controlled",
+        "cursed",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Hobgoblin warlord, bound by curse Potential ally to party.",
       "relationships": {
         "controlled_by": [
           "The Crone of Black Veils"
@@ -464,17 +273,7 @@
           "Sketra the Eye-Drinker",
           "The Mistress of Veils"
         ]
-      },
-      "notes": "Hobgoblin warlord, bound by curse Potential ally to party.",
-      "tags": [
-        "hobgoblin",
-        "warlord",
-        "leader",
-        "controlled",
-        "cursed",
-        "has-portrait",
-        "important"
-      ]
+      }
     },
     "Bolg": {
       "name": "Bolg",
@@ -482,6 +281,15 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Bolg & Wren.bmp",
+      "tags": [
+        "bugbear",
+        "twin",
+        "brawler",
+        "impulsive",
+        "tribe-member",
+        "has-portrait"
+      ],
+      "notes": "Bugbear twin, the brawler, impulsive and physical",
       "relationships": {
         "twin_of": [
           "Wren the Bugbear"
@@ -501,16 +309,7 @@
           "Yelthar'xun, The Unshackled",
           "Grix"
         ]
-      },
-      "notes": "Bugbear twin, the brawler, impulsive and physical",
-      "tags": [
-        "bugbear",
-        "twin",
-        "brawler",
-        "impulsive",
-        "tribe-member",
-        "has-portrait"
-      ]
+      }
     },
     "Sketra the Eye-Drinker": {
       "name": "Sketra the Eye-Drinker",
@@ -518,6 +317,14 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Sketra.bmp",
+      "tags": [
+        "goblin",
+        "witch",
+        "fanatic",
+        "servant",
+        "has-portrait"
+      ],
+      "notes": "Goblin witch, fanatic of the Crone",
       "relationships": {
         "serves": [
           "The Crone of Black Veils"
@@ -542,21 +349,22 @@
         "enemy": [
           "Grix"
         ]
-      },
-      "notes": "Goblin witch, fanatic of the Crone",
-      "tags": [
-        "goblin",
-        "witch",
-        "fanatic",
-        "servant",
-        "has-portrait"
-      ]
+      }
     },
     "Shiyandra Vel": {
       "name": "Shiyandra Vel",
       "faction": "Spy Network / Nhlon",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "spy",
+        "agent",
+        "manipulator",
+        "controller",
+        "high-level",
+        "important"
+      ],
+      "notes": "High-level agent and manipulator",
       "relationships": {
         "works_with": [
           "Sketra the Eye-Drinker"
@@ -570,43 +378,23 @@
         "serves": [
           "Nhlon"
         ]
-      },
-      "notes": "High-level agent and manipulator",
-      "tags": [
-        "spy",
-        "agent",
-        "manipulator",
-        "controller",
-        "high-level",
-        "important"
-      ]
-    },
-    "Vel Anra": {
-      "name": "Vel Anra",
-      "faction": "Spy Network (defected)",
-      "location": "Unknown",
-      "status": "alive",
-      "relationships": {
-        "enemy": [
-          "Shiyandra Vel"
-        ],
-        "defected_from": [
-          "Spy Network"
-        ]
-      },
-      "notes": "Changeling operative, defected from Shiyandra's network",
-      "tags": [
-        "changeling",
-        "spy",
-        "defector",
-        "operative"
-      ]
+      }
     },
     "Cassius the Contract-Keeper": {
       "name": "Cassius the Contract-Keeper",
       "faction": "Asmodeus's Court",
       "location": "Nine Hells / Material Plane",
       "status": "alive",
+      "tags": [
+        "cambion",
+        "devil",
+        "contract-master",
+        "infernal",
+        "trapper",
+        "powerful",
+        "important"
+      ],
+      "notes": "Cambion devil, master of infernal contracts",
       "relationships": {
         "serves": [
           "Asmodeus"
@@ -620,23 +408,22 @@
         "trapped": [
           "Kaelen Vexaris"
         ]
-      },
-      "notes": "Cambion devil, master of infernal contracts",
-      "tags": [
-        "cambion",
-        "devil",
-        "contract-master",
-        "infernal",
-        "trapper",
-        "powerful",
-        "important"
-      ]
+      }
     },
     "Belmarazoth, The Gilded Tongue of Nessus": {
       "name": "Belmarazoth, The Gilded Tongue of Nessus",
       "faction": "Asmodeus's Court",
       "location": "Nessus / Betrayer Vault",
       "status": "alive",
+      "tags": [
+        "pit-fiend",
+        "devil",
+        "lawyer",
+        "contract-specialist",
+        "infernal",
+        "important"
+      ],
+      "notes": "Pit fiend lawyer, contract specialist",
       "relationships": {
         "serves": [
           "Cassius the Contract-Keeper",
@@ -645,22 +432,20 @@
         "created": [
           "Pact of the Ascendant Boon"
         ]
-      },
-      "notes": "Pit fiend lawyer, contract specialist",
-      "tags": [
-        "pit-fiend",
-        "devil",
-        "lawyer",
-        "contract-specialist",
-        "infernal",
-        "important"
-      ]
+      }
     },
     "Kaelen Vexaris": {
       "name": "Kaelen Vexaris",
       "faction": "Trapped",
       "location": "Love Vault (game show dimension)",
       "status": "alive (trapped)",
+      "tags": [
+        "trapped",
+        "victim",
+        "game-show",
+        "dimension"
+      ],
+      "notes": "Trapped in eternal game show dimension",
       "relationships": {
         "trapped_by": [
           "Cassius the Contract-Keeper"
@@ -671,20 +456,21 @@
         "hosted_by": [
           "Cupid McSparkles"
         ]
-      },
-      "notes": "Trapped in eternal game show dimension",
-      "tags": [
-        "trapped",
-        "victim",
-        "game-show",
-        "dimension"
-      ]
+      }
     },
     "Nara": {
       "name": "Nara",
       "faction": "Deceased",
       "location": "Love Vault",
       "status": "deceased",
+      "tags": [
+        "elf",
+        "skeleton",
+        "deceased",
+        "lover",
+        "pact-maker"
+      ],
+      "notes": "Elven skeleton, made pact to free Kaelen",
       "relationships": {
         "loved": [
           "Kaelen Vexaris"
@@ -692,15 +478,7 @@
         "made_pact_for": [
           "Kaelen Vexaris"
         ]
-      },
-      "notes": "Elven skeleton, made pact to free Kaelen",
-      "tags": [
-        "elf",
-        "skeleton",
-        "deceased",
-        "lover",
-        "pact-maker"
-      ]
+      }
     },
     "Cupid McSparkles": {
       "name": "Cupid McSparkles",
@@ -708,25 +486,34 @@
       "location": "Love Vault",
       "status": "alive",
       "portrait": "../Images/Cupid McSparkles.png",
-      "relationships": {
-        "hosts": [
-          "Kaelen Vexaris"
-        ]
-      },
-      "notes": "Entity in Love Vault, game show host",
       "tags": [
         "entity",
         "host",
         "game-show",
         "vault",
         "has-portrait"
-      ]
+      ],
+      "notes": "Entity in Love Vault, game show host",
+      "relationships": {
+        "hosts": [
+          "Kaelen Vexaris"
+        ]
+      }
     },
     "Elara of the Silver Quill": {
       "name": "Elara of the Silver Quill",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "deceased (spirit bound)",
+      "tags": [
+        "spirit",
+        "scholar",
+        "deceased",
+        "bound",
+        "archive",
+        "important"
+      ],
+      "notes": "Spirit bound to archive, died 747 P.C.",
       "relationships": {
         "related_to": [
           "Elaris of the Widow's Veil"
@@ -743,16 +530,7 @@
         "saved_by": [
           "Alrik"
         ]
-      },
-      "notes": "Spirit bound to archive, died 747 P.C.",
-      "tags": [
-        "spirit",
-        "scholar",
-        "deceased",
-        "bound",
-        "archive",
-        "important"
-      ]
+      }
     },
     "The Fear Eater": {
       "name": "The Fear Eater (Dr. Sylv'thir)",
@@ -760,6 +538,15 @@
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive (transformed)",
       "portrait": "../Images/Dr. Sylv'thir.png",
+      "tags": [
+        "archivist",
+        "transformed",
+        "monster",
+        "feeds-on-fear",
+        "antagonist",
+        "important"
+      ],
+      "notes": "Transformed archivist, feeds on fear",
       "relationships": {
         "feeds_on": [
           "Zyl'veth, The Trapped Scholar"
@@ -771,23 +558,24 @@
           "Elara of the Silver Quill",
           "Party"
         ]
-      },
-      "notes": "Transformed archivist, feeds on fear",
-      "tags": [
-        "archivist",
-        "transformed",
-        "monster",
-        "feeds-on-fear",
-        "antagonist",
-        "important"
-      ]
+      }
     },
     "Zyl'veth, The Trapped Scholar": {
       "name": "Zyl'veth, The Trapped Scholar",
-      "portrait": "../Images/Syl'veth.png",
       "faction": "Aboleth / Trapped",
       "location": "Fey Palace Archive, Bone Garden",
       "status": "petrified (alive)",
+      "portrait": "../Images/Syl'veth.png",
+      "tags": [
+        "aboleth",
+        "scholar",
+        "petrified",
+        "trapped",
+        "contains-entity",
+        "dangerous",
+        "important"
+      ],
+      "notes": "Aboleth scholar, petrified, contains dangerous entity",
       "relationships": {
         "captured_by": [
           "The Mistress of Veils"
@@ -801,17 +589,7 @@
         "contains": [
           "Something Worse (unknown entity)"
         ]
-      },
-      "notes": "Aboleth scholar, petrified, contains dangerous entity",
-      "tags": [
-        "aboleth",
-        "scholar",
-        "petrified",
-        "trapped",
-        "contains-entity",
-        "dangerous",
-        "important"
-      ]
+      }
     },
     "The Mistress of Veils": {
       "name": "The Mistress of Veils",
@@ -819,6 +597,15 @@
       "location": "Unknown",
       "status": "alive",
       "portrait": "../Images/Mistress of Veils.bmp",
+      "tags": [
+        "mysterious",
+        "powerful",
+        "captor",
+        "destroyer",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Captured Zyl'veth, destroyed aboleth city Ally/user/neutral to party.",
       "relationships": {
         "captured": [
           "Zyl'veth, The Trapped Scholar"
@@ -837,46 +624,31 @@
         "enemy": [
           "Grix"
         ]
-      },
-      "notes": "Captured Zyl'veth, destroyed aboleth city Ally/user/neutral to party.",
-      "tags": [
-        "mysterious",
-        "powerful",
-        "captor",
-        "destroyer",
-        "has-portrait",
-        "important"
-      ]
+      }
     },
     "Xyl'thar": {
       "name": "Xyl'thar",
       "faction": "Aboleth",
       "location": "Unknown",
       "status": "deceased",
-      "relationships": {
-        "mentor_of": [
-          "Zyl'veth, The Trapped Scholar"
-        ]
-      },
-      "notes": "Ancient aboleth, Zyl'veth's mentor",
       "tags": [
         "aboleth",
         "ancient",
         "mentor",
         "deceased"
-      ]
+      ],
+      "notes": "Ancient aboleth, Zyl'veth's mentor",
+      "relationships": {
+        "mentor_of": [
+          "Zyl'veth, The Trapped Scholar"
+        ]
+      }
     },
     "Archivist Selene the Wise": {
       "name": "Archivist Selene the Wise",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "deceased (spirit bound)",
-      "relationships": {
-        "mentor_of": [
-          "Elara of the Silver Quill"
-        ]
-      },
-      "notes": "Elara's mentor, first spirit bound to archive",
       "tags": [
         "archivist",
         "spirit",
@@ -884,31 +656,46 @@
         "bound",
         "mentor",
         "first-spirit"
-      ]
+      ],
+      "notes": "Elara's mentor, first spirit bound to archive",
+      "relationships": {
+        "mentor_of": [
+          "Elara of the Silver Quill"
+        ]
+      }
     },
     "Alrik": {
       "name": "Alrik",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "deceased",
-      "relationships": {
-        "tried_to_save": [
-          "Elara of the Silver Quill"
-        ]
-      },
-      "notes": "Gnome who tried to save Elara",
       "tags": [
         "gnome",
         "deceased",
         "tried-to-save",
         "helper"
-      ]
+      ],
+      "notes": "Gnome who tried to save Elara",
+      "relationships": {
+        "tried_to_save": [
+          "Elara of the Silver Quill"
+        ]
+      }
     },
     "Kireya Anvilgleam": {
       "name": "Kireya Anvilgleam",
       "faction": "Civilians / Merchants",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "dwarf",
+        "blacksmith",
+        "merchant",
+        "quest-giver",
+        "ally",
+        "craftsman"
+      ],
+      "notes": "Dwarf blacksmith of Ember & Echo, quest giver for The Gilded Cage",
       "relationships": {
         "ally": [
           "Party",
@@ -932,16 +719,7 @@
         "enemy": [
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Dwarf blacksmith of Ember & Echo, quest giver for The Gilded Cage",
-      "tags": [
-        "dwarf",
-        "blacksmith",
-        "merchant",
-        "quest-giver",
-        "ally",
-        "craftsman"
-      ]
+      }
     },
     "Durn Greathammer": {
       "name": "Durn Greathammer",
@@ -949,15 +727,6 @@
       "location": "Asmelhorion",
       "status": "alive",
       "portrait": "../Images/Durn Greathammer.bmp",
-      "relationships": {
-        "survivor_of": [
-          "Hag's Curse"
-        ],
-        "neutral": [
-          "Lord Caravel Deyros"
-        ]
-      },
-      "notes": "Dwarf blacksmith, survivor of the hag's curse",
       "tags": [
         "dwarf",
         "blacksmith",
@@ -965,22 +734,22 @@
         "survivor",
         "cursed",
         "has-portrait"
-      ]
+      ],
+      "notes": "Dwarf blacksmith, survivor of the hag's curse",
+      "relationships": {
+        "survivor_of": [
+          "Hag's Curse"
+        ],
+        "neutral": [
+          "Lord Caravel Deyros"
+        ]
+      }
     },
     "Captain Valerius": {
       "name": "Captain Valerius",
       "faction": "Light Ring / City Guard",
       "location": "Asmelhorion",
       "status": "alive",
-      "relationships": {
-        "ally": [
-          "Lord Caravel Deyros"
-        ],
-        "serves": [
-          "City of Asmelhorion"
-        ]
-      },
-      "notes": "City Guard Captain",
       "tags": [
         "guard",
         "captain",
@@ -988,13 +757,29 @@
         "ally",
         "law-enforcement",
         "important"
-      ]
+      ],
+      "notes": "City Guard Captain",
+      "relationships": {
+        "ally": [
+          "Lord Caravel Deyros"
+        ],
+        "serves": [
+          "City of Asmelhorion"
+        ]
+      }
     },
     "Tavira": {
       "name": "Tavira",
       "faction": "Light Ring",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "half-elf",
+        "clerk",
+        "bureaucrat",
+        "light-ring"
+      ],
+      "notes": "Half-elf clerk at Hall of Bright Accord",
       "relationships": {
         "works_at": [
           "Hall of Bright Accord"
@@ -1002,20 +787,20 @@
         "knows_about": [
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Half-elf clerk at Hall of Bright Accord",
-      "tags": [
-        "half-elf",
-        "clerk",
-        "bureaucrat",
-        "light-ring"
-      ]
+      }
     },
     "Mirovel": {
       "name": "Mirovel",
       "faction": "Civilians / Merchants",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "elf",
+        "merchant",
+        "tavernkeeper",
+        "proprietor"
+      ],
+      "notes": "Elf, proprietor of The Golden Sigh tavern",
       "relationships": {
         "runs": [
           "The Golden Sigh"
@@ -1036,20 +821,19 @@
           "Ivlis Vern of Glowroot & Glass",
           "Maelis Thornbrush of Thread & Thorn"
         ]
-      },
-      "notes": "Elf, proprietor of The Golden Sigh tavern",
-      "tags": [
-        "elf",
-        "merchant",
-        "tavernkeeper",
-        "proprietor"
-      ]
+      }
     },
     "Yalen of the Quiet Ember": {
       "name": "Yalen of the Quiet Ember",
       "faction": "Civilians / Merchants",
       "location": "Ashen Yard",
       "status": "alive",
+      "tags": [
+        "half-drow",
+        "merchant",
+        "tavernkeeper"
+      ],
+      "notes": "Half-drow tavernkeeper",
       "relationships": {
         "runs": [
           "Tavern"
@@ -1074,13 +858,7 @@
         "enemy": [
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Half-drow tavernkeeper",
-      "tags": [
-        "half-drow",
-        "merchant",
-        "tavernkeeper"
-      ]
+      }
     },
     "Tivarnis Fal": {
       "name": "Tivarnis Fal (Caervox the Grand Incarnadine)",
@@ -1088,6 +866,16 @@
       "location": "Asmelhorion",
       "status": "alive",
       "portrait": "../Images/Tivannis Fal.png",
+      "tags": [
+        "tiefling",
+        "diabolist",
+        "occultist",
+        "seeker",
+        "enemy",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Tiefling diabolist and occultist",
       "relationships": {
         "seeks": [
           "The Crone of Black Veils' original name"
@@ -1111,17 +899,7 @@
           "Mirovel",
           "Elaris of the Widow's Veil"
         ]
-      },
-      "notes": "Tiefling diabolist and occultist",
-      "tags": [
-        "tiefling",
-        "diabolist",
-        "occultist",
-        "seeker",
-        "enemy",
-        "has-portrait",
-        "important"
-      ]
+      }
     },
     "Veris Mallor": {
       "name": "Veris Mallor",
@@ -1129,16 +907,6 @@
       "location": "Unknown",
       "status": "alive",
       "portrait": "../Images/Veris the Ex-Sorcerer.bmp",
-      "relationships": {
-        "interested_in_by": [
-          "The Crone of Black Veils"
-        ],
-        "knows_about": [
-          "Divine Seals",
-          "Underclasp secret"
-        ]
-      },
-      "notes": "Ex-sorcerer, cursed scholar, knows things he shouldn't",
       "tags": [
         "human",
         "scholar",
@@ -1147,7 +915,17 @@
         "knows-secrets",
         "has-portrait",
         "important"
-      ]
+      ],
+      "notes": "Ex-sorcerer, cursed scholar, knows things he shouldn't",
+      "relationships": {
+        "interested_in_by": [
+          "The Crone of Black Veils"
+        ],
+        "knows_about": [
+          "Divine Seals",
+          "Underclasp secret"
+        ]
+      }
     },
     "Seyra the Quick": {
       "name": "Seyra the Quick",
@@ -1155,6 +933,15 @@
       "location": "Cinderfang Camp / Falia",
       "status": "alive",
       "portrait": "../Images/Seyra the Quick.bmp",
+      "tags": [
+        "elf",
+        "gladiator",
+        "champion",
+        "enslaved",
+        "captive",
+        "has-portrait"
+      ],
+      "notes": "Elven gladiator, former champion, now enslaved",
       "relationships": {
         "enslaved_by": [
           "Cinderfang Tribe"
@@ -1165,16 +952,7 @@
         "from": [
           "Falia"
         ]
-      },
-      "notes": "Elven gladiator, former champion, now enslaved",
-      "tags": [
-        "elf",
-        "gladiator",
-        "champion",
-        "enslaved",
-        "captive",
-        "has-portrait"
-      ]
+      }
     },
     "Kaelith, The Joyful Mother": {
       "name": "Kaelith, The Joyful Mother",
@@ -1182,6 +960,14 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Kaelith the Mother.bmp",
+      "tags": [
+        "human",
+        "mother",
+        "denial",
+        "dark-secrets",
+        "has-portrait"
+      ],
+      "notes": "Human mother with dark secrets, refuses to see truth about her son",
       "relationships": {
         "mother_of": [
           "Caenin"
@@ -1197,15 +983,7 @@
         "neutral": [
           "Grix"
         ]
-      },
-      "notes": "Human mother with dark secrets, refuses to see truth about her son",
-      "tags": [
-        "human",
-        "mother",
-        "denial",
-        "dark-secrets",
-        "has-portrait"
-      ]
+      }
     },
     "Caenin": {
       "name": "Caenin",
@@ -1213,6 +991,16 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Caenin.bmp",
+      "tags": [
+        "twisted",
+        "returned",
+        "wrong",
+        "son",
+        "mysterious",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Kaelith's son, 'The Thing That Returned', something is wrong with him",
       "relationships": {
         "son_of": [
           "Kaelith, The Joyful Mother"
@@ -1228,17 +1016,7 @@
         "neutral": [
           "Grix"
         ]
-      },
-      "notes": "Kaelith's son, 'The Thing That Returned', something is wrong with him",
-      "tags": [
-        "twisted",
-        "returned",
-        "wrong",
-        "son",
-        "mysterious",
-        "has-portrait",
-        "important"
-      ]
+      }
     },
     "Rix the Coward": {
       "name": "Rix the Coward",
@@ -1246,19 +1024,19 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Rix.bmp",
-      "relationships": {
-        "captive_of": [
-          "Cinderfang Tribe"
-        ]
-      },
-      "notes": "Kobold scholar, captive, knows more than he lets on",
       "tags": [
         "kobold",
         "scholar",
         "captive",
         "knows-more",
         "has-portrait"
-      ]
+      ],
+      "notes": "Kobold scholar, captive, knows more than he lets on",
+      "relationships": {
+        "captive_of": [
+          "Cinderfang Tribe"
+        ]
+      }
     },
     "Althessa, The Rogue on a Mission": {
       "name": "Althessa, The Rogue on a Mission",
@@ -1266,6 +1044,17 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Althessa the Rogue.bmp",
+      "tags": [
+        "tiefling",
+        "rogue",
+        "underclasp",
+        "agent",
+        "captive",
+        "tracking",
+        "has-portrait",
+        "important"
+      ],
+      "notes": "Tiefling Underclasp agent, captured while tracking artifact",
       "relationships": {
         "member_of": [
           "Underclasp"
@@ -1276,24 +1065,21 @@
         "tracking": [
           "Missing artifact"
         ]
-      },
-      "notes": "Tiefling Underclasp agent, captured while tracking artifact",
-      "tags": [
-        "tiefling",
-        "rogue",
-        "underclasp",
-        "agent",
-        "captive",
-        "tracking",
-        "has-portrait",
-        "important"
-      ]
+      }
     },
     "The Clockwork Jester": {
       "name": "The Clockwork Jester",
       "faction": "Fey Palace Archive / Construct",
       "location": "Fey Palace Archive",
       "status": "alive",
+      "tags": [
+        "construct",
+        "mechanical",
+        "performer",
+        "seeking",
+        "archive"
+      ],
+      "notes": "Mechanical construct performer, searching for understanding",
       "relationships": {
         "seeks_understanding_of": [
           "Circus",
@@ -1302,21 +1088,22 @@
         "connected_to": [
           "Fey Palace Archive"
         ]
-      },
-      "notes": "Mechanical construct performer, searching for understanding",
-      "tags": [
-        "construct",
-        "mechanical",
-        "performer",
-        "seeking",
-        "archive"
-      ]
+      }
     },
     "The Crimson Gaze": {
       "name": "The Crimson Gaze",
       "faction": "Weapon / Artifact",
       "location": "Variable",
       "status": "alive (evolving)",
+      "tags": [
+        "weapon",
+        "artifact",
+        "evolving",
+        "consciousness",
+        "dangerous",
+        "important"
+      ],
+      "notes": "Evolving weapon with Zirithon's consciousness",
       "relationships": {
         "created_by": [
           "Zirithon the Forsaken"
@@ -1331,73 +1118,26 @@
         "neutral": [
           "Olpha"
         ]
-      },
-      "notes": "Evolving weapon with Zirithon's consciousness",
-      "tags": [
-        "weapon",
-        "artifact",
-        "evolving",
-        "consciousness",
-        "dangerous",
-        "important"
-      ]
-    },
-    "Vaeril Mornshade": {
-      "name": "Vaeril Mornshade",
-      "faction": "Drow",
-      "location": "Unknown",
-      "status": "alive",
-      "relationships": {
-        "used": [
-          "The Crimson Gaze"
-        ]
-      },
-      "notes": "Drow who used The Crimson Gaze to build empire",
-      "tags": [
-        "drow",
-        "empire-builder",
-        "wielder",
-        "historical"
-      ]
-    },
-    "Githyanki Warrior": {
-      "name": "Githyanki Warrior",
-      "faction": "Githyanki",
-      "location": "Unknown",
-      "status": "deceased / driven to madness",
-      "relationships": {
-        "wielded": [
-          "The Crimson Gaze"
-        ]
-      },
-      "notes": "Previous wielder of The Crimson Gaze, driven to madness",
-      "tags": [
-        "githyanki",
-        "warrior",
-        "deceased",
-        "madness",
-        "wielder",
-        "historical"
-      ]
+      }
     },
     "Lord Valdris": {
       "name": "Lord Valdris",
       "faction": "Fear Vault / Spirit",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "deceased (spirit bound)",
-      "relationships": {
-        "bound_to": [
-          "Fear Vault"
-        ]
-      },
-      "notes": "Noble spirit bound in Fear Vault",
       "tags": [
         "noble",
         "spirit",
         "deceased",
         "bound",
         "vault"
-      ]
+      ],
+      "notes": "Noble spirit bound in Fear Vault",
+      "relationships": {
+        "bound_to": [
+          "Fear Vault"
+        ]
+      }
     },
     "Archivist Bliss": {
       "name": "Archivist Bliss",
@@ -1405,6 +1145,14 @@
       "location": "Fey Palace Archive, Joy Vault",
       "status": "alive (transformed)",
       "portrait": "../Images/Archivist Bliss.png",
+      "tags": [
+        "archivist",
+        "transformed",
+        "flowers",
+        "joy-vault",
+        "has-portrait"
+      ],
+      "notes": "Archivist of Joy Vault, composed of living flowers, forgotten her own sorrow",
       "relationships": {
         "in_charge_of": [
           "Joy Vault"
@@ -1430,21 +1178,20 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Archivist of Joy Vault, composed of living flowers, forgotten her own sorrow",
-      "tags": [
-        "archivist",
-        "transformed",
-        "flowers",
-        "joy-vault",
-        "has-portrait"
-      ]
+      }
     },
     "Archivist Stellaris": {
       "name": "Archivist Stellaris",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Awe Vault",
       "status": "alive (transformed)",
+      "tags": [
+        "archivist",
+        "transformed",
+        "starlight",
+        "awe-vault"
+      ],
+      "notes": "Archivist of Awe Vault, composed of starlight and cosmic energy",
       "relationships": {
         "in_charge_of": [
           "Awe Vault"
@@ -1470,14 +1217,7 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Archivist of Awe Vault, composed of starlight and cosmic energy",
-      "tags": [
-        "archivist",
-        "transformed",
-        "starlight",
-        "awe-vault"
-      ]
+      }
     },
     "Scholar Veritas": {
       "name": "Scholar Veritas (The Betrayed Scholar)",
@@ -1485,6 +1225,16 @@
       "location": "Fey Palace Archive, Betrayal Vault",
       "status": "deceased (spirit bound)",
       "portrait": "../Images/Archivist Veritas.png",
+      "tags": [
+        "scholar",
+        "spirit",
+        "deceased",
+        "bound",
+        "betrayed",
+        "betrayal-vault",
+        "has-portrait"
+      ],
+      "notes": "Scholar of Betrayal Vault, betrayed by research partner Marcus, now a spectral guardian",
       "relationships": {
         "in_charge_of": [
           "Betrayal Vault"
@@ -1511,23 +1261,21 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Scholar of Betrayal Vault, betrayed by research partner Marcus, now a spectral guardian",
-      "tags": [
-        "scholar",
-        "spirit",
-        "deceased",
-        "bound",
-        "betrayed",
-        "betrayal-vault",
-        "has-portrait"
-      ]
+      }
     },
     "Archivist Ratio": {
       "name": "Archivist Ratio",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Love Vault",
       "status": "alive (transformed)",
+      "tags": [
+        "archivist",
+        "transformed",
+        "mathematical",
+        "love-vault",
+        "detached"
+      ],
+      "notes": "Archivist of Love Vault, composed of mathematical equations, detached from emotion",
       "relationships": {
         "in_charge_of": [
           "Love Vault"
@@ -1551,21 +1299,20 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Archivist of Love Vault, composed of mathematical equations, detached from emotion",
-      "tags": [
-        "archivist",
-        "transformed",
-        "mathematical",
-        "love-vault",
-        "detached"
-      ]
+      }
     },
     "Archivist Thorne": {
       "name": "Archivist Thorne",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "alive (left)",
+      "tags": [
+        "archivist",
+        "last-living",
+        "left",
+        "day-89"
+      ],
+      "notes": "Last living archivist, left on Day 89",
       "relationships": {
         "member_of": [
           "Fey Palace Archive"
@@ -1589,20 +1336,20 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Last living archivist, left on Day 89",
-      "tags": [
-        "archivist",
-        "last-living",
-        "left",
-        "day-89"
-      ]
+      }
     },
     "Librarian Vell": {
       "name": "Librarian Vell",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "alive",
+      "tags": [
+        "librarian",
+        "archivist",
+        "intuitive",
+        "noticed"
+      ],
+      "notes": "Intuitive archivist, noticed books becoming alive",
       "relationships": {
         "member_of": [
           "Fey Palace Archive"
@@ -1626,20 +1373,20 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Intuitive archivist, noticed books becoming alive",
-      "tags": [
-        "librarian",
-        "archivist",
-        "intuitive",
-        "noticed"
-      ]
+      }
     },
     "Mechanist Krell": {
       "name": "Mechanist Krell",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "alive",
+      "tags": [
+        "mechanist",
+        "archivist",
+        "obsessed",
+        "ward-spirals"
+      ],
+      "notes": "Obsessed with Ward Spiral patterns",
       "relationships": {
         "member_of": [
           "Fey Palace Archive"
@@ -1663,20 +1410,20 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Obsessed with Ward Spiral patterns",
-      "tags": [
-        "mechanist",
-        "archivist",
-        "obsessed",
-        "ward-spirals"
-      ]
+      }
     },
     "Guardian Marrow": {
       "name": "Guardian Marrow",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive",
       "status": "alive",
+      "tags": [
+        "guardian",
+        "archivist",
+        "security",
+        "protector"
+      ],
+      "notes": "Responsible for security at Fey Palace Archive",
       "relationships": {
         "member_of": [
           "Fey Palace Archive"
@@ -1700,80 +1447,66 @@
           "Amok",
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Responsible for security at Fey Palace Archive",
-      "tags": [
-        "guardian",
-        "archivist",
-        "security",
-        "protector"
-      ]
+      }
     },
     "Jul'yourn": {
       "name": "Jul'yourn",
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive",
-      "relationships": {
-        "author_of": [
-          "Living journal in Fear Vault"
-        ]
-      },
-      "notes": "Author of living journal in Fear Vault",
       "tags": [
         "author",
         "journal",
         "fear-vault"
-      ]
+      ],
+      "notes": "Author of living journal in Fear Vault",
+      "relationships": {
+        "author_of": [
+          "Living journal in Fear Vault"
+        ]
+      }
     },
     "Maurice": {
       "name": "Maurice",
       "faction": "Unknown",
       "location": "Unknown",
       "status": "deceased",
-      "relationships": {
-        "mentor_of": [
-          "Thenn"
-        ]
-      },
-      "notes": "Thenn's mentor, deceased, mentioned in visions",
       "tags": [
         "deceased",
         "mentor",
         "vision",
         "historical"
-      ]
+      ],
+      "notes": "Thenn's mentor, deceased, mentioned in visions",
+      "relationships": {
+        "mentor_of": [
+          "Thenn"
+        ]
+      }
     },
     "Cara": {
       "name": "Cara",
       "faction": "Unknown",
       "location": "Unknown",
       "status": "alive",
-      "relationships": {
-        "murdered_by": [
-          "Thenn"
-        ]
-      },
-      "notes": "Person Thenn murdered, mentioned in visions",
       "tags": [
         "alive",
         "murdered",
         "vision",
         "victim"
-      ]
+      ],
+      "notes": "Person Thenn murdered, mentioned in visions",
+      "relationships": {
+        "murdered_by": [
+          "Thenn"
+        ]
+      }
     },
     "Zuggtmoy": {
       "name": "Zuggtmoy",
       "faction": "Demon Lord",
       "location": "Abyss",
       "status": "alive",
-      "relationships": {
-        "served_by": [
-          "Madame Zilla",
-          "The Pandemime"
-        ]
-      },
-      "notes": "Demon Queen of Fungi, served by Madame Zilla and The Pandemime",
       "tags": [
         "demon-lord",
         "queen",
@@ -1781,72 +1514,58 @@
         "powerful",
         "antagonist",
         "important"
-      ]
+      ],
+      "notes": "Demon Queen of Fungi, served by Madame Zilla and The Pandemime"
     },
     "Dispater": {
       "name": "Dispater",
       "faction": "Archdevil",
       "location": "Dis (Second Layer of Nine Hells)",
       "status": "alive",
-      "relationships": {
-        "served_by": [
-          "Venturlock"
-        ]
-      },
-      "notes": "Archdevil, Lord of Dis, served by Venturlock",
       "tags": [
         "archdevil",
         "lord-of-dis",
         "powerful",
         "infernal",
         "important"
-      ]
+      ],
+      "notes": "Archdevil, Lord of Dis, served by Venturlock",
+      "relationships": {
+        "served_by": [
+          "Venturlock"
+        ]
+      }
     },
     "Asmodeus": {
       "name": "Asmodeus",
       "faction": "Archdevil",
       "location": "Nessus (Ninth Layer of Nine Hells)",
       "status": "alive",
-      "relationships": {
-        "served_by": [
-          "Cassius the Contract-Keeper",
-          "Belmarazoth, The Gilded Tongue of Nessus"
-        ]
-      },
-      "notes": "Archdevil, Lord of the Nine Hells, served by Cassius and Belmarazoth",
       "tags": [
         "archdevil",
         "lord-of-nine-hells",
         "powerful",
         "infernal",
         "important"
-      ]
-    },
-    "Elder Brain": {
-      "name": "Elder Brain",
-      "faction": "Illithid",
-      "location": "Unknown",
-      "status": "alive",
+      ],
+      "notes": "Archdevil, Lord of the Nine Hells, served by Cassius and Belmarazoth",
       "relationships": {
-        "enemy": [
-          "Zirithon the Forsaken",
-          "Yelthar'xun, The Unshackled"
+        "served_by": [
+          "Cassius the Contract-Keeper",
+          "Belmarazoth, The Gilded Tongue of Nessus"
         ]
-      },
-      "notes": "Illithid hive mind, enemy of free mind flayers",
-      "tags": [
-        "illithid",
-        "hive-mind",
-        "enemy",
-        "powerful",
-        "important"
-      ]
+      }
     },
     "Olpha": {
       "name": "Olpha",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Felwin",
@@ -1871,18 +1590,18 @@
         "works_with": [
           "Wren the Bugbear"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Felwin": {
       "name": "Felwin",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Olpha",
@@ -1902,18 +1621,18 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Julior": {
       "name": "Julior",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Olpha",
@@ -1933,18 +1652,18 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Cooker": {
       "name": "Cooker",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Olpha",
@@ -1964,18 +1683,18 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Thenn": {
       "name": "Thenn",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Olpha",
@@ -1995,18 +1714,18 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Amok": {
       "name": "Amok",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
       "relationships": {
         "ally": [
           "Olpha",
@@ -2026,18 +1745,18 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
+      }
     },
     "Grix": {
       "name": "Grix",
       "faction": "Cinderfang Tribe",
       "location": "Cinderfang Camp",
       "status": "alive",
+      "tags": [
+        "tribe-member",
+        "cinderfang"
+      ],
+      "notes": "Cinderfang tribe member",
       "relationships": {
         "ally": [
           "Chief Goruk The Twice-Burned",
@@ -2052,18 +1771,18 @@
           "Sketra the Eye-Drinker",
           "The Mistress of Veils"
         ]
-      },
-      "notes": "Cinderfang tribe member",
-      "tags": [
-        "tribe-member",
-        "cinderfang"
-      ]
+      }
     },
     "Mirraven from the Mourning Bough": {
       "name": "Mirraven from the Mourning Bough",
       "faction": "Independent",
       "location": "Asmelhorion, The Mourning Bough",
       "status": "alive",
+      "tags": [
+        "independent",
+        "mourning-bough"
+      ],
+      "notes": "From the Mourning Bough",
       "relationships": {
         "neutral": [
           "Mirovel",
@@ -2079,12 +1798,7 @@
           "Maelis Thornbrush of Thread & Thorn"
         ],
         "ally": []
-      },
-      "notes": "From the Mourning Bough",
-      "tags": [
-        "independent",
-        "mourning-bough"
-      ]
+      }
     },
     "High Seeker YVanne": {
       "name": "High Seeker YVanne",
@@ -2092,27 +1806,6 @@
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
       "portrait": "../Images/High Seeker Yvonne.png",
-      "relationships": {
-        "member_of": [
-          "Temple of Balance"
-        ],
-        "neutral": [
-          "Mirraven from the Mourning Bough",
-          "Initiate Halben",
-          "Mourning Sister Elvestri",
-          "Brother Rhess",
-          "Elaris of the Widow's Veil",
-          "Tivarnis Fal",
-          "Yalen of the Quiet Ember",
-          "Kireya Anvilgleam",
-          "Ivlis Vern of Glowroot & Glass",
-          "Maelis Thornbrush of Thread & Thorn"
-        ],
-        "ally": [
-          "Mirovel"
-        ]
-      },
-      "notes": "High Seeker at Temple of Balance (Selune & Shar)",
       "tags": [
         "cleric",
         "temple",
@@ -2120,20 +1813,15 @@
         "shar",
         "high-seeker",
         "religious"
-      ]
-    },
-    "Initiate Halben": {
-      "name": "Initiate Halben",
-      "faction": "Temple of Balance (Selune & Shar)",
-      "location": "Asmelhorion, Temple of Balance",
-      "status": "alive",
+      ],
+      "notes": "High Seeker at Temple of Balance (Selune & Shar)",
       "relationships": {
         "member_of": [
           "Temple of Balance"
         ],
         "neutral": [
           "Mirraven from the Mourning Bough",
-          "High Seeker YVanne",
+          "Initiate Halben",
           "Mourning Sister Elvestri",
           "Brother Rhess",
           "Elaris of the Widow's Veil",
@@ -2146,8 +1834,13 @@
         "ally": [
           "Mirovel"
         ]
-      },
-      "notes": "Initiate at Temple of Balance (Selune & Shar)",
+      }
+    },
+    "Initiate Halben": {
+      "name": "Initiate Halben",
+      "faction": "Temple of Balance (Selune & Shar)",
+      "location": "Asmelhorion, Temple of Balance",
+      "status": "alive",
       "tags": [
         "cleric",
         "temple",
@@ -2155,13 +1848,43 @@
         "shar",
         "initiate",
         "religious"
-      ]
+      ],
+      "notes": "Initiate at Temple of Balance (Selune & Shar)",
+      "relationships": {
+        "member_of": [
+          "Temple of Balance"
+        ],
+        "neutral": [
+          "Mirraven from the Mourning Bough",
+          "High Seeker YVanne",
+          "Mourning Sister Elvestri",
+          "Brother Rhess",
+          "Elaris of the Widow's Veil",
+          "Tivarnis Fal",
+          "Yalen of the Quiet Ember",
+          "Kireya Anvilgleam",
+          "Ivlis Vern of Glowroot & Glass",
+          "Maelis Thornbrush of Thread & Thorn"
+        ],
+        "ally": [
+          "Mirovel"
+        ]
+      }
     },
     "Mourning Sister Elvestri": {
       "name": "Mourning Sister Elvestri",
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
+      "tags": [
+        "cleric",
+        "temple",
+        "selune",
+        "shar",
+        "mourning-sister",
+        "religious"
+      ],
+      "notes": "Mourning Sister at Temple of Balance (Selune & Shar)",
       "relationships": {
         "member_of": [
           "Temple of Balance"
@@ -2181,22 +1904,22 @@
         "ally": [
           "Mirovel"
         ]
-      },
-      "notes": "Mourning Sister at Temple of Balance (Selune & Shar)",
-      "tags": [
-        "cleric",
-        "temple",
-        "selune",
-        "shar",
-        "mourning-sister",
-        "religious"
-      ]
+      }
     },
     "Brother Rhess": {
       "name": "Brother Rhess",
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
+      "tags": [
+        "cleric",
+        "temple",
+        "selune",
+        "shar",
+        "brother",
+        "religious"
+      ],
+      "notes": "Brother at Temple of Balance (Selune & Shar)",
       "relationships": {
         "member_of": [
           "Temple of Balance"
@@ -2216,22 +1939,19 @@
         "ally": [
           "Mirovel"
         ]
-      },
-      "notes": "Brother at Temple of Balance (Selune & Shar)",
-      "tags": [
-        "cleric",
-        "temple",
-        "selune",
-        "shar",
-        "brother",
-        "religious"
-      ]
+      }
     },
     "Ivlis Vern of Glowroot & Glass": {
       "name": "Ivlis Vern of Glowroot & Glass",
       "faction": "Civilians / Merchants",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "merchant",
+        "shopkeeper",
+        "glowroot-glass"
+      ],
+      "notes": "Shopkeeper at Glowroot & Glass",
       "relationships": {
         "neutral": [
           "Elaris of the Widow's Veil",
@@ -2249,19 +1969,20 @@
           "Mirovel",
           "Lord Caravel Deyros"
         ]
-      },
-      "notes": "Shopkeeper at Glowroot & Glass",
-      "tags": [
-        "merchant",
-        "shopkeeper",
-        "glowroot-glass"
-      ]
+      }
     },
     "Maelis Thornbrush of Thread & Thorn": {
       "name": "Maelis Thornbrush of Thread & Thorn",
       "faction": "Civilians / Merchants",
       "location": "Asmelhorion",
       "status": "alive",
+      "tags": [
+        "merchant",
+        "shopkeeper",
+        "thread-thorn",
+        "general-store"
+      ],
+      "notes": "General shopkeeper at Thread & Thorn",
       "relationships": {
         "neutral": [
           "Mirraven from the Mourning Bough",
@@ -2279,31 +2000,24 @@
         "ally": [
           "Mirovel"
         ]
-      },
-      "notes": "General shopkeeper at Thread & Thorn",
-      "tags": [
-        "merchant",
-        "shopkeeper",
-        "thread-thorn",
-        "general-store"
-      ]
+      }
     },
     "Lady Vesperia": {
       "name": "Lady Vesperia",
       "faction": "Light Ring",
       "location": "Asmelhorion",
       "status": "alive",
-      "relationships": {
-        "ally": [
-          "Lord Caravel Deyros"
-        ]
-      },
-      "notes": "Ally of Lord Caravel Deyros",
       "tags": [
         "noble",
         "light-ring",
         "ally"
-      ]
+      ],
+      "notes": "Ally of Lord Caravel Deyros",
+      "relationships": {
+        "ally": [
+          "Lord Caravel Deyros"
+        ]
+      }
     },
     "Wren the Bugbear": {
       "name": "Wren the Bugbear",
@@ -2311,6 +2025,13 @@
       "location": "Cinderfang Camp",
       "status": "alive",
       "portrait": "../Images/Bolg & Wren.bmp",
+      "tags": [
+        "bugbear",
+        "twin",
+        "cinderfang-tribe",
+        "has-portrait"
+      ],
+      "notes": "Bugbear twin of Bolg",
       "relationships": {
         "twin_of": [
           "Bolg"
@@ -2337,20 +2058,20 @@
           "Goruk",
           "Grix"
         ]
-      },
-      "notes": "Bugbear twin of Bolg",
-      "tags": [
-        "bugbear",
-        "twin",
-        "cinderfang-tribe",
-        "has-portrait"
-      ]
+      }
     },
     "Wren": {
       "name": "Wren",
       "faction": "Party",
       "location": "Variable",
       "status": "alive",
+      "tags": [
+        "party",
+        "player-character",
+        "halfling",
+        "cursed"
+      ],
+      "notes": "Cursed halfling, party member, working with Olpha",
       "relationships": {
         "ally": [
           "Olpha",
@@ -2373,72 +2094,65 @@
           "Guardian Marrow",
           "Scholar Veritas"
         ]
-      },
-      "notes": "Cursed halfling, party member, working with Olpha",
-      "tags": [
-        "party",
-        "player-character",
-        "halfling",
-        "cursed"
-      ]
+      }
     },
-    "Primevera": {
-      "name": "Primevera",
-      "faction": "Party",
-      "location": "Variable",
-      "status": "alive",
-      "relationships": {
-        "ally": [
-          "Olpha",
-          "Felwin",
-          "Julior",
-          "Cooker",
-          "Thenn",
-          "Amok",
-          "Wren the Bugbear",
-          "Archivist Bliss",
-          "Archivist Stellaris"
-        ],
-        "neutral": [
-          "Archivist Ratio",
-          "Archivist Thorne",
-          "Librarian Vell",
-          "Mechanist Krell",
-          "Guardian Marrow",
-          "Scholar Veritas"
-        ]
-      },
-      "notes": "Party member",
-      "tags": [
-        "party",
-        "player-character"
-      ]
-    },
-    "Lorchka": {
-      "name": "Lorchka",
-      "faction": "Independent",
-      "location": "Variable",
-      "status": "alive",
-      "portrait": "../Images/Lorchka.png",
-      "relationships": {
-        "works_with": [
-          "Party"
-        ],
-        "enemy": [
-          "The Mistress of Veils"
-        ]
-      },
-      "notes": "Fey cat that wears a mask. Has a mutual agreement with the party to help one another. Wants to get into the circus. Against the Mistress of Veils.",
-      "tags": [
-        "fey",
-        "cat",
-        "masked",
-        "circus",
-        "ally",
-        "has-portrait"
-      ]
-    }
-  },
+     "Primevera": {
+       "name": "Primevera",
+       "faction": "Party",
+       "location": "Variable",
+       "status": "alive",
+       "tags": [
+         "party",
+         "player-character"
+       ],
+       "notes": "Party member",
+       "relationships": {
+         "ally": [
+           "Olpha",
+           "Felwin",
+           "Julior",
+           "Cooker",
+           "Thenn",
+           "Amok",
+           "Wren the Bugbear",
+           "Archivist Bliss",
+           "Archivist Stellaris"
+         ],
+         "neutral": [
+           "Archivist Ratio",
+           "Archivist Thorne",
+           "Librarian Vell",
+           "Mechanist Krell",
+           "Guardian Marrow",
+           "Scholar Veritas"
+         ]
+       }
+     },
+     "Lorchka": {
+       "name": "Lorchka",
+       "faction": "Independent",
+       "location": "Variable",
+       "status": "alive",
+       "portrait": "../Images/Lorchka.png",
+       "tags": [
+         "fey",
+         "cat",
+         "masked",
+         "circus",
+         "ally",
+         "has-portrait"
+       ],
+       "notes": "Fey cat that wears a mask. Has a mutual agreement with the party to help one another. Wants to get into the circus. Against the Mistress of Veils.",
+       "relationships": {
+         "works_with": [
+           "Party"
+         ],
+         "enemy": [
+           "The Mistress of Veils"
+         ]
+       }
+     }
+   },
   "relationship_types": [
     "ally",
     "enemy",
