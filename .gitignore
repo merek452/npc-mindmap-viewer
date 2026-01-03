@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Backup files
+*.backup
+*.backup*
+*.bak
+
+# Generated images (optional - uncomment if you don't want to track these)
+# *.png
+
+# Documentation files (keep README.md)
+*.md
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
+
