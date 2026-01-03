@@ -537,7 +537,10 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive (transformed)",
+<<<<<<< HEAD
       "portrait": "../Images/Dr. Sylv'thir.png",
+=======
+>>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
       "tags": [
         "archivist",
         "transformed",
@@ -1805,7 +1808,10 @@
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
+<<<<<<< HEAD
       "portrait": "../Images/High Seeker Yvonne.png",
+=======
+>>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
       "tags": [
         "cleric",
         "temple",
@@ -2096,6 +2102,7 @@
         ]
       }
     },
+<<<<<<< HEAD
      "Primevera": {
        "name": "Primevera",
        "faction": "Party",
@@ -2153,6 +2160,41 @@
        }
      }
    },
+=======
+    "Primevera": {
+      "name": "Primevera",
+      "faction": "Party",
+      "location": "Variable",
+      "status": "alive",
+      "tags": [
+        "party",
+        "player-character"
+      ],
+      "notes": "Party member",
+      "relationships": {
+        "ally": [
+          "Olpha",
+          "Felwin",
+          "Julior",
+          "Cooker",
+          "Thenn",
+          "Amok",
+          "Wren the Bugbear",
+          "Archivist Bliss",
+          "Archivist Stellaris"
+        ],
+        "neutral": [
+          "Archivist Ratio",
+          "Archivist Thorne",
+          "Librarian Vell",
+          "Mechanist Krell",
+          "Guardian Marrow",
+          "Scholar Veritas"
+        ]
+      }
+    }
+  },
+>>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
   "relationship_types": [
     "ally",
     "enemy",
