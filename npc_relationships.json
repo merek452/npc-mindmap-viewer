@@ -537,10 +537,7 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive (transformed)",
-<<<<<<< HEAD
       "portrait": "../Images/Dr. Sylv'thir.png",
-=======
->>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
       "tags": [
         "archivist",
         "transformed",
@@ -1808,10 +1805,7 @@
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
-<<<<<<< HEAD
       "portrait": "../Images/High Seeker Yvonne.png",
-=======
->>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
       "tags": [
         "cleric",
         "temple",
