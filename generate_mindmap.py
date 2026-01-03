@@ -1703,7 +1703,8 @@ class NPCRelationshipMapper:
                                 <div id="bagOfHolding" class="inventory-container" 
                                      ondrop="drop(event, 'bagOfHolding')" 
                                      ondragover="allowDrop(event)"
-                                     style="min-height: 100px; max-height: 200px; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; border: 2px dashed rgba(255,255,255,0.3);">
+                                     ontouchend="handleTouchEnd(event, 'bagOfHolding')"
+                                     style="min-height: 100px; max-height: 200px; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                                     <p style="color: #888; text-align: center; margin: 10px 0; font-size: 0.85em;">Drop items here</p>
                                 </div>
                             </div>
@@ -4118,7 +4119,8 @@ class NPCRelationshipMapper:
                     <div class="inventory-container" 
                          ondrop="drop(event, 'player_${index}')" 
                          ondragover="allowDrop(event)"
-                         style="min-height: 60px; max-height: 150px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 2px dashed rgba(255,255,255,0.3);">
+                         ontouchend="handleTouchEnd(event, 'player_${index}')"
+                         style="min-height: 60px; max-height: 150px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                         ${player.items.length === 0 ? '<p style="color: #888; text-align: center; margin: 5px 0; font-size: 0.8em;">Drop items here</p>' : ''}
                         ${player.items.map(function(item, itemIndex) {
                             // Use the original player's items array to get correct index
@@ -4300,14 +4302,42 @@ class NPCRelationshipMapper:
                         toggleItemSelection(item.name);
                     };
                 } else {
-                    // Click to show description, double-click to add
+                    // Mobile: Add touch support
+                    let touchStartTime = 0;
+                    let touchStartY = 0;
+                    
+                    itemDiv.ontouchstart = function(e) {
+                        touchStartTime = Date.now();
+                        touchStartY = e.touches[0].clientY;
+                        handleTouchStart(e, item, 'lookup');
+                    };
+                    
+                    itemDiv.ontouchend = function(e) {
+                        const touchDuration = Date.now() - touchStartTime;
+                        const touchEndY = e.changedTouches[0].clientY;
+                        const touchDistance = Math.abs(touchEndY - touchStartY);
+                        
+                        // If quick tap (not a drag), show description
+                        if (touchDuration < 300 && touchDistance < 10) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showItemDescription(item);
+                        }
+                    };
+                    
+                    // Desktop: Click to show description, double-click to add
                     itemDiv.onclick = function(e) { 
-                        e.stopPropagation();
-                        showItemDescription(item);
+                        // Only handle click if not a touch device
+                        if (!('ontouchstart' in window)) {
+                            e.stopPropagation();
+                            showItemDescription(item);
+                        }
                     };
                     itemDiv.ondblclick = function(e) {
-                        e.stopPropagation();
-                        addItemFromLookup(item);
+                        if (!('ontouchstart' in window)) {
+                            e.stopPropagation();
+                            addItemFromLookup(item);
+                        }
                     };
                     itemDiv.draggable = true;
                     itemDiv.ondragstart = function(e) {
@@ -4601,6 +4631,11 @@ class NPCRelationshipMapper:
         }
         
         // Drag and Drop Functions
+        // Mobile: Touch support for drag and drop
+        let touchStartItem = null;
+        let touchStartContainer = null;
+        let touchStartItemData = null;
+        
         function allowDrop(ev) {
             ev.preventDefault();
         }
@@ -4608,6 +4643,55 @@ class NPCRelationshipMapper:
         function drag(ev, itemId, sourceContainer) {
             ev.dataTransfer.setData('itemId', itemId);
             ev.dataTransfer.setData('sourceContainer', sourceContainer);
+        }
+        
+        // Mobile: Handle touch start for items
+        function handleTouchStart(ev, item, source) {
+            // Handle both direct item objects and JSON strings
+            let itemObj = item;
+            if (typeof item === 'string') {
+                try {
+                    itemObj = JSON.parse(item);
+                } catch(e) {
+                    logger.error('Failed to parse item in handleTouchStart:', e);
+                    return;
+                }
+            }
+            
+            touchStartItem = itemObj;
+            touchStartContainer = source;
+            touchStartItemData = JSON.stringify(itemObj);
+            // Prevent scrolling while dragging
+            ev.preventDefault();
+        }
+        
+        // Mobile: Handle touch end (drop)
+        function handleTouchEnd(ev, targetContainer) {
+            if (!touchStartItem || !touchStartItemData) return;
+            
+            ev.preventDefault();
+            ev.stopPropagation();
+            
+            // Simulate drop event
+            const fakeEvent = {{
+                preventDefault: function() {{}},
+                dataTransfer: {{
+                    getData: function(key) {{
+                        if (key === 'item') return touchStartItemData;
+                        if (key === 'source') return 'lookup';
+                        if (key === 'itemId') return touchStartItem.id || '';
+                        if (key === 'sourceContainer') return touchStartContainer || '';
+                        return '';
+                    }}
+                }}
+            }};
+            
+            drop(fakeEvent, targetContainer);
+            
+            // Reset
+            touchStartItem = null;
+            touchStartContainer = null;
+            touchStartItemData = null;
         }
         
         function drop(ev, targetContainer) {

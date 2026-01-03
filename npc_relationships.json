@@ -759,6 +759,7 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive (transformed)",
+      "portrait": "../Images/Dr. Sylv'thir.png",
       "relationships": {
         "feeds_on": [
           "Zyl'veth, The Trapped Scholar"
@@ -2090,6 +2091,7 @@
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
+      "portrait": "../Images/High Seeker Yvonne.png",
       "relationships": {
         "member_of": [
           "Temple of Balance"
@@ -2410,6 +2412,30 @@
       "tags": [
         "party",
         "player-character"
+      ]
+    },
+    "Lorchka": {
+      "name": "Lorchka",
+      "faction": "Independent",
+      "location": "Variable",
+      "status": "alive",
+      "portrait": "../Images/Lorchka.png",
+      "relationships": {
+        "works_with": [
+          "Party"
+        ],
+        "enemy": [
+          "The Mistress of Veils"
+        ]
+      },
+      "notes": "Fey cat that wears a mask. Has a mutual agreement with the party to help one another. Wants to get into the circus. Against the Mistress of Veils.",
+      "tags": [
+        "fey",
+        "cat",
+        "masked",
+        "circus",
+        "ally",
+        "has-portrait"
       ]
     }
   },
