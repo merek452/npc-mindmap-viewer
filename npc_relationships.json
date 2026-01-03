@@ -366,7 +366,7 @@
       "faction": "Independent / Psionic",
       "location": "Unknown",
       "status": "alive",
-      "portrait": "../Images/Yelthar'xun, The Unshackled.bmp",
+      "portrait": "../Images/Yelthar'xun..png",
       "relationships": {
         "related_to": [
           "Zirithon the Forsaken"
@@ -706,7 +706,7 @@
       "faction": "Love Vault",
       "location": "Love Vault",
       "status": "alive",
-      "portrait": "../Images/Cupid McSparkles Descends.png",
+      "portrait": "../Images/Cupid McSparkles.png",
       "relationships": {
         "hosts": [
           "Kaelen Vexaris"
