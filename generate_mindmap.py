@@ -4163,6 +4163,8 @@ class NPCRelationshipMapper:
                      ondragstart="drag(event, '${{itemId}}', '${{containerId}}')"
                      onclick="showItemDescription('${{itemJsonEscaped}}')"
                      ontouchstart="handleTouchStart(event, JSON.parse('${{itemForTouch}}'), '${{containerId}}')"
+                     ontouchmove="handleTouchMove(event)"
+                     ontouchend="handleTouchEnd(event, null)"
                      data-item-id="${{itemId}}"
                      data-container="${{containerId}}"
                      data-item-index="${{index}}"
