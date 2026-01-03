@@ -267,6 +267,7 @@
       "faction": "Neutral/Mystical",
       "location": "Asmelhorion / Dreams",
       "status": "alive",
+      "portrait": "../Images/Elaris.png",
       "tags": [
         "seer",
         "mystical",
