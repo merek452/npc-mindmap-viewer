@@ -12,6 +12,8 @@ __pycache__/
 
 # Generated images (optional - uncomment if you don't want to track these)
 # *.png
+# But keep the Images folder for NPC portraits
+!Images/
 
 # Documentation files (keep README.md)
 *.md

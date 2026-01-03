@@ -1328,12 +1328,16 @@ class NPCRelationshipMapper:
             
             portrait_html = ''
             if portrait:
-                # Fix path: if portrait path is ../Images/, change to ../../Images/ 
-                # (since HTML is now in mindmap_viewer/ subfolder, not NPCs/)
-                if portrait.startswith('../Images/'):
-                    portrait = portrait.replace('../Images/', '../../Images/', 1)
-                elif portrait.startswith('Images/'):
-                    portrait = '../../Images/' + portrait.replace('Images/', '', 1)
+                # Fix path: Images folder is now in the same directory as HTML (for GitHub Pages)
+                # Convert any path to use local Images/ folder
+                if portrait.startswith('../Images/') or portrait.startswith('../../Images/'):
+                    # Extract just the filename
+                    filename = portrait.split('/')[-1]
+                    portrait = 'Images/' + filename
+                elif not portrait.startswith('Images/'):
+                    # If it's just a filename or different path, ensure it's in Images/
+                    filename = portrait.split('/')[-1]
+                    portrait = 'Images/' + filename
                 
                 # URL encode the path to handle special characters (apostrophes, spaces, etc.)
                 # This is especially important for file:// protocol
