@@ -2096,65 +2096,6 @@
         ]
       }
     },
-<<<<<<< HEAD
-     "Primevera": {
-       "name": "Primevera",
-       "faction": "Party",
-       "location": "Variable",
-       "status": "alive",
-       "tags": [
-         "party",
-         "player-character"
-       ],
-       "notes": "Party member",
-       "relationships": {
-         "ally": [
-           "Olpha",
-           "Felwin",
-           "Julior",
-           "Cooker",
-           "Thenn",
-           "Amok",
-           "Wren the Bugbear",
-           "Archivist Bliss",
-           "Archivist Stellaris"
-         ],
-         "neutral": [
-           "Archivist Ratio",
-           "Archivist Thorne",
-           "Librarian Vell",
-           "Mechanist Krell",
-           "Guardian Marrow",
-           "Scholar Veritas"
-         ]
-       }
-     },
-     "Lorchka": {
-       "name": "Lorchka",
-       "faction": "Independent",
-       "location": "Variable",
-       "status": "alive",
-       "portrait": "../Images/Lorchka.png",
-       "tags": [
-         "fey",
-         "cat",
-         "masked",
-         "circus",
-         "ally",
-         "has-portrait"
-       ],
-       "notes": "Fey cat that wears a mask. Has a mutual agreement with the party to help one another. Wants to get into the circus. Against the Mistress of Veils.",
-       "relationships": {
-         "works_with": [
-           "Party"
-         ],
-         "enemy": [
-           "The Mistress of Veils"
-         ]
-       }
-     }
-   },
-=======
     "Primevera": {
       "name": "Primevera",
       "faction": "Party",
@@ -2186,9 +2127,32 @@
           "Scholar Veritas"
         ]
       }
+    },
+    "Lorchka": {
+      "name": "Lorchka",
+      "faction": "Independent",
+      "location": "Variable",
+      "status": "alive",
+      "portrait": "../Images/Lorchka.png",
+      "tags": [
+        "fey",
+        "cat",
+        "masked",
+        "circus",
+        "ally",
+        "has-portrait"
+      ],
+      "notes": "Fey cat that wears a mask. Has a mutual agreement with the party to help one another. Wants to get into the circus. Against the Mistress of Veils.",
+      "relationships": {
+        "works_with": [
+          "Party"
+        ],
+        "enemy": [
+          "The Mistress of Veils"
+        ]
+      }
     }
   },
->>>>>>> 7961734b657b6745c1c47f19c5c36b407f83add5
   "relationship_types": [
     "ally",
     "enemy",
