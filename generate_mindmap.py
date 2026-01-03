@@ -1666,7 +1666,7 @@ class NPCRelationshipMapper:
                                 <option value="category">Sort: Category</option>
                             </select>
                         </div>
-                        <div id="itemLookup" style="max-height: calc(100vh - 400px); overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                        <div id="itemLookup" style="max-height: calc(100vh - 400px); overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 4px; touch-action: pan-y;">
                             <!-- Items will be populated by JavaScript -->
                         </div>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
@@ -1703,8 +1703,9 @@ class NPCRelationshipMapper:
                                 <div id="bagOfHolding" class="inventory-container" 
                                      ondrop="drop(event, 'bagOfHolding')" 
                                      ondragover="allowDrop(event)"
+                                     ontouchmove="handleTouchMove(event)"
                                      ontouchend="handleTouchEnd(event, 'bagOfHolding')"
-                                     style="min-height: 100px; max-height: 200px; overflow-y: auto; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
+                                     style="min-height: 100px; max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                                     <p style="color: #888; text-align: center; margin: 10px 0; font-size: 0.85em;">Drop items here</p>
                                 </div>
                             </div>
@@ -4119,8 +4120,9 @@ class NPCRelationshipMapper:
                     <div class="inventory-container" 
                          ondrop="drop(event, 'player_${index}')" 
                          ondragover="allowDrop(event)"
+                         ontouchmove="handleTouchMove(event)"
                          ontouchend="handleTouchEnd(event, 'player_${index}')"
-                         style="min-height: 60px; max-height: 150px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
+                         style="min-height: 60px; max-height: 150px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                         ${player.items.length === 0 ? '<p style="color: #888; text-align: center; margin: 5px 0; font-size: 0.8em;">Drop items here</p>' : ''}
                         ${player.items.map(function(item, itemIndex) {
                             // Use the original player's items array to get correct index
@@ -4306,27 +4308,43 @@ class NPCRelationshipMapper:
                         toggleItemSelection(item.name);
                     };
                 } else {
-                    // Mobile: Add touch support
+                    // Mobile: Add touch support with proper scroll handling
                     let touchStartTime = 0;
-                    let touchStartY = 0;
+                    let itemTouchStartY = 0;
+                    let itemTouchMoved = false;
                     
                     itemDiv.ontouchstart = function(e) {
                         touchStartTime = Date.now();
-                        touchStartY = e.touches[0].clientY;
+                        itemTouchStartY = e.touches[0].clientY;
+                        itemTouchMoved = false;
                         handleTouchStart(e, item, 'lookup');
+                    };
+                    
+                    itemDiv.ontouchmove = function(e) {
+                        const touch = e.touches[0];
+                        const deltaY = Math.abs(touch.clientY - itemTouchStartY);
+                        if (deltaY > 5) {
+                            itemTouchMoved = true;
+                        }
+                        handleTouchMove(e);
                     };
                     
                     itemDiv.ontouchend = function(e) {
                         const touchDuration = Date.now() - touchStartTime;
                         const touchEndY = e.changedTouches[0].clientY;
-                        const touchDistance = Math.abs(touchEndY - touchStartY);
+                        const touchDistance = Math.abs(touchEndY - itemTouchStartY);
                         
-                        // If quick tap (not a drag), show description
-                        if (touchDuration < 300 && touchDistance < 10) {
+                        // If quick tap (not a drag, not scrolled), show description
+                        if (!itemTouchMoved && touchDuration < 300 && touchDistance < 10) {
                             e.preventDefault();
                             e.stopPropagation();
                             showItemDescription(item);
+                        } else {
+                            // Handle as potential drag
+                            handleTouchEnd(e, null);
                         }
+                        
+                        itemTouchMoved = false;
                     };
                     
                     // Desktop: Click to show description, double-click to add
@@ -4348,6 +4366,9 @@ class NPCRelationshipMapper:
                         e.dataTransfer.setData('item', JSON.stringify(item));
                         e.dataTransfer.setData('source', 'lookup');
                     };
+                    
+                    // Ensure item can be scrolled over
+                    itemDiv.style.touchAction = 'pan-y';
                 }
                 
                 const itemNameEscaped = item.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -4639,6 +4660,10 @@ class NPCRelationshipMapper:
         let touchStartItem = null;
         let touchStartContainer = null;
         let touchStartItemData = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchMoved = false;
+        let touchElement = null;
         
         function allowDrop(ev) {
             ev.preventDefault();
@@ -4665,37 +4690,91 @@ class NPCRelationshipMapper:
             touchStartItem = itemObj;
             touchStartContainer = source;
             touchStartItemData = JSON.stringify(itemObj);
-            // Prevent scrolling while dragging
-            ev.preventDefault();
+            touchStartX = ev.touches[0].clientX;
+            touchStartY = ev.touches[0].clientY;
+            touchMoved = false;
+            touchElement = ev.currentTarget || ev.target;
+            
+            // Don't prevent default - allow scrolling
+        }
+        
+        // Mobile: Handle touch move - track if user is dragging or scrolling
+        function handleTouchMove(ev) {
+            if (!touchStartItem) return;
+            
+            const touch = ev.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            // If moved more than 10px, consider it a drag
+            if (deltaX > 10 || deltaY > 10) {
+                touchMoved = true;
+                // Only prevent default if moving horizontally (more likely a drag)
+                // Allow vertical movement for scrolling
+                if (deltaX > deltaY) {
+                    ev.preventDefault();
+                }
+            }
         }
         
         // Mobile: Handle touch end (drop)
         function handleTouchEnd(ev, targetContainer) {
-            if (!touchStartItem || !touchStartItemData) return;
+            if (!touchStartItem || !touchStartItemData) {
+                touchStartItem = null;
+                touchStartContainer = null;
+                touchStartItemData = null;
+                return;
+            }
             
-            ev.preventDefault();
-            ev.stopPropagation();
+            const touch = ev.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            const touchDuration = Date.now() - (ev.timeStamp || Date.now());
             
-            // Simulate drop event
-            const fakeEvent = {{
-                preventDefault: function() {{}},
-                dataTransfer: {{
-                    getData: function(key) {{
-                        if (key === 'item') return touchStartItemData;
-                        if (key === 'source') return 'lookup';
-                        if (key === 'itemId') return touchStartItem.id || '';
-                        if (key === 'sourceContainer') return touchStartContainer || '';
-                        return '';
-                    }}
-                }}
-            }};
-            
-            drop(fakeEvent, targetContainer);
+            // If moved significantly (drag) or long press, treat as drag
+            if (touchMoved || deltaX > 20 || deltaY > 20) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                
+                // Check if dropped on a valid target
+                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (targetElement) {
+                    // Find the nearest drop container
+                    const dropContainer = targetElement.closest('.inventory-container') || 
+                                         targetElement.closest('[id^="player_"]') ||
+                                         (targetElement.id === 'bagOfHolding' ? targetElement : null);
+                    
+                    if (dropContainer) {
+                        const containerId = dropContainer.id || 
+                                          (dropContainer.classList.contains('inventory-container') && dropContainer.closest('[id^="player_"]') ? 
+                                           dropContainer.closest('[id^="player_"]').id : 'bagOfHolding');
+                        
+                        // Simulate drop event
+                        const fakeEvent = {{
+                            preventDefault: function() {{}},
+                            stopPropagation: function() {{}},
+                            dataTransfer: {{
+                                getData: function(key) {{
+                                    if (key === 'item') return touchStartItemData;
+                                    if (key === 'source') return 'lookup';
+                                    if (key === 'itemId') return touchStartItem.id || '';
+                                    if (key === 'sourceContainer') return touchStartContainer || '';
+                                    return '';
+                                }}
+                            }}
+                        }};
+                        
+                        drop(fakeEvent, containerId);
+                    }
+                }
+            }
             
             // Reset
             touchStartItem = null;
             touchStartContainer = null;
             touchStartItemData = null;
+            touchMoved = false;
+            touchElement = null;
         }
         
         function drop(ev, targetContainer) {
