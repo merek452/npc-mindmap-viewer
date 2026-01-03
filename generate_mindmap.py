@@ -4152,15 +4152,19 @@ class NPCRelationshipMapper:
             }}
             if (item.attunement) propertiesHtml += `<span style="color: #f38181;">🔗 Attuned</span> `;
             
+            // Prepare item data for touch events
+            const itemForTouch = JSON.stringify(item).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
             return `
                 <div class="inventory-item" 
                      draggable="true" 
                      ondragstart="drag(event, '${{itemId}}', '${{containerId}}')"
                      onclick="showItemDescription('${{itemJsonEscaped}}')"
+                     ontouchstart="handleTouchStart(event, JSON.parse('${{itemForTouch}}'), '${{containerId}}')"
                      data-item-id="${{itemId}}"
                      data-container="${{containerId}}"
                      data-item-index="${{index}}"
-                     style="padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em;">
+                     style="padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                             <strong style="color: #fff; font-size: 0.9em;">${{item.name}}</strong>
