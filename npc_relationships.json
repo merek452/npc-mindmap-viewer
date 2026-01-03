@@ -783,6 +783,7 @@
     },
     "Zyl'veth, The Trapped Scholar": {
       "name": "Zyl'veth, The Trapped Scholar",
+      "portrait": "../Images/Syl'veth.png",
       "faction": "Aboleth / Trapped",
       "location": "Fey Palace Archive, Bone Garden",
       "status": "petrified (alive)",
