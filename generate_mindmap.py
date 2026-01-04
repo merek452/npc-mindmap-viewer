@@ -4794,15 +4794,41 @@ class NPCRelationshipMapper:
                     // Check if dropped on a valid target
                     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
                     if (targetElement) {
-                        // Find the nearest drop container
-                        const dropContainer = targetElement.closest('.inventory-container') || 
-                                             targetElement.closest('[id^="player_"]') ||
-                                             (targetElement.id === 'bagOfHolding' ? targetElement : null);
+                        // Find the nearest drop container - check multiple possible structures
+                        let dropContainer = null;
+                        
+                        // First check if we're directly on a container
+                        if (targetElement.classList && targetElement.classList.contains('inventory-container')) {
+                            dropContainer = targetElement;
+                        } else if (targetElement.id === 'bagOfHolding') {
+                            dropContainer = targetElement;
+                        } else {
+                            // Look for parent containers
+                            dropContainer = targetElement.closest('.inventory-container');
+                            if (!dropContainer && targetElement.id && targetElement.id.startsWith('player_')) {
+                                dropContainer = targetElement;
+                            }
+                        }
                         
                         if (dropContainer) {
-                            finalTargetContainer = dropContainer.id || 
-                                                  (dropContainer.classList.contains('inventory-container') && dropContainer.closest('[id^="player_"]') ? 
-                                                   dropContainer.closest('[id^="player_"]').id : 'bagOfHolding');
+                            // Get the container ID - check if it has an id attribute
+                            if (dropContainer.id) {
+                                finalTargetContainer = dropContainer.id;
+                            } else {
+                                // If no ID, look for parent with player_ ID or default to bagOfHolding
+                                const parentWithId = dropContainer.closest('[id^="player_"]');
+                                if (parentWithId && parentWithId.id) {
+                                    finalTargetContainer = parentWithId.id;
+                                } else if (dropContainer.id === 'bagOfHolding') {
+                                    finalTargetContainer = 'bagOfHolding';
+                                } else {
+                                    // Last resort: check if it's inside a player inventory div
+                                    const playerDiv = dropContainer.closest('[id^="player_"]');
+                                    if (playerDiv && playerDiv.id) {
+                                        finalTargetContainer = playerDiv.id;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
