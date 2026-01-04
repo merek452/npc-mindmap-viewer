@@ -9458,9 +9458,11 @@
                         inventoryData.bagOfHolding.push(itemCopy);
                     }
                     updateBagWeight();
-                } else if (targetContainer.startsWith('player_')) {
+                } else if (targetContainer && typeof targetContainer === 'string' && targetContainer.startsWith('player_')) {
                     const playerIndex = parseInt(targetContainer.split('_')[1]);
-                    if (inventoryData.players[playerIndex]) {
+                    logger.log('Adding item to player index', playerIndex, 'container:', targetContainer);
+                    logger.log('Total players:', inventoryData.players ? inventoryData.players.length : 0);
+                    if (inventoryData.players && inventoryData.players[playerIndex]) {
                         // Auto-stack if item already exists
                         const existingIndex = inventoryData.players[playerIndex].items.findIndex(function(existing) {
                             return existing.name === itemCopy.name && 
