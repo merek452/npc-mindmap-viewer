@@ -4325,25 +4325,46 @@ class NPCRelationshipMapper:
                     itemDiv.ontouchmove = function(e) {
                         const touch = e.touches[0];
                         const deltaY = Math.abs(touch.clientY - itemTouchStartY);
-                        if (deltaY > 5) {
+                        const deltaX = Math.abs(touch.clientX - (e.touches[0].clientX));
+                        
+                        // Only mark as moved if significant movement
+                        if (deltaY > 10 || deltaX > 10) {
                             itemTouchMoved = true;
                         }
+                        
+                        // Only prevent default if clearly dragging (horizontal movement)
+                        // Allow vertical scrolling
+                        if (deltaX > deltaY && deltaX > 15) {
+                            e.preventDefault();
+                        }
+                        
                         handleTouchMove(e);
                     };
                     
                     itemDiv.ontouchend = function(e) {
                         const touchDuration = Date.now() - touchStartTime;
                         const touchEndY = e.changedTouches[0].clientY;
-                        const touchDistance = Math.abs(touchEndY - itemTouchStartY);
+                        const touchEndX = e.changedTouches[0].clientX;
+                        const touchDistanceY = Math.abs(touchEndY - itemTouchStartY);
+                        const touchDistanceX = Math.abs(touchEndX - (e.touches[0] ? e.touches[0].clientX : itemTouchStartY));
                         
                         // If quick tap (not a drag, not scrolled), show description
-                        if (!itemTouchMoved && touchDuration < 300 && touchDistance < 10) {
+                        if (!itemTouchMoved && touchDuration < 300 && touchDistanceY < 10 && touchDistanceX < 10) {
                             e.preventDefault();
                             e.stopPropagation();
                             showItemDescription(item);
-                        } else {
-                            // Handle as potential drag
+                            // Reset touch state
+                            touchStartItem = null;
+                            touchStartContainer = null;
+                            touchStartItemData = null;
+                        } else if (itemTouchMoved || touchDistanceX > 20 || touchDistanceY > 20) {
+                            // Handle as potential drag - let handleTouchEnd find the target
                             handleTouchEnd(e, null);
+                        } else {
+                            // Reset touch state if no action
+                            touchStartItem = null;
+                            touchStartContainer = null;
+                            touchStartItemData = null;
                         }
                         
                         itemTouchMoved = false;
@@ -4702,7 +4723,10 @@ class NPCRelationshipMapper:
         
         // Mobile: Handle touch move - track if user is dragging or scrolling
         function handleTouchMove(ev) {
-            if (!touchStartItem) return;
+            if (!touchStartItem) {
+                // Allow scrolling if no drag is in progress
+                return;
+            }
             
             const touch = ev.touches[0];
             const deltaX = Math.abs(touch.clientX - touchStartX);
@@ -4713,7 +4737,7 @@ class NPCRelationshipMapper:
                 touchMoved = true;
                 // Only prevent default if moving horizontally (more likely a drag)
                 // Allow vertical movement for scrolling
-                if (deltaX > deltaY) {
+                if (deltaX > deltaY && deltaX > 15) {
                     ev.preventDefault();
                 }
             }
