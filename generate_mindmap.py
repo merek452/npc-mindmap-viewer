@@ -391,6 +391,8 @@ class NPCRelationshipMapper:
             
             #itemLookup {{
                 max-height: 300px !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
             }}
             
             /* Mind map mobile optimizations */
