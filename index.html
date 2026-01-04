@@ -8671,6 +8671,8 @@
                         <button onclick="removePlayer(${index})" style="padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em;">🗑️</button>
                     </div>
                     <div class="inventory-container" 
+                         id="player_${index}_container"
+                         data-container-id="player_${index}"
                          ondrop="drop(event, 'player_${index}')" 
                          ondragover="allowDrop(event)"
                          ontouchmove="handleTouchMove(event)"
@@ -9362,21 +9364,30 @@
                         }
                         
                         if (dropContainer) {
-                            // Get the container ID - check if it has an id attribute
-                            if (dropContainer.id) {
-                                finalTargetContainer = dropContainer.id;
-                            } else {
-                                // If no ID, look for parent with player_ ID or default to bagOfHolding
-                                const parentWithId = dropContainer.closest('[id^="player_"]');
-                                if (parentWithId && parentWithId.id) {
-                                    finalTargetContainer = parentWithId.id;
+                            // Get the container ID - check multiple ways
+                            if (dropContainer.dataset && dropContainer.dataset.containerId) {
+                                finalTargetContainer = dropContainer.dataset.containerId;
+                            } else if (dropContainer.id) {
+                                // If ID is like "player_0_container", extract "player_0"
+                                if (dropContainer.id.endsWith('_container') && dropContainer.id.startsWith('player_')) {
+                                    finalTargetContainer = dropContainer.id.replace('_container', '');
                                 } else if (dropContainer.id === 'bagOfHolding') {
                                     finalTargetContainer = 'bagOfHolding';
                                 } else {
-                                    // Last resort: check if it's inside a player inventory div
-                                    const playerDiv = dropContainer.closest('[id^="player_"]');
-                                    if (playerDiv && playerDiv.id) {
-                                        finalTargetContainer = playerDiv.id;
+                                    finalTargetContainer = dropContainer.id;
+                                }
+                            } else {
+                                // If no ID, look for parent with player_ ID or data attribute
+                                const parentWithId = dropContainer.closest('[id^="player_"], [data-container-id]');
+                                if (parentWithId) {
+                                    if (parentWithId.dataset && parentWithId.dataset.containerId) {
+                                        finalTargetContainer = parentWithId.dataset.containerId;
+                                    } else if (parentWithId.id) {
+                                        if (parentWithId.id.endsWith('_container')) {
+                                            finalTargetContainer = parentWithId.id.replace('_container', '');
+                                        } else {
+                                            finalTargetContainer = parentWithId.id;
+                                        }
                                     }
                                 }
                             }
