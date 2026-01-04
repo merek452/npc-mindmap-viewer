@@ -9396,14 +9396,24 @@
                 }
                 
                 if (finalTargetContainer) {
+                    logger.log('Mobile drag: Dropping item into container:', finalTargetContainer);
+                    logger.log('Item data:', touchStartItem ? touchStartItem.name : 'null');
+                    
                     // Simulate drop event
                     const fakeEvent = {
                         preventDefault: function() {},
                         stopPropagation: function() {},
                         dataTransfer: {
                             getData: function(key) {
-                                if (key === 'item') return touchStartItemData;
-                                if (key === 'source') return touchStartContainer || 'lookup';
+                                if (key === 'item') {
+                                    logger.log('getData(item):', touchStartItemData ? 'has data (' + touchStartItemData.length + ' chars)' : 'no data');
+                                    return touchStartItemData;
+                                }
+                                if (key === 'source') {
+                                    const src = touchStartContainer || 'lookup';
+                                    logger.log('getData(source):', src);
+                                    return src;
+                                }
                                 if (key === 'itemId') return touchStartItem.id || '';
                                 if (key === 'sourceContainer') return touchStartContainer || '';
                                 return '';
@@ -9411,7 +9421,25 @@
                         }
                     };
                     
-                    drop(fakeEvent, finalTargetContainer);
+                    try {
+                        drop(fakeEvent, finalTargetContainer);
+                        logger.log('Drop function called successfully');
+                        
+                        // Force UI update after a short delay to ensure data is saved
+                        setTimeout(function() {
+                            if (finalTargetContainer === 'bagOfHolding') {
+                                renderBagOfHolding();
+                            } else if (finalTargetContainer.startsWith('player_')) {
+                                renderPlayers();
+                            }
+                        }, 100);
+                    } catch(e) {
+                        logger.error('Error in drop function:', e);
+                        logger.error('Stack:', e.stack);
+                    }
+                } else {
+                    logger.warn('Mobile drag: Could not find drop target at', touch.clientX, touch.clientY);
+                    logger.warn('Target element:', targetElement ? targetElement.tagName + (targetElement.className ? '.' + targetElement.className : '') + (targetElement.id ? '#' + targetElement.id : '') : 'null');
                 }
             }
             
