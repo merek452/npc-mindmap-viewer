@@ -4879,10 +4879,15 @@ class NPCRelationshipMapper:
             const itemData = ev.dataTransfer.getData('item');
             const source = ev.dataTransfer.getData('source');
             
+            logger.log('drop() called with targetContainer:', targetContainer);
+            logger.log('source:', source, 'itemData:', itemData ? 'has data' : 'no data');
+            
             if (source === 'lookup' && itemData) {{
                 // Dragging from lookup table
+                logger.log('Processing drop from lookup table');
                 const item = JSON.parse(itemData);
                 const itemCopy = JSON.parse(JSON.stringify(item));
+                logger.log('Item to add:', itemCopy.name);
                 
                 if (targetContainer === 'bagOfHolding') {{
                     // Auto-stack if item already exists
