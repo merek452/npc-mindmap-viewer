@@ -4766,49 +4766,64 @@ class NPCRelationshipMapper:
                 touchStartItem = null;
                 touchStartContainer = null;
                 touchStartItemData = null;
+                touchMoved = false;
+                return;
+            }
+            
+            if (!ev.changedTouches || !ev.changedTouches[0]) {
+                touchStartItem = null;
+                touchStartContainer = null;
+                touchStartItemData = null;
+                touchMoved = false;
                 return;
             }
             
             const touch = ev.changedTouches[0];
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);
-            const touchDuration = Date.now() - (ev.timeStamp || Date.now());
             
-            // If moved significantly (drag) or long press, treat as drag
+            // If moved significantly (drag), treat as drag
             if (touchMoved || deltaX > 20 || deltaY > 20) {
                 ev.preventDefault();
                 ev.stopPropagation();
                 
-                // Check if dropped on a valid target
-                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (targetElement) {
-                    // Find the nearest drop container
-                    const dropContainer = targetElement.closest('.inventory-container') || 
-                                         targetElement.closest('[id^="player_"]') ||
-                                         (targetElement.id === 'bagOfHolding' ? targetElement : null);
-                    
-                    if (dropContainer) {
-                        const containerId = dropContainer.id || 
-                                          (dropContainer.classList.contains('inventory-container') && dropContainer.closest('[id^="player_"]') ? 
-                                           dropContainer.closest('[id^="player_"]').id : 'bagOfHolding');
+                // If targetContainer is provided, use it; otherwise find the drop target
+                let finalTargetContainer = targetContainer;
+                
+                if (!finalTargetContainer) {
+                    // Check if dropped on a valid target
+                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (targetElement) {
+                        // Find the nearest drop container
+                        const dropContainer = targetElement.closest('.inventory-container') || 
+                                             targetElement.closest('[id^="player_"]') ||
+                                             (targetElement.id === 'bagOfHolding' ? targetElement : null);
                         
-                        // Simulate drop event
-                        const fakeEvent = {{
-                            preventDefault: function() {{}},
-                            stopPropagation: function() {{}},
-                            dataTransfer: {{
-                                getData: function(key) {{
-                                    if (key === 'item') return touchStartItemData;
-                                    if (key === 'source') return 'lookup';
-                                    if (key === 'itemId') return touchStartItem.id || '';
-                                    if (key === 'sourceContainer') return touchStartContainer || '';
-                                    return '';
-                                }}
-                            }}
-                        }};
-                        
-                        drop(fakeEvent, containerId);
+                        if (dropContainer) {
+                            finalTargetContainer = dropContainer.id || 
+                                                  (dropContainer.classList.contains('inventory-container') && dropContainer.closest('[id^="player_"]') ? 
+                                                   dropContainer.closest('[id^="player_"]').id : 'bagOfHolding');
+                        }
                     }
+                }
+                
+                if (finalTargetContainer) {
+                    // Simulate drop event
+                    const fakeEvent = {{
+                        preventDefault: function() {{}},
+                        stopPropagation: function() {{}},
+                        dataTransfer: {{
+                            getData: function(key) {{
+                                if (key === 'item') return touchStartItemData;
+                                if (key === 'source') return touchStartContainer || 'lookup';
+                                if (key === 'itemId') return touchStartItem.id || '';
+                                if (key === 'sourceContainer') return touchStartContainer || '';
+                                return '';
+                            }}
+                        }}
+                    }};
+                    
+                    drop(fakeEvent, finalTargetContainer);
                 }
             }
             
