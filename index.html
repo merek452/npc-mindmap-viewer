@@ -9501,16 +9501,24 @@
                         if (existingIndex >= 0 && isStackable(itemCopy)) {
                             const existing = inventoryData.players[playerIndex].items[existingIndex];
                             existing.quantity = (parseInt(existing.quantity) || 1) + 1;
+                            logger.log('Stacked item, new quantity:', existing.quantity);
                         } else {
                             if (isStackable(itemCopy)) {
                                 itemCopy.quantity = 1;
                             }
                             inventoryData.players[playerIndex].items.push(itemCopy);
+                            logger.log('Added new item to player inventory. Total items:', inventoryData.players[playerIndex].items.length);
                         }
                         renderPlayers();
+                        renderBagOfHolding();
+                    } else {
+                        logger.error('Player index', playerIndex, 'not found in inventoryData.players');
                     }
+                } else {
+                    logger.warn('Invalid targetContainer:', targetContainer, 'type:', typeof targetContainer);
                 }
                 saveInventoryData();
+                logger.log('Inventory data saved');
                 return;
             }
             
