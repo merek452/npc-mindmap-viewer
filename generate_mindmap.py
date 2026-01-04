@@ -4314,20 +4314,24 @@ class NPCRelationshipMapper:
                 } else {
                     // Mobile: Add touch support with proper scroll handling
                     let touchStartTime = 0;
+                    let itemTouchStartX = 0;
                     let itemTouchStartY = 0;
                     let itemTouchMoved = false;
                     
                     itemDiv.ontouchstart = function(e) {
                         touchStartTime = Date.now();
+                        itemTouchStartX = e.touches[0].clientX;
                         itemTouchStartY = e.touches[0].clientY;
                         itemTouchMoved = false;
                         handleTouchStart(e, item, 'lookup');
                     };
                     
                     itemDiv.ontouchmove = function(e) {
+                        if (!e.touches || !e.touches[0]) return;
+                        
                         const touch = e.touches[0];
                         const deltaY = Math.abs(touch.clientY - itemTouchStartY);
-                        const deltaX = Math.abs(touch.clientX - (e.touches[0].clientX));
+                        const deltaX = Math.abs(touch.clientX - itemTouchStartX);
                         
                         // Only mark as moved if significant movement
                         if (deltaY > 10 || deltaX > 10) {
@@ -4344,11 +4348,20 @@ class NPCRelationshipMapper:
                     };
                     
                     itemDiv.ontouchend = function(e) {
+                        if (!e.changedTouches || !e.changedTouches[0]) {
+                            // Reset touch state
+                            touchStartItem = null;
+                            touchStartContainer = null;
+                            touchStartItemData = null;
+                            itemTouchMoved = false;
+                            return;
+                        }
+                        
                         const touchDuration = Date.now() - touchStartTime;
                         const touchEndY = e.changedTouches[0].clientY;
                         const touchEndX = e.changedTouches[0].clientX;
                         const touchDistanceY = Math.abs(touchEndY - itemTouchStartY);
-                        const touchDistanceX = Math.abs(touchEndX - (e.touches[0] ? e.touches[0].clientX : itemTouchStartY));
+                        const touchDistanceX = Math.abs(touchEndX - itemTouchStartX);
                         
                         // If quick tap (not a drag, not scrolled), show description
                         if (!itemTouchMoved && touchDuration < 300 && touchDistanceY < 10 && touchDistanceX < 10) {
@@ -4359,6 +4372,7 @@ class NPCRelationshipMapper:
                             touchStartItem = null;
                             touchStartContainer = null;
                             touchStartItemData = null;
+                            touchMoved = false;
                         } else if (itemTouchMoved || touchDistanceX > 20 || touchDistanceY > 20) {
                             // Handle as potential drag - let handleTouchEnd find the target
                             handleTouchEnd(e, null);
@@ -4367,6 +4381,7 @@ class NPCRelationshipMapper:
                             touchStartItem = null;
                             touchStartContainer = null;
                             touchStartItemData = null;
+                            touchMoved = false;
                         }
                         
                         itemTouchMoved = false;
