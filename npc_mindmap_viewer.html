@@ -9438,7 +9438,7 @@
             const itemData = ev.dataTransfer.getData('item');
             const source = ev.dataTransfer.getData('source');
             const sourceContainer = ev.dataTransfer.getData('sourceContainer');
-            const itemId = ev.dataTransfer.getData('itemId');
+            let itemId = ev.dataTransfer.getData('itemId');
             
             // Handle drag from lookup table or inventory with item data
             if (itemData && (source === 'lookup' || !sourceContainer)) {
