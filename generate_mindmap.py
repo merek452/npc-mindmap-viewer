@@ -4954,7 +4954,7 @@ class NPCRelationshipMapper:
             // Existing drag from inventory containers (itemId and sourceContainer already declared above)
             if (!itemId || !sourceContainer) return;
             
-            // Parse item info from itemId
+            // Parse item info from itemId (reuse the itemId variable declared above)
             const parts = itemId.split('_');
             if (parts.length < 3) return;
             
