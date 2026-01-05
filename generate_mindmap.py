@@ -1705,8 +1705,8 @@ class NPCRelationshipMapper:
                                 <div id="bagOfHolding" class="inventory-container" 
                                      ondrop="drop(event, 'bagOfHolding')" 
                                      ondragover="allowDrop(event)"
-                                     ontouchmove="handleTouchMove(event)"
-                                     ontouchend="handleTouchEnd(event, 'bagOfHolding')"
+                                     ontouchmove="if(event.touches.length === 1) handleTouchMove(event)"
+                                     ontouchend="if(event.changedTouches.length === 1) handleTouchEnd(event)"
                                      style="min-height: 100px; max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                                     <p style="color: #888; text-align: center; margin: 10px 0; font-size: 0.85em;">Drop items here</p>
                                 </div>
@@ -4138,8 +4138,8 @@ class NPCRelationshipMapper:
                          data-container-id="player_${index}"
                          ondrop="drop(event, 'player_${index}')" 
                          ondragover="allowDrop(event)"
-                         ontouchmove="handleTouchMove(event)"
-                         ontouchend="handleTouchEnd(event, 'player_${index}')"
+                         ontouchmove="if(event.touches.length === 1) handleTouchMove(event)"
+                         ontouchend="if(event.changedTouches.length === 1) handleTouchEnd(event)"
                          style="min-height: 60px; max-height: 150px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 2px dashed rgba(255,255,255,0.3); touch-action: pan-y;">
                         ${player.items.length === 0 ? '<p style="color: #888; text-align: center; margin: 5px 0; font-size: 0.8em;">Drop items here</p>' : ''}
                         ${player.items.map(function(item, itemIndex) {
