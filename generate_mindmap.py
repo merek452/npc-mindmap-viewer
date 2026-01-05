@@ -4951,10 +4951,7 @@ class NPCRelationshipMapper:
                 return;
             }}
             
-            // Existing drag from inventory containers
-            const itemId = ev.dataTransfer.getData('itemId');
-            const sourceContainer = ev.dataTransfer.getData('sourceContainer');
-            
+            // Existing drag from inventory containers (itemId and sourceContainer already declared above)
             if (!itemId || !sourceContainer) return;
             
             // Parse item info from itemId
