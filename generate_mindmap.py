@@ -3882,6 +3882,20 @@ class NPCRelationshipMapper:
                 previewPortrait();
             }
         }, 100);
+        // Simple logger utility (can be disabled by setting DEBUG_MODE to false)
+        const DEBUG_MODE = false; // Set to true to enable debug logging
+        const logger = {{
+            log: function(...args) {{
+                if (DEBUG_MODE) console.log(...args);
+            }},
+            error: function(...args) {{
+                if (DEBUG_MODE) console.error(...args);
+            }},
+            warn: function(...args) {{
+                if (DEBUG_MODE) console.warn(...args);
+            }}
+        }};
+        
         // Inventory Tracker Functions
         let inventoryData = {{
             partyGold: 0,
