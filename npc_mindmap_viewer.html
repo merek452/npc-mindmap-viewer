@@ -8719,7 +8719,7 @@
                      onclick="showItemDescription('${itemJsonEscaped}')"
                      ontouchstart="handleTouchStart(event, JSON.parse('${itemForTouch}'), '${containerId}')"
                      ontouchmove="handleTouchMove(event)"
-                     ontouchend="handleTouchEnd(event, null)"
+                     ontouchend="handleTouchEnd(event)"
                      data-item-id="${itemId}"
                      data-container="${containerId}"
                      data-item-index="${index}"
@@ -9338,7 +9338,7 @@
         }
         
         // Mobile: Handle touch end (drop)
-        function handleTouchEnd(ev, targetContainer) {
+        function handleTouchEnd(ev) {
             if (!touchStartItem || !touchStartItemData) {
                 touchStartItem = null;
                 touchStartContainer = null;
@@ -9360,84 +9360,45 @@
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
             // If moved significantly (drag), treat as drag
-            if (touchMoved || deltaX > 20 || deltaY > 20) {
+            if (touchMoved || deltaX > 10 || deltaY > 10) {
                 ev.preventDefault();
                 ev.stopPropagation();
                 
-                // If targetContainer is provided, use it; otherwise find the drop target
-                let finalTargetContainer = targetContainer;
+                // Find drop target using elementFromPoint
+                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                let finalTargetContainer = null;
                 
-                if (!finalTargetContainer) {
-                    // Check if dropped on a valid target
-                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (targetElement) {
-                        // Find the nearest drop container - check multiple possible structures
-                        let dropContainer = null;
-                        
-                        // First check if we're directly on a container
-                        if (targetElement.classList && targetElement.classList.contains('inventory-container')) {
-                            dropContainer = targetElement;
-                        } else if (targetElement.id === 'bagOfHolding') {
-                            dropContainer = targetElement;
-                        } else {
-                            // Look for parent containers
-                            dropContainer = targetElement.closest('.inventory-container');
-                            if (!dropContainer && targetElement.id && targetElement.id.startsWith('player_')) {
-                                dropContainer = targetElement;
-                            }
-                        }
-                        
-                        if (dropContainer) {
-                            // Get the container ID - check multiple ways
-                            if (dropContainer.dataset && dropContainer.dataset.containerId) {
-                                finalTargetContainer = dropContainer.dataset.containerId;
-                            } else if (dropContainer.id) {
-                                // If ID is like "player_0_container", extract "player_0"
-                                if (dropContainer.id.endsWith('_container') && dropContainer.id.startsWith('player_')) {
-                                    finalTargetContainer = dropContainer.id.replace('_container', '');
-                                } else if (dropContainer.id === 'bagOfHolding') {
-                                    finalTargetContainer = 'bagOfHolding';
-                                } else {
-                                    finalTargetContainer = dropContainer.id;
-                                }
-                            } else {
-                                // If no ID, look for parent with player_ ID or data attribute
-                                const parentWithId = dropContainer.closest('[id^="player_"], [data-container-id]');
-                                if (parentWithId) {
-                                    if (parentWithId.dataset && parentWithId.dataset.containerId) {
-                                        finalTargetContainer = parentWithId.dataset.containerId;
-                                    } else if (parentWithId.id) {
-                                        if (parentWithId.id.endsWith('_container')) {
-                                            finalTargetContainer = parentWithId.id.replace('_container', '');
-                                        } else {
-                                            finalTargetContainer = parentWithId.id;
-                                        }
-                                    }
-                                }
+                if (targetElement) {
+                    // Check for container
+                    const container = targetElement.closest('.inventory-container') || 
+                                     targetElement.closest('#bagOfHolding') ||
+                                     (targetElement.classList && targetElement.classList.contains('inventory-container') ? targetElement : null) ||
+                                     (targetElement.id === 'bagOfHolding' ? targetElement : null);
+                    
+                    if (container) {
+                        if (container.dataset && container.dataset.containerId) {
+                            finalTargetContainer = container.dataset.containerId;
+                        } else if (container.id) {
+                            if (container.id === 'bagOfHolding') {
+                                finalTargetContainer = 'bagOfHolding';
+                            } else if (container.id.endsWith('_container')) {
+                                finalTargetContainer = container.id.replace('_container', '');
+                            } else if (container.id.startsWith('player_')) {
+                                finalTargetContainer = container.id;
                             }
                         }
                     }
                 }
                 
                 if (finalTargetContainer) {
-                    logger.log('Mobile drag: Dropping item into container:', finalTargetContainer);
-                    logger.log('Item data:', touchStartItem ? touchStartItem.name : 'null');
-                    
                     // Simulate drop event
                     const fakeEvent = {
                         preventDefault: function() {},
                         stopPropagation: function() {},
                         dataTransfer: {
                             getData: function(key) {
-                                if (key === 'item') {
-                                    logger.log('getData(item):', touchStartItemData ? 'has data (' + touchStartItemData.length + ' chars)' : 'no data');
-                                    return touchStartItemData;
-                                }
-                                if (key === 'source') {
-                                    const src = touchStartContainer || 'lookup';
-                                    logger.log('getData(source):', src);
-                                    return src;
-                                }
+                                if (key === 'item') return touchStartItemData;
+                                if (key === 'source') return touchStartContainer || 'lookup';
                                 if (key === 'itemId') return touchStartItem.id || '';
                                 if (key === 'sourceContainer') return touchStartContainer || '';
                                 return '';
@@ -9445,26 +9406,21 @@
                         }
                     };
                     
-                    try {
-                        drop(fakeEvent, finalTargetContainer);
-                        logger.log('Drop function called successfully');
-                        
-                        // Force UI update after a short delay to ensure data is saved
-                        setTimeout(function() {
-                            if (finalTargetContainer === 'bagOfHolding') {
-                                renderBagOfHolding();
-                            } else if (finalTargetContainer.startsWith('player_')) {
-                                renderPlayers();
-                            }
-                        }, 100);
-                    } catch(e) {
-                        logger.error('Error in drop function:', e);
-                        logger.error('Stack:', e.stack);
-                    }
-                } else {
-                    logger.warn('Mobile drag: Could not find drop target at', touch.clientX, touch.clientY);
-                    logger.warn('Target element:', targetElement ? targetElement.tagName + (targetElement.className ? '.' + targetElement.className : '') + (targetElement.id ? '#' + targetElement.id : '') : 'null');
+                    drop(fakeEvent, finalTargetContainer);
+                    
+                    // Force UI update
+                    setTimeout(function() {
+                        if (finalTargetContainer === 'bagOfHolding') {
+                            renderBagOfHolding();
+                        } else if (finalTargetContainer.startsWith('player_')) {
+                            renderPlayers();
+                        }
+                    }, 50);
                 }
+            } else {
+                // Quick tap - show description
+                const itemJson = touchStartItemData;
+                showItemDescription(itemJson);
             }
             
             // Reset
@@ -9478,14 +9434,14 @@
         function drop(ev, targetContainer) {
             ev.preventDefault();
             
-            // Check if dragging from lookup table
+            // Check if dragging from lookup table or inventory
             const itemData = ev.dataTransfer.getData('item');
             const source = ev.dataTransfer.getData('source');
+            const sourceContainer = ev.dataTransfer.getData('sourceContainer');
+            const itemId = ev.dataTransfer.getData('itemId');
             
-            logger.log('drop() called with targetContainer:', targetContainer);
-            logger.log('source:', source, 'itemData:', itemData ? 'has data' : 'no data');
-            
-            if (source === 'lookup' && itemData) {
+            // Handle drag from lookup table or inventory with item data
+            if (itemData && (source === 'lookup' || !sourceContainer)) {
                 // Dragging from lookup table
                 logger.log('Processing drop from lookup table');
                 const item = JSON.parse(itemData);
