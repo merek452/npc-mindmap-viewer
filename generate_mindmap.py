@@ -4780,8 +4780,7 @@ class NPCRelationshipMapper:
         
         // Mobile: Handle touch move - track if user is dragging or scrolling
         function handleTouchMove(ev) {
-            if (!touchStartItem) {
-                // Allow scrolling if no drag is in progress
+            if (!touchStartItem || !ev.touches || !ev.touches[0]) {
                 return;
             }
             
@@ -4789,12 +4788,11 @@ class NPCRelationshipMapper:
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
-            // If moved more than 10px, consider it a drag
-            if (deltaX > 10 || deltaY > 10) {
+            // Lower threshold for mobile - if moved more than 5px, consider it a drag
+            if (deltaX > 5 || deltaY > 5) {
                 touchMoved = true;
-                // Only prevent default if moving horizontally (more likely a drag)
-                // Allow vertical movement for scrolling
-                if (deltaX > deltaY && deltaX > 15) {
+                // Prevent default to allow drag, but only if significant horizontal movement
+                if (deltaX > 8) {
                     ev.preventDefault();
                 }
             }
@@ -4822,34 +4820,52 @@ class NPCRelationshipMapper:
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
-            // If moved significantly (drag), treat as drag
-            if (touchMoved || deltaX > 10 || deltaY > 10) {
+            // Lower threshold for mobile - if moved more than 5px, treat as drag
+            if (touchMoved || deltaX > 5 || deltaY > 5) {
                 ev.preventDefault();
                 ev.stopPropagation();
                 
-                // Find drop target using elementFromPoint
-                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                // Find drop target using elementFromPoint - try multiple times if needed
+                let targetElement = null;
                 let finalTargetContainer = null;
                 
-                if (targetElement) {
-                    // Check for container
-                    const container = targetElement.closest('.inventory-container') || 
-                                     targetElement.closest('#bagOfHolding') ||
-                                     (targetElement.classList && targetElement.classList.contains('inventory-container') ? targetElement : null) ||
-                                     (targetElement.id === 'bagOfHolding' ? targetElement : null);
-                    
-                    if (container) {
-                        if (container.dataset && container.dataset.containerId) {
-                            finalTargetContainer = container.dataset.containerId;
-                        } else if (container.id) {
-                            if (container.id === 'bagOfHolding') {
-                                finalTargetContainer = 'bagOfHolding';
-                            } else if (container.id.endsWith('_container')) {
-                                finalTargetContainer = container.id.replace('_container', '');
-                            } else if (container.id.startsWith('player_')) {
-                                finalTargetContainer = container.id;
+                // Try to find the drop target
+                for (let i = 0; i < 3; i++) {
+                    targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (targetElement) {
+                        // Check for container with multiple strategies
+                        let container = targetElement.closest('.inventory-container');
+                        if (!container) container = targetElement.closest('#bagOfHolding');
+                        if (!container && targetElement.classList && targetElement.classList.contains('inventory-container')) {
+                            container = targetElement;
+                        }
+                        if (!container && targetElement.id === 'bagOfHolding') {
+                            container = targetElement;
+                        }
+                        
+                        if (container) {
+                            // Get container ID
+                            if (container.dataset && container.dataset.containerId) {
+                                finalTargetContainer = container.dataset.containerId;
+                                break;
+                            } else if (container.id) {
+                                if (container.id === 'bagOfHolding') {
+                                    finalTargetContainer = 'bagOfHolding';
+                                    break;
+                                } else if (container.id.endsWith('_container')) {
+                                    finalTargetContainer = container.id.replace('_container', '');
+                                    break;
+                                } else if (container.id.startsWith('player_')) {
+                                    finalTargetContainer = container.id;
+                                    break;
+                                }
                             }
                         }
+                    }
+                    // If not found, try slightly offset coordinates
+                    if (!finalTargetContainer && i < 2) {
+                        touch.clientX += (i === 0 ? -5 : 5);
+                        touch.clientY += (i === 0 ? -5 : 5);
                     }
                 }
                 
