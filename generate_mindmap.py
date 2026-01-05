@@ -4187,13 +4187,13 @@ class NPCRelationshipMapper:
                     <div style="display: flex; align-items: center; gap: 4px;">
                         ${{isStackableItem ? `
                             <button onclick="event.stopPropagation(); changeQuantity('${{containerId}}', ${{index}}, -1)" 
-                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em;">−</button>
+                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation;">−</button>
                             <span style="min-width: 30px; text-align: center; font-weight: bold; color: #fff;">${{quantity}}</span>
                             <button onclick="event.stopPropagation(); changeQuantity('${{containerId}}', ${{index}}, 1)" 
-                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em;">+</button>
+                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation;">+</button>
                         ` : ''}}
                         <button onclick="event.stopPropagation(); removeItem('${{containerId}}', ${{index}})" 
-                                style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px;">✕</button>
+                                style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px; touch-action: manipulation;">✕</button>
                     </div>
                 </div>
             `;
@@ -4712,6 +4712,30 @@ class NPCRelationshipMapper:
         }
         
         function drag(ev, itemId, sourceContainer) {
+            // Get the item data from the DOM element
+            const itemElement = ev.target.closest('.inventory-item');
+            if (itemElement) {
+                const itemIndex = parseInt(itemElement.dataset.itemIndex || '-1');
+                let item = null;
+                
+                // Get item from the correct container
+                if (sourceContainer === 'bagOfHolding') {
+                    item = inventoryData.bagOfHolding[itemIndex];
+                } else if (sourceContainer.startsWith('player_')) {
+                    const playerIndex = parseInt(sourceContainer.split('_')[1]);
+                    if (inventoryData.players[playerIndex]) {
+                        item = inventoryData.players[playerIndex].items[itemIndex];
+                    }
+                }
+                
+                // Set item data for lookup table compatibility
+                if (item) {
+                    ev.dataTransfer.setData('item', JSON.stringify(item));
+                    ev.dataTransfer.setData('source', sourceContainer);
+                }
+            }
+            
+            // Also set the original data
             ev.dataTransfer.setData('itemId', itemId);
             ev.dataTransfer.setData('sourceContainer', sourceContainer);
         }
