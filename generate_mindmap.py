@@ -4897,12 +4897,12 @@ class NPCRelationshipMapper:
                                     renderPlayers();
                                 }}
                             }}, 100);
-                        } catch(e) {
+                        }} catch(e) {{
                             console.error('Drop error:', e);
                             alert('Error dropping item: ' + (e.message || 'Unknown error'));
-                        }
-                    }
-                } else {
+                        }}
+                    }}
+                }} else {{
                     // Quick tap - show description
                     try {
                         showItemDescription(activeTouchData.itemData);
