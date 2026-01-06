@@ -9305,160 +9305,166 @@
             ev.dataTransfer.setData('sourceContainer', sourceContainer);
         }
         
-        // Mobile: Handle touch start for items
+        // Mobile: Simplified touch handling - store item data on element
         function handleTouchStart(ev, item, source) {
-            // Handle both direct item objects and JSON strings
-            let itemObj = item;
-            if (typeof item === 'string') {
-                try {
-                    itemObj = JSON.parse(item);
-                } catch(e) {
-                    logger.error('Failed to parse item in handleTouchStart:', e);
+            try {
+                if (!ev || !ev.touches || !ev.touches[0]) return;
+                
+                // Store item data directly on the element for easy access
+                const element = ev.currentTarget || ev.target;
+                if (!element) return;
+                
+                let itemObj = item;
+                if (typeof item === 'string') {
+                    try {
+                        itemObj = JSON.parse(item);
+                    } catch(e) {
+                        console.error('Failed to parse item:', e);
+                        return;
+                    }
+                }
+                
+                // Store everything on the element
+                element._touchItem = itemObj;
+                element._touchSource = source || 'lookup';
+                element._touchItemData = JSON.stringify(itemObj);
+                element._touchStartX = ev.touches[0].clientX;
+                element._touchStartY = ev.touches[0].clientY;
+                element._touchMoved = false;
+                
+                // Visual feedback
+                element.style.opacity = '0.7';
+            } catch(e) {
+                console.error('handleTouchStart error:', e);
+            }
+        }
+        
+        // Mobile: Track movement
+        function handleTouchMove(ev) {
+            try {
+                const element = ev.currentTarget || ev.target;
+                if (!element || !element._touchItem || !ev.touches || !ev.touches[0]) return;
+                
+                const touch = ev.touches[0];
+                const deltaX = Math.abs(touch.clientX - element._touchStartX);
+                const deltaY = Math.abs(touch.clientY - element._touchStartY);
+                
+                if (deltaX > 3 || deltaY > 3) {
+                    element._touchMoved = true;
+                    if (deltaX > 5) {
+                        ev.preventDefault();
+                    }
+                }
+            } catch(e) {
+                console.error('handleTouchMove error:', e);
+            }
+        }
+        
+        // Mobile: Handle drop - simplified
+        function handleTouchEnd(ev) {
+            try {
+                const element = ev.currentTarget || ev.target;
+                if (!element || !element._touchItem) {
+                    // Reset any element that might have touch data
+                    if (element) {
+                        element.style.opacity = '';
+                        delete element._touchItem;
+                    }
                     return;
                 }
-            }
-            
-            touchStartItem = itemObj;
-            touchStartContainer = source;
-            touchStartItemData = JSON.stringify(itemObj);
-            touchStartX = ev.touches[0].clientX;
-            touchStartY = ev.touches[0].clientY;
-            touchMoved = false;
-            touchElement = ev.currentTarget || ev.target;
-            
-            // Don't prevent default - allow scrolling
-        }
-        
-        // Mobile: Handle touch move - track if user is dragging or scrolling
-        function handleTouchMove(ev) {
-            if (!touchStartItem || !ev.touches || !ev.touches[0]) {
-                return;
-            }
-            
-            const touch = ev.touches[0];
-            const deltaX = Math.abs(touch.clientX - touchStartX);
-            const deltaY = Math.abs(touch.clientY - touchStartY);
-            
-            // Lower threshold for mobile - if moved more than 5px, consider it a drag
-            if (deltaX > 5 || deltaY > 5) {
-                touchMoved = true;
-                // Prevent default to allow drag, but only if significant horizontal movement
-                if (deltaX > 8) {
-                    ev.preventDefault();
+                
+                if (!ev.changedTouches || !ev.changedTouches[0]) {
+                    element.style.opacity = '';
+                    delete element._touchItem;
+                    return;
                 }
-            }
-        }
-        
-        // Mobile: Handle touch end (drop)
-        function handleTouchEnd(ev) {
-            if (!touchStartItem || !touchStartItemData) {
-                touchStartItem = null;
-                touchStartContainer = null;
-                touchStartItemData = null;
-                touchMoved = false;
-                return;
-            }
-            
-            if (!ev.changedTouches || !ev.changedTouches[0]) {
-                touchStartItem = null;
-                touchStartContainer = null;
-                touchStartItemData = null;
-                touchMoved = false;
-                return;
-            }
-            
-            const touch = ev.changedTouches[0];
-            const deltaX = Math.abs(touch.clientX - touchStartX);
-            const deltaY = Math.abs(touch.clientY - touchStartY);
-            
-            // Lower threshold for mobile - if moved more than 5px, treat as drag
-            if (touchMoved || deltaX > 5 || deltaY > 5) {
-                ev.preventDefault();
-                ev.stopPropagation();
                 
-                // Find drop target using elementFromPoint - try multiple times if needed
-                let targetElement = null;
-                let finalTargetContainer = null;
+                const touch = ev.changedTouches[0];
+                const deltaX = Math.abs(touch.clientX - element._touchStartX);
+                const deltaY = Math.abs(touch.clientY - element._touchStartY);
                 
-                // Try to find the drop target
-                for (let i = 0; i < 3; i++) {
-                    targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                // Restore opacity
+                element.style.opacity = '';
+                
+                // If moved, treat as drag
+                if (element._touchMoved || deltaX > 3 || deltaY > 3) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    
+                    // Find drop target
+                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                    let containerId = null;
+                    
                     if (targetElement) {
-                        // Check for container with multiple strategies
-                        let container = targetElement.closest('.inventory-container');
-                        if (!container) container = targetElement.closest('#bagOfHolding');
-                        if (!container && targetElement.classList && targetElement.classList.contains('inventory-container')) {
-                            container = targetElement;
-                        }
-                        if (!container && targetElement.id === 'bagOfHolding') {
-                            container = targetElement;
-                        }
+                        // Try to find container
+                        const container = targetElement.closest('.inventory-container') || 
+                                         targetElement.closest('#bagOfHolding') ||
+                                         (targetElement.id === 'bagOfHolding' ? targetElement : null);
                         
                         if (container) {
-                            // Get container ID
                             if (container.dataset && container.dataset.containerId) {
-                                finalTargetContainer = container.dataset.containerId;
-                                break;
-                            } else if (container.id) {
-                                if (container.id === 'bagOfHolding') {
-                                    finalTargetContainer = 'bagOfHolding';
-                                    break;
-                                } else if (container.id.endsWith('_container')) {
-                                    finalTargetContainer = container.id.replace('_container', '');
-                                    break;
-                                } else if (container.id.startsWith('player_')) {
-                                    finalTargetContainer = container.id;
-                                    break;
-                                }
+                                containerId = container.dataset.containerId;
+                            } else if (container.id === 'bagOfHolding') {
+                                containerId = 'bagOfHolding';
+                            } else if (container.id && container.id.endsWith('_container')) {
+                                containerId = container.id.replace('_container', '');
+                            } else if (container.id && container.id.startsWith('player_')) {
+                                containerId = container.id;
                             }
                         }
                     }
-                    // If not found, try slightly offset coordinates
-                    if (!finalTargetContainer && i < 2) {
-                        touch.clientX += (i === 0 ? -5 : 5);
-                        touch.clientY += (i === 0 ? -5 : 5);
+                    
+                    if (containerId) {
+                        // Create fake drop event
+                        const fakeEvent = {
+                            preventDefault: function() {},
+                            stopPropagation: function() {},
+                            dataTransfer: {
+                                getData: function(key) {
+                                    if (key === 'item') return element._touchItemData;
+                                    if (key === 'source') return element._touchSource || 'lookup';
+                                    if (key === 'itemId') return '';
+                                    if (key === 'sourceContainer') return element._touchSource || '';
+                                    return '';
+                                }
+                            }
+                        };
+                        
+                        // Call drop function
+                        try {
+                            drop(fakeEvent, containerId);
+                            // Force UI update
+                            setTimeout(function() {
+                                if (containerId === 'bagOfHolding') {
+                                    renderBagOfHolding();
+                                } else if (containerId.startsWith('player_')) {
+                                    renderPlayers();
+                                }
+                            }, 100);
+                        } catch(e) {
+                            console.error('Drop error:', e);
+                            alert('Error dropping item: ' + (e.message || 'Unknown error'));
+                        }
+                    }
+                } else {
+                    // Quick tap - show description
+                    try {
+                        showItemDescription(element._touchItemData);
+                    } catch(e) {
+                        console.error('Show description error:', e);
                     }
                 }
                 
-                if (finalTargetContainer) {
-                    // Simulate drop event
-                    const fakeEvent = {
-                        preventDefault: function() {},
-                        stopPropagation: function() {},
-                        dataTransfer: {
-                            getData: function(key) {
-                                if (key === 'item') return touchStartItemData;
-                                if (key === 'source') return touchStartContainer || 'lookup';
-                                if (key === 'itemId') return touchStartItem.id || '';
-                                if (key === 'sourceContainer') return touchStartContainer || '';
-                                return '';
-                            }
-                        }
-                    };
-                    
-                    drop(fakeEvent, finalTargetContainer);
-                    
-                    // Force UI update
-                    setTimeout(function() {
-                        if (finalTargetContainer === 'bagOfHolding') {
-                            renderBagOfHolding();
-                        } else if (finalTargetContainer.startsWith('player_')) {
-                            renderPlayers();
-                        }
-                    }, 50);
-                }
-            } else {
-                // Quick tap - show description
-                const itemJson = touchStartItemData;
-                showItemDescription(itemJson);
+                // Clean up
+                delete element._touchItem;
+                delete element._touchSource;
+                delete element._touchItemData;
+                delete element._touchStartX;
+                delete element._touchStartY;
+                delete element._touchMoved;
+            } catch(e) {
+                console.error('handleTouchEnd error:', e);
             }
-            
-            // Reset
-            touchStartItem = null;
-            touchStartContainer = null;
-            touchStartItemData = null;
-            touchMoved = false;
-            touchElement = null;
         }
         
         function drop(ev, targetContainer) {
