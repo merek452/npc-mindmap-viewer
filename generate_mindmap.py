@@ -4203,6 +4203,7 @@ class NPCRelationshipMapper:
         
         function renderItem(item, containerId, index) {{
             const itemId = containerId + '_' + index;
+            const containerIdEscaped = (containerId || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const itemNameEscaped = (item.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const itemJsonEscaped = JSON.stringify(item).replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const quantity = parseInt(item.quantity) || 1;
