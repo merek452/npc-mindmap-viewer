@@ -4876,10 +4876,10 @@ class NPCRelationshipMapper:
                             stopPropagation: function() {{}},
                             dataTransfer: {{
                                 getData: function(key) {{
-                                    if (key === 'item') return element._touchItemData;
-                                    if (key === 'source') return element._touchSource || 'lookup';
+                                    if (key === 'item') return activeTouchData.itemData;
+                                    if (key === 'source') return activeTouchData.source || 'lookup';
                                     if (key === 'itemId') return '';
-                                    if (key === 'sourceContainer') return element._touchSource || '';
+                                    if (key === 'sourceContainer') return activeTouchData.source || '';
                                     return '';
                                 }}
                             }}
