@@ -4851,23 +4851,24 @@ class NPCRelationshipMapper:
                         );
                         
                         if (targetElement) {
-                        // Try to find container
-                        const container = targetElement.closest('.inventory-container') || 
-                                         targetElement.closest('#bagOfHolding') ||
-                                         (targetElement.id === 'bagOfHolding' ? targetElement : null);
-                        
-                        if (container) {
-                            if (container.dataset && container.dataset.containerId) {
-                                containerId = container.dataset.containerId;
-                            } else if (container.id === 'bagOfHolding') {
-                                containerId = 'bagOfHolding';
-                            } else if (container.id && container.id.endsWith('_container')) {
-                                containerId = container.id.replace('_container', '');
-                            } else if (container.id && container.id.startsWith('player_')) {
-                                containerId = container.id;
-                            }
-                        }
-                    }
+                            // Try to find container
+                            const container = targetElement.closest('.inventory-container') || 
+                                             targetElement.closest('#bagOfHolding') ||
+                                             (targetElement.id === 'bagOfHolding' ? targetElement : null);
+                            
+                            if (container) {
+                                if (container.dataset && container.dataset.containerId) {
+                                    containerId = container.dataset.containerId;
+                                }} else if (container.id === 'bagOfHolding') {{
+                                    containerId = 'bagOfHolding';
+                                }} else if (container.id && container.id.endsWith('_container')) {{
+                                    containerId = container.id.replace('_container', '');
+                                }} else if (container.id && container.id.startsWith('player_')) {{
+                                    containerId = container.id;
+                                }}
+                            }}
+                        }}
+                    }}
                     
                     if (containerId) {
                         // Create fake drop event
