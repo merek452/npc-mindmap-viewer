@@ -9362,42 +9362,46 @@
             }
         }
         
-        // Mobile: Handle drop - simplified
+        // Mobile: Handle drop - use global state
         function handleTouchEnd(ev) {
             try {
-                const element = ev.currentTarget || ev.target;
-                if (!element || !element._touchItem) {
-                    // Reset any element that might have touch data
-                    if (element) {
-                        element.style.opacity = '';
-                        delete element._touchItem;
+                if (!activeTouchData || !ev.changedTouches || !ev.changedTouches[0]) {
+                    // Cleanup
+                    if (activeTouchElement) {
+                        activeTouchElement.style.opacity = '';
+                        activeTouchElement.style.transform = '';
                     }
-                    return;
-                }
-                
-                if (!ev.changedTouches || !ev.changedTouches[0]) {
-                    element.style.opacity = '';
-                    delete element._touchItem;
+                    activeTouchElement = null;
+                    activeTouchData = null;
                     return;
                 }
                 
                 const touch = ev.changedTouches[0];
-                const deltaX = Math.abs(touch.clientX - element._touchStartX);
-                const deltaY = Math.abs(touch.clientY - element._touchStartY);
+                const deltaX = Math.abs(touch.clientX - activeTouchData.startX);
+                const deltaY = Math.abs(touch.clientY - activeTouchData.startY);
                 
-                // Restore opacity
-                element.style.opacity = '';
+                // Restore visual
+                if (activeTouchElement) {
+                    activeTouchElement.style.opacity = '';
+                    activeTouchElement.style.transform = '';
+                }
                 
                 // If moved, treat as drag
-                if (element._touchMoved || deltaX > 3 || deltaY > 3) {
+                if (activeTouchData.moved || deltaX > 3 || deltaY > 3) {
                     ev.preventDefault();
                     ev.stopPropagation();
                     
-                    // Find drop target
-                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                    // Find drop target - try multiple coordinates for reliability
                     let containerId = null;
+                    const offsets = [[0, 0], [-10, -10], [10, 10], [-10, 10], [10, -10]];
                     
-                    if (targetElement) {
+                    for (let i = 0; i < offsets.length && !containerId; i++) {
+                        const targetElement = document.elementFromPoint(
+                            touch.clientX + offsets[i][0],
+                            touch.clientY + offsets[i][1]
+                        );
+                        
+                        if (targetElement) {
                         // Try to find container
                         const container = targetElement.closest('.inventory-container') || 
                                          targetElement.closest('#bagOfHolding') ||
@@ -9451,21 +9455,24 @@
                 } else {
                     // Quick tap - show description
                     try {
-                        showItemDescription(element._touchItemData);
+                        showItemDescription(activeTouchData.itemData);
                     } catch(e) {
                         console.error('Show description error:', e);
                     }
                 }
                 
-                // Clean up
-                delete element._touchItem;
-                delete element._touchSource;
-                delete element._touchItemData;
-                delete element._touchStartX;
-                delete element._touchStartY;
-                delete element._touchMoved;
+                // Cleanup
+                activeTouchElement = null;
+                activeTouchData = null;
             } catch(e) {
                 console.error('handleTouchEnd error:', e);
+                // Ensure cleanup
+                if (activeTouchElement) {
+                    activeTouchElement.style.opacity = '';
+                    activeTouchElement.style.transform = '';
+                }
+                activeTouchElement = null;
+                activeTouchData = null;
             }
         }
         
