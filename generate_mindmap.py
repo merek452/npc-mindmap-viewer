@@ -4959,7 +4959,25 @@ class NPCRelationshipMapper:
                 }} else {{
                     // Quick tap - show description
                     try {
-                        showItemDescription(activeTouchData.itemData);
+                        let itemData = activeTouchData.item;
+                        if (!itemData && activeTouchElement && activeTouchElement.dataset && activeTouchElement.dataset.itemJsonBase64) {
+                            try {
+                                const itemJson = atob(activeTouchElement.dataset.itemJsonBase64);
+                                itemData = JSON.parse(itemJson);
+                            } catch(e) {
+                                console.error('Failed to parse item data from dataset:', e);
+                            }
+                        }
+                        if (!itemData && activeTouchData.itemData) {
+                            try {
+                                itemData = typeof activeTouchData.itemData === 'string' ? JSON.parse(activeTouchData.itemData) : activeTouchData.itemData;
+                            } catch(e) {
+                                console.error('Failed to parse item data:', e);
+                            }
+                        }
+                        if (itemData) {
+                            showItemDescription(itemData);
+                        }
                     } catch(e) {
                         console.error('Show description error:', e);
                     }
