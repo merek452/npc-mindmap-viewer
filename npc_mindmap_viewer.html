@@ -8730,10 +8730,10 @@
                 <div class="inventory-item" 
                      draggable="true" 
                      ondragstart="drag(event, '${itemId}', '${containerId}')"
-                     onclick="showItemDescription('${itemJsonEscaped}')"
-                     ontouchstart="if(event.touches.length === 1) handleTouchStart(event, JSON.parse('${itemForTouch}'), '${containerId}')"
-                     ontouchmove="if(event.touches.length === 1) handleTouchMove(event)"
-                     ontouchend="if(event.changedTouches.length === 1) handleTouchEnd(event)"
+                     onclick="if(!event.target.closest('button')) { showItemDescription('${itemJsonEscaped}'); }"
+                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchStart(event, JSON.parse('${itemForTouch}'), '${containerId}'); }"
+                     ontouchmove="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchMove(event); }"
+                     ontouchend="if(event.changedTouches.length === 1 && !event.target.closest('button')) { handleTouchEnd(event); }"
                      data-item-id="${itemId}"
                      data-container="${containerId}"
                      data-item-index="${index}"
@@ -8751,14 +8751,17 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
                         ${isStackableItem ? `
-                            <button onclick="event.stopPropagation(); changeQuantity('${containerId}', ${index}, -1)" 
-                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation;">−</button>
+                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${containerId}', ${index}, -1); return false;" 
+                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${containerId}', ${index}, -1); return false;"
+                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(102, 102, 102, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">−</button>
                             <span style="min-width: 30px; text-align: center; font-weight: bold; color: #fff;">${quantity}</span>
-                            <button onclick="event.stopPropagation(); changeQuantity('${containerId}', ${index}, 1)" 
-                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation;">+</button>
+                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${containerId}', ${index}, 1); return false;" 
+                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${containerId}', ${index}, 1); return false;"
+                                    style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(102, 102, 102, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">+</button>
                         ` : ''}
-                        <button onclick="event.stopPropagation(); removeItem('${containerId}', ${index})" 
-                                style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px; touch-action: manipulation;">✕</button>
+                        <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${containerId}', ${index}); return false;" 
+                                ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${containerId}', ${index}); return false;"
+                                style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">✕</button>
                     </div>
                 </div>
             `;
