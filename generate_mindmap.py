@@ -4713,14 +4713,6 @@ class NPCRelationshipMapper:
         
         // Drag and Drop Functions
         // Mobile: Touch support for drag and drop
-        let touchStartItem = null;
-        let touchStartContainer = null;
-        let touchStartItemData = null;
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchMoved = false;
-        let touchElement = null;
-        
         function allowDrop(ev) {
             ev.preventDefault();
         }
