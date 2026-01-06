@@ -4224,13 +4224,13 @@ class NPCRelationshipMapper:
             return `
                 <div class="inventory-item" 
                      draggable="true" 
-                     ondragstart="drag(event, '${{itemId}}', '${{containerId}}')"
+                     ondragstart="drag(event, '${{itemId}}', '${{containerIdEscaped}}')"
                      onclick="if(!event.target.closest('button')) { showItemDescription('${{itemJsonEscaped}}'); }"
-                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchStart(event, JSON.parse('${{itemForTouch}}'), '${{containerId}}'); }"
+                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchStart(event, JSON.parse('${{itemForTouch}}'), '${{containerIdEscaped}}'); }"
                      ontouchmove="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchMove(event); }"
                      ontouchend="if(event.changedTouches.length === 1 && !event.target.closest('button')) { handleTouchEnd(event); }"
                      data-item-id="${{itemId}}"
-                     data-container="${{containerId}}"
+                     data-container="${{containerIdEscaped}}"
                      data-item-index="${{index}}"
                      style="padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
                     <div style="flex: 1; min-width: 0;">
@@ -4246,16 +4246,16 @@ class NPCRelationshipMapper:
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
                         ${{isStackableItem ? `
-                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerId}}', ${{index}}, -1); return false;" 
-                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerId}}', ${{index}}, -1); return false;"
+                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, -1); return false;" 
+                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, -1); return false;"
                                     style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(102, 102, 102, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">−</button>
                             <span style="min-width: 30px; text-align: center; font-weight: bold; color: #fff;">${{quantity}}</span>
-                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerId}}', ${{index}}, 1); return false;" 
-                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerId}}', ${{index}}, 1); return false;"
+                            <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, 1); return false;" 
+                                    ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, 1); return false;"
                                     style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(102, 102, 102, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">+</button>
                         ` : ''}}
-                        <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerId}}', ${{index}}); return false;" 
-                                ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerId}}', ${{index}}); return false;"
+                        <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;" 
+                                ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;"
                                 style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">✕</button>
                     </div>
                 </div>
