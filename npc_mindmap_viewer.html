@@ -8773,17 +8773,21 @@
             // Prepare item data for touch events
             const itemForTouch = JSON.stringify(item).replace(/'/g, "\'").replace(/"/g, '&quot;');
             
+            // Escape for HTML attribute (double quotes)
+            const itemJsonForAttr = JSON.stringify(item).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            
             return `
                 <div class="inventory-item" 
                      draggable="true" 
                      ondragstart="drag(event, '${itemId}', '${containerIdEscaped}')"
-                     onclick="if(!event.target.closest('button')) { showItemDescription('${itemJsonEscaped}'); }"
+                     onclick="if(!event.target.closest('button')) { const itemData = this.dataset.itemJson ? JSON.parse(this.dataset.itemJson.replace(/&quot;/g, '\"').replace(/&#39;/g, "'")) : null; if(itemData) showItemDescription(itemData); }"
                      ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchStart(event, JSON.parse('${itemForTouch}'), '${containerIdEscaped}'); }"
                      ontouchmove="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchMove(event); }"
                      ontouchend="if(event.changedTouches.length === 1 && !event.target.closest('button')) { handleTouchEnd(event); }"
                      data-item-id="${itemId}"
                      data-container="${containerIdEscaped}"
                      data-item-index="${index}"
+                     data-item-json="${itemJsonForAttr}"
                      style="padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${rarityColor}; font-size: 0.85em; touch-action: pan-y;">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
