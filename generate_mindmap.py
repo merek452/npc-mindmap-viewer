@@ -4717,6 +4717,10 @@ class NPCRelationshipMapper:
             ev.preventDefault();
         }
         
+        // Mobile: Global touch state (more reliable than element properties)
+        let activeTouchElement = null;
+        let activeTouchData = null;
+        
         function drag(ev, itemId, sourceContainer) {
             // Get the item data from the DOM element
             const itemElement = ev.target.closest('.inventory-item');
@@ -4746,14 +4750,17 @@ class NPCRelationshipMapper:
             ev.dataTransfer.setData('sourceContainer', sourceContainer);
         }
         
-        // Mobile: Simplified touch handling - store item data on element
+        // Mobile: Simplified touch handling - use global state
         function handleTouchStart(ev, item, source) {
             try {
                 if (!ev || !ev.touches || !ev.touches[0]) return;
                 
-                // Store item data directly on the element for easy access
-                const element = ev.currentTarget || ev.target;
-                if (!element) return;
+                // Find the inventory item element (might be nested inside buttons/spans)
+                let element = ev.target;
+                while (element && !element.classList.contains('inventory-item')) {
+                    element = element.parentElement;
+                }
+                if (!element) element = ev.currentTarget || ev.target;
                 
                 let itemObj = item;
                 if (typeof item === 'string') {
@@ -4765,16 +4772,20 @@ class NPCRelationshipMapper:
                     }
                 }
                 
-                // Store everything on the element
-                element._touchItem = itemObj;
-                element._touchSource = source || 'lookup';
-                element._touchItemData = JSON.stringify(itemObj);
-                element._touchStartX = ev.touches[0].clientX;
-                element._touchStartY = ev.touches[0].clientY;
-                element._touchMoved = false;
+                // Store globally for reliability across touch events
+                activeTouchElement = element;
+                activeTouchData = {
+                    item: itemObj,
+                    source: source || 'lookup',
+                    itemData: JSON.stringify(itemObj),
+                    startX: ev.touches[0].clientX,
+                    startY: ev.touches[0].clientY,
+                    moved: false
+                };
                 
                 // Visual feedback
                 element.style.opacity = '0.7';
+                element.style.transform = 'scale(0.95)';
             } catch(e) {
                 console.error('handleTouchStart error:', e);
             }
@@ -4783,15 +4794,14 @@ class NPCRelationshipMapper:
         // Mobile: Track movement
         function handleTouchMove(ev) {
             try {
-                const element = ev.currentTarget || ev.target;
-                if (!element || !element._touchItem || !ev.touches || !ev.touches[0]) return;
+                if (!activeTouchData || !ev.touches || !ev.touches[0]) return;
                 
                 const touch = ev.touches[0];
-                const deltaX = Math.abs(touch.clientX - element._touchStartX);
-                const deltaY = Math.abs(touch.clientY - element._touchStartY);
+                const deltaX = Math.abs(touch.clientX - activeTouchData.startX);
+                const deltaY = Math.abs(touch.clientY - activeTouchData.startY);
                 
                 if (deltaX > 3 || deltaY > 3) {
-                    element._touchMoved = true;
+                    activeTouchData.moved = true;
                     if (deltaX > 5) {
                         ev.preventDefault();
                     }
