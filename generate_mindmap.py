@@ -5450,6 +5450,7 @@ class NPCRelationshipMapper:
                 
                 const description = item.description || item.notes || item.entries || 'No description available.';
                 const modal = document.createElement('div');
+                modal.className = 'item-description-modal';
                 modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
                 modal.onclick = function(e) {
                     if (e.target === modal) {
@@ -5488,16 +5489,21 @@ class NPCRelationshipMapper:
                 
                 detailsHtml += '</div>';
                 
+                const itemNameEscaped = (item.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                const descriptionEscaped = typeof description === 'string' 
+                    ? description.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+                    : (Array.isArray(description) ? description.join('\\n\\n') : JSON.stringify(description));
+                
                 modal.innerHTML = `
                     <div style="background: rgba(20,20,30,0.95); border: 2px solid #FFD700; border-radius: 10px; padding: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto; color: #fff;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h2 style="color: #FFD700; margin: 0;">${item.name}</h2>
-                            <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #f44336; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; font-size: 1.2em;">✕</button>
+                            <h2 style="color: #FFD700; margin: 0;">${itemNameEscaped}</h2>
+                            <button onclick="this.closest('.item-description-modal').remove()" style="background: #f44336; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; font-size: 1.2em;">✕</button>
                         </div>
                         ${detailsHtml}
                         <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 10px;">
                             <strong>Description:</strong>
-                            <div style="margin-top: 5px; line-height: 1.5; white-space: pre-wrap;">${typeof description === 'string' ? description : (Array.isArray(description) ? description.join('\\n\\n') : JSON.stringify(description))}</div>
+                            <div style="margin-top: 5px; line-height: 1.5; white-space: pre-wrap;">${descriptionEscaped}</div>
                         </div>
                     </div>
                 `;
