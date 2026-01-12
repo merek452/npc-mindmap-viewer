@@ -5388,9 +5388,6 @@ class NPCRelationshipMapper:
             }}
             if (item.attunement) propertiesHtml += `<span style="color: #f38181;">🔗 Attuned</span> `;
             
-            // Prepare item data for touch events
-            const itemForTouch = JSON.stringify(item).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            
             // Use base64 encoding to avoid all quote/special character issues
             const itemJsonBase64 = btoa(JSON.stringify(item));
             
@@ -5399,7 +5396,7 @@ class NPCRelationshipMapper:
                      draggable="true" 
                      ondragstart="drag(event, '${{itemId}}', '${{containerIdEscaped}}')"
                      onclick="if(!event.target.closest('button')) { try { const itemJson = atob(this.dataset.itemJsonBase64 || ''); if(itemJson) showItemDescription(JSON.parse(itemJson)); } catch(e) { console.error('Error showing item description:', e); } }"
-                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchStart(event, JSON.parse('${{itemForTouch}}'), '${{containerIdEscaped}}'); }"
+                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { try { const itemJson = atob(this.dataset.itemJsonBase64 || ''); if(itemJson) handleTouchStart(event, JSON.parse(itemJson), '${{containerIdEscaped}}'); } catch(e) { console.error('Error in touch start:', e); } }"
                      ontouchmove="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchMove(event); }"
                      ontouchend="if(event.changedTouches.length === 1 && !event.target.closest('button')) { handleTouchEnd(event); }"
                      data-item-id="${{itemId}}"
