@@ -3629,6 +3629,8 @@ class NPCRelationshipMapper:
                 } else {
                     window.network.redraw();
                 }
+            } else if (tabName === 'map') {
+                // Map tab - no initialization needed, just display the SVG
             } else if (tabName === 'editor') {
                 if (typeof initEditor === 'function') {
                     initEditor();
