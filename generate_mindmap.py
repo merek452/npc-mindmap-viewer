@@ -5388,8 +5388,20 @@ class NPCRelationshipMapper:
             }}
             if (item.attunement) propertiesHtml += `<span style="color: #f38181;">🔗 Attuned</span> `;
             
-            // Use base64 encoding to avoid all quote/special character issues
-            const itemJsonBase64 = btoa(JSON.stringify(item));
+            // Use Unicode-safe base64 encoding to avoid all quote/special character issues
+            // btoa() only works with Latin1, so we need to encode Unicode properly
+            function unicodeToBase64(str) {{
+                try {{
+                    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{{2}})/g, function(match, p1) {{
+                        return String.fromCharCode('0x' + p1);
+                    }}));
+                }} catch(e) {{
+                    // Fallback: use encodeURIComponent + btoa with proper handling
+                    const utf8 = unescape(encodeURIComponent(str));
+                    return btoa(utf8);
+                }}
+            }}
+            const itemJsonBase64 = unicodeToBase64(JSON.stringify(item));
             
             return `
                 <div class="inventory-item" 
