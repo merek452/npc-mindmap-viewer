@@ -219,6 +219,19 @@ class NPCRelationshipMapper:
         relationship_types = self.data.get('relationship_types', [])
         factions = self.data.get('factions', [])
         
+        # Load SVG map content to embed directly
+        svg_map_content = ""
+        svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
+        if svg_map_path.exists():
+            try:
+                with open(svg_map_path, 'r', encoding='utf-8') as f:
+                    svg_map_content = f.read()
+                    # Escape for JavaScript template literal
+                    svg_map_content = svg_map_content.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
+            except Exception as e:
+                print(f"Warning: Could not load SVG map: {e}")
+                svg_map_content = ""
+        
         # Faction colors
         faction_colors = {
             'Light Ring': '#FFD700',
@@ -239,6 +252,9 @@ class NPCRelationshipMapper:
         print("Loading items from items.json...")
         dnd_items_js = self.load_items_for_html()
         print(f"Loaded items and formatted for JavaScript")
+        
+        # Prepare SVG content for JavaScript (escape and format)
+        svg_js_content = repr(svg_map_content) if svg_map_content else "''"
         
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1305,6 +1321,7 @@ class NPCRelationshipMapper:
         <div class="tabs">
             <button class="tab active" onclick="switchTab('cards')">📋 Card View</button>
             <button class="tab" onclick="switchTab('mindmap')">🗺️ Visual Mind Map</button>
+            <button class="tab" onclick="switchTab('map')">🗺️ World Map</button>
             <button class="tab" onclick="switchTab('editor')">✏️ Visual Editor</button>
             <button class="tab" onclick="switchTab('inventory')">🎒 Inventory Tracker</button>
         </div>
@@ -1325,8 +1342,9 @@ class NPCRelationshipMapper:
             let tabIndex = -1;
             if (tabName === 'cards') tabIndex = 0;
             else if (tabName === 'mindmap') tabIndex = 1;
-            else if (tabName === 'editor') tabIndex = 2;
-            else if (tabName === 'inventory') tabIndex = 3;
+            else if (tabName === 'map') tabIndex = 2;
+            else if (tabName === 'editor') tabIndex = 3;
+            else if (tabName === 'inventory') tabIndex = 4;
             
             if (tabIndex >= 0 && tabs[tabIndex]) {{
                 tabs[tabIndex].classList.add('active');
@@ -1344,6 +1362,8 @@ class NPCRelationshipMapper:
                     initCardView();
                 }} else if (tabName === 'mindmap' && typeof initMindMap === 'function') {{
                     initMindMap();
+                }} else if (tabName === 'map') {{
+                    // Map tab - no initialization needed, just display the SVG
                 }} else if (tabName === 'editor' && typeof initEditor === 'function') {{
                     initEditor();
                 }} else if (tabName === 'inventory' && typeof initInventory === 'function') {{
@@ -1454,19 +1474,23 @@ class NPCRelationshipMapper:
                 else:
                     encoded_path = urllib.parse.quote(portrait, safe='/')
                 
+                # Use encoded path for both background-image and img src
                 # Improved error handling: suppress console errors for missing images
-                portrait_html = f'<img src="{encoded_path}" alt="{name}" onerror="this.style.display=\'none\'; this.onerror=null;" loading="lazy">'
+                # Use onerror to hide broken images and prevent console errors
+                portrait_html = f'<img src="{encoded_path}" alt="{name}" onerror="this.style.display=\'none\'; this.parentElement.style.backgroundImage=\'none\'; this.onerror=null;" loading="lazy">'
+                portrait_style = f"background-image: url('{encoded_path}');"
             else:
                 portrait_html = '<div class="portrait-placeholder">📷</div>'
+                portrait_style = ''
             
             tags_html = ''
             if tags:
                 tags_html = '<div class="npc-tags"><span class="tag-label">Tags:</span> ' + ''.join([f'<span class="tag">{tag}</span>' for tag in tags]) + '</div>'
             
-            html += f"""            <div class="npc-card" data-faction="{faction}" data-status="{status}" data-name="{name.lower()}" data-location="{location.lower()}" data-tags="{tags_str.lower()}" data-spoiler="{str(spoiler).lower()}" data-portrait="{portrait}">
+            html += f"""            <div class="npc-card" data-faction="{faction}" data-status="{status}" data-name="{name.lower()}" data-location="{location.lower()}" data-tags="{tags_str.lower()}" data-spoiler="{str(spoiler).lower()}" data-portrait="{portrait if portrait else ''}">
                 <div class="npc-header">
                     <div class="npc-portrait-container">
-                        <div class="npc-portrait" style="background-image: url('{portrait}');">
+                        <div class="npc-portrait" style="{portrait_style}">
                             {portrait_html}
                         </div>
                     </div>
@@ -1547,6 +1571,1092 @@ class NPCRelationshipMapper:
             </div>
             <div id="mindmapContainer"></div>
         </div>
+        
+        <div id="mapTab" class="tab-content">
+            <div style="padding: 20px;">
+                <h2 style="color: #FFD700; margin-top: 0;">🗺️ Genia World Map</h2>
+                <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; border: 2px solid rgba(255,255,255,0.2); display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button id="mapResetBtn" onclick="resetMapView()" style="padding: 8px 16px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🔄 Reset View</button>
+                            <button id="toggleLabelsBtn" onclick="toggleMapLabels()" style="padding: 8px 16px; background: rgba(76,175,80,0.3); border: 2px solid #4CAF50; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🏷️ Labels: ON</button>
+                            <button id="addMarkerBtn" onclick="toggleMarkerMode()" style="padding: 8px 16px; background: rgba(33,150,243,0.3); border: 2px solid #2196F3; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">📍 Add Marker</button>
+                            <button id="drawAnnotationBtn" onclick="toggleAnnotationMode()" style="padding: 8px 16px; background: rgba(156,39,176,0.3); border: 2px solid #9C27B0; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✏️ Draw</button>
+                            <button id="undoBtn" onclick="undoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Undo">↶ Undo</button>
+                            <button id="redoBtn" onclick="redoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Redo">↷ Redo</button>
+                            <span id="mapZoomLevel" style="color: #aaa; font-size: 0.9em;">Zoom: 100%</span>
+                        </div>
+                        <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: layout style paint;">
+                            <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; will-change: transform; contain: layout style paint;">
+                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate3d(-50%, -50%, 0) scale(1); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: transform;"></div>
+                                <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
+                                <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                    <p style="font-size: 1.2em; margin-bottom: 10px;">⚠️ Map not found</p>
+                                    <p>Please ensure "Gienia World Map.svg" is in the Images folder.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 0.9em; color: #aaa;">
+                            <p style="margin: 5px 0;">💡 <strong>Controls:</strong> Mouse wheel to zoom | Click and drag to pan | Double-click to reset | Pinch to zoom on mobile</p>
+                        </div>
+                    </div>
+                    <div id="mapSidebar" style="width: 280px; min-width: 280px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; max-height: 80vh; overflow-y: auto;">
+                        <h3 style="color: #FFD700; margin-top: 0; margin-bottom: 15px; font-size: 1.1em;">📍 Locations</h3>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">🔍 Search:</label>
+                            <input type="text" id="markerSearchInput" oninput="filterMarkersByCategory()" placeholder="Search locations..." style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Filter by Category:</label>
+                            <select id="markerCategoryFilter" onchange="filterMarkersByCategory()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em;">
+                                <option value="all">All Categories</option>
+                                <option value="city">Cities</option>
+                                <option value="dungeon">Dungeons</option>
+                                <option value="landmark">Landmarks</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div id="locationList" style="display: flex; flex-direction: column; gap: 8px;">
+                            <p style="color: #666; font-size: 0.85em; font-style: italic;">No locations added yet. Click "Add Marker" to place markers on the map.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        // Map zoom and pan functionality
+        (function() {{
+            let mapScale = 1;
+            let mapX = 0;
+            let mapY = 0;
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let dragStartMapX = 0;
+            let dragStartMapY = 0;
+            // Touch gesture variables (declared here, used in touch handlers)
+            let lastTouchDistance = 0;
+            let lastTouchCenterX = 0;
+            let lastTouchCenterY = 0;
+            let touchStartTime = 0;
+            let touchStartPos = {{ x: 0, y: 0 }};
+            let isPinching = false;
+            let twoFingerPanStart = {{ x: 0, y: 0 }};
+            let touches = [];
+            
+            // Marker and annotation system
+            let markers = [];
+            let annotations = [];
+            let markerMode = false;
+            let annotationMode = false;
+            let isDrawing = false;
+            let currentPath = null;
+            let labelsVisible = true;
+            let mapBounds = {{ minX: -2000, maxX: 2000, minY: -1000, maxY: 1000 }};
+            
+            const markerCategories = {{
+                'city': {{ name: 'City', color: '#4CAF50', icon: '🏙️' }},
+                'dungeon': {{ name: 'Dungeon', color: '#F44336', icon: '🏰' }},
+                'landmark': {{ name: 'Landmark', color: '#FF9800', icon: '🗿' }},
+                'other': {{ name: 'Other', color: '#9E9E9E', icon: '📍' }}
+            }};
+            
+            const mapSvgContainer = document.getElementById('worldMapSvgContainer');
+            const mapContainer = document.getElementById('mapContainer');
+            const mapWrapper = document.getElementById('mapWrapper');
+            const zoomLevelDisplay = document.getElementById('mapZoomLevel');
+            const mapError = document.getElementById('mapError');
+            const mapOverlay = document.getElementById('mapOverlay');
+            const locationList = document.getElementById('locationList');
+            
+            // Expose functions globally first, even if elements don't exist yet
+            function resetMapView() {{
+                if (!mapContainer || !mapSvgContainer) return;
+                mapScale = 1;
+                mapX = 0;
+                mapY = 0;
+                updateMapTransform();
+            }}
+            
+            // Define functions that need to be available immediately (before DOM elements exist)
+            function resetMapView() {{
+                if (!mapContainer || !mapSvgContainer) return;
+                mapScale = 1;
+                mapX = 0;
+                mapY = 0;
+                updateMapTransform();
+            }}
+            
+            function toggleMarkerMode() {{
+                if (!mapContainer) return;
+                markerMode = !markerMode;
+                annotationMode = false;
+                const btn = document.getElementById('addMarkerBtn');
+                const drawBtn = document.getElementById('drawAnnotationBtn');
+                if (btn) {{
+                    btn.style.background = markerMode ? 'rgba(33,150,243,0.6)' : 'rgba(33,150,243,0.3)';
+                    btn.textContent = markerMode ? '📍 Cancel' : '📍 Add Marker';
+                }}
+                if (drawBtn) {{
+                    drawBtn.style.background = 'rgba(156,39,176,0.3)';
+                    drawBtn.textContent = '✏️ Draw';
+                }}
+                mapContainer.style.cursor = markerMode ? 'crosshair' : 'grab';
+            }}
+            
+            function toggleAnnotationMode() {{
+                if (!mapContainer) return;
+                annotationMode = !annotationMode;
+                markerMode = false;
+                const btn = document.getElementById('drawAnnotationBtn');
+                const markerBtn = document.getElementById('addMarkerBtn');
+                if (btn) {{
+                    btn.style.background = annotationMode ? 'rgba(156,39,176,0.6)' : 'rgba(156,39,176,0.3)';
+                    btn.textContent = annotationMode ? '✏️ Cancel' : '✏️ Draw';
+                }}
+                if (markerBtn) {{
+                    markerBtn.style.background = 'rgba(33,150,243,0.3)';
+                    markerBtn.textContent = '📍 Add Marker';
+                }}
+                mapContainer.style.cursor = annotationMode ? 'crosshair' : 'grab';
+                if (!annotationMode && isDrawing) {{
+                    finishAnnotation();
+                }}
+            }}
+            
+            function toggleMapLabels() {{
+                labelsVisible = !labelsVisible;
+                const btn = document.getElementById('toggleLabelsBtn');
+                if (btn) {{
+                    btn.textContent = labelsVisible ? '🏷️ Labels: ON' : '🏷️ Labels: OFF';
+                }}
+                if (mapOverlay) renderMarkers();
+            }}
+            
+            // Expose functions to window immediately (before early return)
+            window.resetMapView = resetMapView;
+            window.toggleMarkerMode = toggleMarkerMode;
+            window.toggleAnnotationMode = toggleAnnotationMode;
+            window.toggleMapLabels = toggleMapLabels;
+            
+            if (!mapSvgContainer || !mapContainer) return;
+            
+            let rafId = null;
+            let pendingUpdate = false;
+            let svgLoaded = false;
+            let renderRafId = null;
+            let lastRenderTime = 0;
+            const RENDER_THROTTLE = 100; // Only render markers/annotations every 100ms
+            
+            // Undo/Redo history
+            let historyStack = [];
+            let historyIndex = -1;
+            const MAX_HISTORY = 50;
+            
+            
+            // Constrain pan to map bounds
+            function constrainPan() {{
+                const rect = mapContainer.getBoundingClientRect();
+                const maxX = (mapBounds.maxX * mapScale) - (rect.width / 2);
+                const minX = (mapBounds.minX * mapScale) + (rect.width / 2);
+                const maxY = (mapBounds.maxY * mapScale) - (rect.height / 2);
+                const minY = (mapBounds.minY * mapScale) + (rect.height / 2);
+                
+                mapX = Math.max(minX, Math.min(maxX, mapX));
+                mapY = Math.max(minY, Math.min(maxY, mapY));
+            }}
+            
+            // Simple function to load SVG map
+            function loadSvgMap() {{
+                if (svgLoaded) return;
+                
+                const svgContent = PLACEHOLDER_SVG_CONTENT;
+                if (svgContent && svgContent.trim() !== '') {{
+                    try {{
+                        mapSvgContainer.innerHTML = svgContent;
+                        svgLoaded = true;
+                    }} catch(e) {{
+                        console.error('Failed to load SVG:', e);
+                        if (mapError) mapError.style.display = 'block';
+                    }}
+                }} else {{
+                    // Fallback: try to load from file
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', 'Images/Gienia World Map.svg', true);
+                    xhr.onreadystatechange = function() {{
+                        if (xhr.readyState === 4 && (xhr.status === 0 || xhr.status === 200)) {{
+                            mapSvgContainer.innerHTML = xhr.responseText;
+                            svgLoaded = true;
+                        }} else if (xhr.readyState === 4) {{
+                            if (mapError) mapError.style.display = 'block';
+                        }}
+                    }};
+                    xhr.onerror = function() {{
+                        if (mapError) mapError.style.display = 'block';
+                    }};
+                    xhr.send();
+                }}
+            }}
+            
+            // Load SVG when map tab is opened
+            const mapTab = document.getElementById('mapTab');
+            if (mapTab) {{
+                const observer = new MutationObserver(function(mutations) {{
+                    if (mapTab.classList.contains('active') && !svgLoaded) {{
+                        loadSvgMap();
+                    }}
+                }});
+                observer.observe(mapTab, {{ attributes: true, attributeFilter: ['class'] }});
+                
+                // Also check if already active
+                if (mapTab.classList.contains('active')) {{
+                    loadSvgMap();
+                }}
+            }}
+            
+            function updateMapTransform() {{
+                if (!mapSvgContainer) return;
+                
+                // Constrain pan to bounds
+                constrainPan();
+                
+                // Use requestAnimationFrame for smooth updates
+                if (rafId) {{
+                    pendingUpdate = true;
+                    return;
+                }}
+                
+                rafId = requestAnimationFrame(function() {{
+                    // Use translate3d for GPU acceleration
+                    mapSvgContainer.style.transform = `translate3d(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px), 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
+                    if (zoomLevelDisplay) {{
+                        zoomLevelDisplay.textContent = `Zoom: ${{Math.round(mapScale * 100)}}%`;
+                    }}
+                    // Throttle marker/annotation rendering for performance
+                    const now = Date.now();
+                    if (svgLoaded && (now - lastRenderTime > RENDER_THROTTLE || !isDragging)) {{
+                        if (renderRafId) cancelAnimationFrame(renderRafId);
+                        renderRafId = requestAnimationFrame(function() {{
+                            renderMarkers();
+                            renderAnnotations();
+                            lastRenderTime = now;
+                            renderRafId = null;
+                        }});
+                    }}
+                    rafId = null;
+                    if (pendingUpdate) {{
+                        pendingUpdate = false;
+                        updateMapTransform();
+                    }}
+                }});
+            }}
+            
+            // resetMapView is already defined and exposed above
+            
+            // Mouse wheel zoom
+            mapContainer.addEventListener('wheel', function(e) {{
+                e.preventDefault();
+                const rect = mapContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.max(0.5, Math.min(20, mapScale * delta)); // Increased max zoom to 2000%
+                
+                // Zoom towards mouse position
+                const scaleChange = newScale / mapScale;
+                const containerCenterX = rect.width / 2;
+                const containerCenterY = rect.height / 2;
+                
+                mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
+                mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
+                
+                mapScale = newScale;
+                updateMapTransform();
+            }});
+            
+            // Mouse drag to pan or add marker/annotation
+            mapContainer.addEventListener('mousedown', function(e) {{
+                if (e.button !== 0) return; // Only left mouse button
+                e.stopPropagation(); // Prevent event bubbling
+                
+                if (markerMode) {{
+                    addMarkerAt(e.clientX, e.clientY);
+                    return;
+                }}
+                
+                if (annotationMode) {{
+                    startAnnotation(e.clientX, e.clientY);
+                    return;
+                }}
+                
+                // Normal pan mode
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                dragStartMapX = mapX;
+                dragStartMapY = mapY;
+                mapContainer.style.cursor = 'grabbing';
+            }});
+            
+            document.addEventListener('mousemove', function(e) {{
+                if (isDrawing && annotationMode) {{
+                    addAnnotationPoint(e.clientX, e.clientY);
+                    return;
+                }}
+                if (!isDragging) return;
+                mapX = dragStartMapX + (e.clientX - dragStartX);
+                mapY = dragStartMapY + (e.clientY - dragStartY);
+                updateMapTransform();
+            }});
+            
+            document.addEventListener('mouseup', function() {{
+                if (isDrawing && annotationMode) {{
+                    finishAnnotation();
+                }}
+                if (isDragging) {{
+                    isDragging = false;
+                    mapContainer.style.cursor = markerMode ? 'crosshair' : (annotationMode ? 'crosshair' : 'grab');
+                    // Force render when dragging stops
+                    if (svgLoaded) {{
+                        renderMarkers();
+                        renderAnnotations();
+                    }}
+                }}
+            }});
+            
+            // Double-click to reset
+            mapContainer.addEventListener('dblclick', function(e) {{
+                e.preventDefault();
+                resetMapView();
+            }});
+            
+            // Touch event helper functions (touches variable already declared above)
+            function getTouchDistance(touch1, touch2) {{
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }}
+            
+            function getTouchCenter(touch1, touch2) {{
+                return {{
+                    x: (touch1.clientX + touch2.clientX) / 2,
+                    y: (touch1.clientY + touch2.clientY) / 2
+                }};
+            }}
+            
+            mapContainer.addEventListener('touchstart', function(e) {{
+                e.preventDefault();
+                touches = Array.from(e.touches);
+                touchStartTime = Date.now();
+                
+                if (touches.length === 1) {{
+                    // Single touch - check if it's marker/annotation mode first
+                    if (markerMode) {{
+                        const rect = mapContainer.getBoundingClientRect();
+                        addMarkerAt(touches[0].clientX, touches[0].clientY);
+                        return;
+                    }}
+                    if (annotationMode) {{
+                        const rect = mapContainer.getBoundingClientRect();
+                        startAnnotation(touches[0].clientX, touches[0].clientY);
+                        return;
+                    }}
+                    // Single touch - start pan
+                    isDragging = true;
+                    dragStartX = touches[0].clientX;
+                    dragStartY = touches[0].clientY;
+                    dragStartMapX = mapX;
+                    dragStartMapY = mapY;
+                    touchStartPos = {{ x: touches[0].clientX, y: touches[0].clientY }};
+                }} else if (touches.length === 2) {{
+                    // Two touches - prepare for pinch zoom or two-finger pan
+                    isPinching = true;
+                    lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+                    const center = getTouchCenter(touches[0], touches[1]);
+                    const rect = mapContainer.getBoundingClientRect();
+                    lastTouchCenterX = center.x - rect.left;
+                    lastTouchCenterY = center.y - rect.top;
+                    twoFingerPanStart = {{ x: mapX, y: mapY }};
+                }}
+            }}, {{ passive: false }});
+            
+            mapContainer.addEventListener('touchmove', function(e) {{
+                e.preventDefault();
+                touches = Array.from(e.touches);
+                
+                if (touches.length === 1 && isDragging && !isPinching) {{
+                    // Single touch - pan
+                    mapX = dragStartMapX + (touches[0].clientX - dragStartX);
+                    mapY = dragStartMapY + (touches[0].clientY - dragStartY);
+                    updateMapTransform();
+                }} else if (touches.length === 2 && isPinching) {{
+                    // Two touches - pinch zoom or two-finger pan
+                    const currentDistance = getTouchDistance(touches[0], touches[1]);
+                    const distanceChange = Math.abs(currentDistance - lastTouchDistance);
+                    
+                    // If fingers are moving apart/together significantly, it's a pinch zoom
+                    if (distanceChange > 5) {{
+                        const scaleChange = currentDistance / lastTouchDistance;
+                        const newScale = Math.max(0.5, Math.min(20, mapScale * scaleChange));
+                        
+                        // Zoom towards touch center
+                        const scaleRatio = newScale / mapScale;
+                        const rect = mapContainer.getBoundingClientRect();
+                        const containerCenterX = rect.width / 2;
+                        const containerCenterY = rect.height / 2;
+                        
+                        mapX = lastTouchCenterX - containerCenterX - (lastTouchCenterX - containerCenterX - mapX) * scaleRatio;
+                        mapY = lastTouchCenterY - containerCenterY - (lastTouchCenterY - containerCenterY - mapY) * scaleRatio;
+                        
+                        mapScale = newScale;
+                        lastTouchDistance = currentDistance;
+                        updateMapTransform();
+                    }} else {{
+                        // Two-finger pan: use the movement of the center point
+                        const center = getTouchCenter(touches[0], touches[1]);
+                        const rect = mapContainer.getBoundingClientRect();
+                        const centerX = center.x - rect.left;
+                        const centerY = center.y - rect.top;
+                        const dx = centerX - lastTouchCenterX;
+                        const dy = centerY - lastTouchCenterY;
+                        mapX = twoFingerPanStart.x + dx;
+                        mapY = twoFingerPanStart.y + dy;
+                        lastTouchCenterX = centerX;
+                        lastTouchCenterY = centerY;
+                        updateMapTransform();
+                    }}
+                }}
+            }}, {{ passive: false }});
+            
+            mapContainer.addEventListener('touchend', function(e) {{
+                touches = Array.from(e.touches);
+                if (touches.length === 0) {{
+                    isDragging = false;
+                    isPinching = false;
+                    if (isDrawing && annotationMode) {{
+                        finishAnnotation();
+                    }}
+                }} else if (touches.length === 1) {{
+                    // One finger left, switch to single touch pan
+                    isPinching = false;
+                    isDragging = true;
+                    dragStartX = touches[0].clientX;
+                    dragStartY = touches[0].clientY;
+                    dragStartMapX = mapX;
+                    dragStartMapY = mapY;
+                }}
+            }});
+            
+            // Load markers and annotations from localStorage
+            function loadMapData() {{
+                try {{
+                    const saved = localStorage.getItem('mapMarkers');
+                    if (saved) markers = JSON.parse(saved);
+                    const savedAnnot = localStorage.getItem('mapAnnotations');
+                    if (savedAnnot) annotations = JSON.parse(savedAnnot);
+                    // Initialize history with initial state (empty or loaded)
+                    const initialState = {{
+                        markers: JSON.parse(JSON.stringify(markers)),
+                        annotations: JSON.parse(JSON.stringify(annotations))
+                    }};
+                    historyStack = [initialState];
+                    historyIndex = 0; // Start at 0 so we can undo to the initial state
+                    updateUndoRedoButtons();
+                    renderMarkers();
+                    renderAnnotations();
+                    updateLocationList();
+                }} catch(e) {{
+                    console.error('Failed to load map data:', e);
+                }}
+            }}
+            
+            // Mini-map functions
+            
+            // Save markers and annotations to localStorage
+            function saveMapData() {{
+                try {{
+                    localStorage.setItem('mapMarkers', JSON.stringify(markers));
+                    localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
+                    // Save to history
+                    saveToHistory();
+                }} catch(e) {{
+                    console.error('Failed to save map data:', e);
+                }}
+            }}
+            
+            // Undo/Redo functions
+            function saveToHistory() {{
+                const state = {{
+                    markers: JSON.parse(JSON.stringify(markers)),
+                    annotations: JSON.parse(JSON.stringify(annotations))
+                }};
+                // Remove any future history if we're not at the end
+                if (historyIndex < historyStack.length - 1) {{
+                    historyStack = historyStack.slice(0, historyIndex + 1);
+                }}
+                historyStack.push(state);
+                if (historyStack.length > MAX_HISTORY) {{
+                    historyStack.shift();
+                }} else {{
+                    historyIndex++;
+                }}
+                updateUndoRedoButtons();
+            }}
+            
+            function undoMapAction() {{
+                if (historyIndex > 0) {{
+                    historyIndex--;
+                    const state = historyStack[historyIndex];
+                    markers = JSON.parse(JSON.stringify(state.markers));
+                    annotations = JSON.parse(JSON.stringify(state.annotations));
+                    renderMarkers();
+                    renderAnnotations();
+                    updateLocationList();
+                    updateUndoRedoButtons();
+                    // Save to localStorage
+                    try {{
+                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
+                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
+                    }} catch(e) {{
+                        console.error('Failed to save:', e);
+                    }}
+                }} else if (historyIndex === 0 && historyStack.length > 1) {{
+                    // Allow undoing the first change back to initial state
+                    historyIndex = 0;
+                    const state = historyStack[0];
+                    markers = JSON.parse(JSON.stringify(state.markers));
+                    annotations = JSON.parse(JSON.stringify(state.annotations));
+                    renderMarkers();
+                    renderAnnotations();
+                    updateLocationList();
+                    updateUndoRedoButtons();
+                    // Save to localStorage
+                    try {{
+                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
+                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
+                    }} catch(e) {{
+                        console.error('Failed to save:', e);
+                    }}
+                }}
+            }}
+            
+            function redoMapAction() {{
+                if (historyIndex < historyStack.length - 1) {{
+                    historyIndex++;
+                    const state = historyStack[historyIndex];
+                    markers = JSON.parse(JSON.stringify(state.markers));
+                    annotations = JSON.parse(JSON.stringify(state.annotations));
+                    renderMarkers();
+                    renderAnnotations();
+                    updateLocationList();
+                    updateUndoRedoButtons();
+                    // Save to localStorage
+                    try {{
+                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
+                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
+                    }} catch(e) {{
+                        console.error('Failed to save:', e);
+                    }}
+                }}
+            }}
+            
+            function updateUndoRedoButtons() {{
+                const undoBtn = document.getElementById('undoBtn');
+                const redoBtn = document.getElementById('redoBtn');
+                if (undoBtn) {{
+                    // Can undo if we're not at the initial state (index 0) or if there are changes after initial state
+                    const canUndo = historyIndex > 0 || (historyIndex === 0 && historyStack.length > 1);
+                    undoBtn.disabled = !canUndo;
+                    undoBtn.style.opacity = canUndo ? '1' : '0.5';
+                }}
+                if (redoBtn) {{
+                    redoBtn.disabled = historyIndex >= historyStack.length - 1;
+                    redoBtn.style.opacity = historyIndex >= historyStack.length - 1 ? '0.5' : '1';
+                }}
+            }}
+            
+            window.undoMapAction = undoMapAction;
+            window.redoMapAction = redoMapAction;
+            
+            // Get map coordinates from screen coordinates
+            function screenToMap(screenX, screenY) {{
+                const rect = mapContainer.getBoundingClientRect();
+                const containerX = screenX - rect.left;
+                const containerY = screenY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const coordX = (containerX - centerX - mapX) / mapScale;
+                const coordY = (containerY - centerY - mapY) / mapScale;
+                return {{ x: coordX, y: coordY }};
+            }}
+            
+            // Render markers on overlay with clustering
+            function renderMarkers() {{
+                if (!mapOverlay) return;
+                // Remove all marker-related elements including cluster text
+                const existingMarkers = mapOverlay.querySelectorAll('.map-marker, .map-marker-label, .map-cluster, .map-cluster-text');
+                existingMarkers.forEach(m => m.remove());
+                // Also remove any text elements that might be cluster numbers
+                const allTexts = mapOverlay.querySelectorAll('text');
+                allTexts.forEach(function(text) {{
+                    // Check if this text is a cluster number (numeric content, positioned near a cluster)
+                    const textContent = text.textContent;
+                    if (textContent && /^\\d+$/.test(textContent.trim()) && text.getAttribute('fill') === '#000') {{
+                        text.remove();
+                    }}
+                }});
+                
+                const rect = mapContainer.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // Clustering threshold: cluster markers when zoomed out (scale < 1.5)
+                const clusterThreshold = mapScale < 1.5 ? 50 : Infinity;
+                const clusters = [];
+                let unclustered = [];
+                
+                if (clusterThreshold < Infinity) {{
+                    // Group markers into clusters
+                    markers.forEach(function(marker) {{
+                        const screenX = centerX + marker.x * mapScale + mapX;
+                        const screenY = centerY + marker.y * mapScale + mapY;
+                        if (screenX < -100 || screenX > rect.width + 100 || screenY < -100 || screenY > rect.height + 100) return;
+                        
+                        let addedToCluster = false;
+                        for (let i = 0; i < clusters.length; i++) {{
+                            const cluster = clusters[i];
+                            const dx = screenX - cluster.x;
+                            const dy = screenY - cluster.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < clusterThreshold) {{
+                                cluster.markers.push(marker);
+                                cluster.x = (cluster.x * (cluster.markers.length - 1) + screenX) / cluster.markers.length;
+                                cluster.y = (cluster.y * (cluster.markers.length - 1) + screenY) / cluster.markers.length;
+                                addedToCluster = true;
+                                break;
+                            }}
+                        }}
+                        if (!addedToCluster) {{
+                            clusters.push({{ x: screenX, y: screenY, markers: [marker] }});
+                        }}
+                    }});
+                    
+                    // Render clusters
+                    clusters.forEach(function(cluster) {{
+                        if (cluster.markers.length === 1) {{
+                            unclustered.push(cluster.markers[0]);
+                        }} else {{
+                            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            circle.setAttribute('cx', cluster.x);
+                            circle.setAttribute('cy', cluster.y);
+                            circle.setAttribute('r', 12 + Math.min(cluster.markers.length * 2, 10));
+                            circle.setAttribute('fill', '#FFD700');
+                            circle.setAttribute('stroke', '#fff');
+                            circle.setAttribute('stroke-width', 2);
+                            circle.setAttribute('class', 'map-cluster');
+                            circle.style.cursor = 'pointer';
+                            circle.style.pointerEvents = 'all';
+                            circle.onclick = function(e) {{
+                                e.stopPropagation();
+                                // Zoom in to show individual markers
+                                mapScale = Math.min(3, mapScale * 1.5);
+                                mapX = rect.width / 2 - (cluster.markers[0].x * mapScale);
+                                mapY = rect.height / 2 - (cluster.markers[0].y * mapScale);
+                                updateMapTransform();
+                            }};
+                            mapOverlay.appendChild(circle);
+                            
+                            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                            text.setAttribute('x', cluster.x);
+                            text.setAttribute('y', cluster.y + 4);
+                            text.setAttribute('fill', '#000');
+                            text.setAttribute('font-size', '12px');
+                            text.setAttribute('font-weight', 'bold');
+                            text.setAttribute('text-anchor', 'middle');
+                            text.setAttribute('class', 'map-cluster-text');
+                            text.style.pointerEvents = 'none';
+                            text.textContent = cluster.markers.length;
+                            mapOverlay.appendChild(text);
+                        }}
+                    }});
+                }} else {{
+                    unclustered = markers;
+                }}
+                
+                // Render individual markers
+                unclustered.forEach(function(marker) {{
+                    const screenX = centerX + marker.x * mapScale + mapX;
+                    const screenY = centerY + marker.y * mapScale + mapY;
+                    if (screenX < -50 || screenX > rect.width + 50 || screenY < -50 || screenY > rect.height + 50) return;
+                    
+                    const category = markerCategories[marker.category] || markerCategories['other'];
+                    const markerColor = marker.color || category.color;
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', screenX);
+                    circle.setAttribute('cy', screenY);
+                    circle.setAttribute('r', 8);
+                    circle.setAttribute('fill', markerColor);
+                    circle.setAttribute('stroke', '#fff');
+                    circle.setAttribute('stroke-width', 2);
+                    circle.setAttribute('class', 'map-marker');
+                    circle.setAttribute('data-marker-id', marker.id);
+                    circle.style.cursor = 'pointer';
+                    circle.style.pointerEvents = 'all';
+                    circle.onclick = function(e) {{
+                        e.stopPropagation();
+                        const markerObj = markers.find(m => m.id === marker.id);
+                        if (markerObj) showMarkerInfo(markerObj);
+                    }};
+                    mapOverlay.appendChild(circle);
+                    
+                    if (marker.name && labelsVisible) {{
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', screenX);
+                        text.setAttribute('y', screenY - 15);
+                        text.setAttribute('fill', '#fff');
+                        text.setAttribute('font-size', '12px');
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('class', 'map-marker-label');
+                        text.style.pointerEvents = 'none';
+                        text.textContent = marker.name;
+                        mapOverlay.appendChild(text);
+                    }}
+                }});
+            }}
+            
+            // Render annotations on overlay
+            function renderAnnotations() {{
+                if (!mapOverlay) return;
+                const existingPaths = mapOverlay.querySelectorAll('.map-annotation, .map-annotation-delete');
+                existingPaths.forEach(p => p.remove());
+                
+                const rect = mapContainer.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                annotations.forEach(function(annotation) {{
+                    if (!annotation.points || annotation.points.length < 2) return;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    let pathData = 'M ';
+                    annotation.points.forEach(function(point, idx) {{
+                        const screenX = centerX + point.x * mapScale + mapX;
+                        const screenY = centerY + point.y * mapScale + mapY;
+                        pathData += (idx === 0 ? '' : ' L ') + screenX + ',' + screenY;
+                    }});
+                    path.setAttribute('d', pathData);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', annotation.color || '#9C27B0');
+                    path.setAttribute('stroke-width', Math.max(3, (annotation.width || 2) * mapScale)); // Make stroke wider for easier clicking
+                    path.setAttribute('class', 'map-annotation');
+                    path.setAttribute('data-annotation-id', annotation.id);
+                    path.style.pointerEvents = 'all'; // Changed from 'stroke' to 'all' for better click detection
+                    path.style.cursor = 'pointer';
+                    path.onclick = function(e) {{
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (confirm('Delete this drawing?')) {{
+                            annotations = annotations.filter(a => a.id !== annotation.id);
+                            saveMapData();
+                            renderAnnotations();
+                        }}
+                    }};
+                    mapOverlay.appendChild(path);
+                    
+                    // Add delete button at the end of the path
+                    const lastPoint = annotation.points[annotation.points.length - 1];
+                    const lastScreenX = centerX + lastPoint.x * mapScale + mapX;
+                    const lastScreenY = centerY + lastPoint.y * mapScale + mapY;
+                    const deleteBtn = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    deleteBtn.setAttribute('cx', lastScreenX);
+                    deleteBtn.setAttribute('cy', lastScreenY);
+                    deleteBtn.setAttribute('r', Math.max(8, 6 * mapScale)); // Scale delete button with zoom
+                    deleteBtn.setAttribute('fill', '#F44336');
+                    deleteBtn.setAttribute('stroke', '#fff');
+                    deleteBtn.setAttribute('stroke-width', 1);
+                    deleteBtn.setAttribute('class', 'map-annotation-delete');
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.pointerEvents = 'all';
+                    deleteBtn.onclick = function(e) {{
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (confirm('Delete this drawing?')) {{
+                            annotations = annotations.filter(a => a.id !== annotation.id);
+                            saveMapData();
+                            renderAnnotations();
+                        }}
+                    }};
+                    mapOverlay.appendChild(deleteBtn);
+                }});
+            }}
+            
+            // toggleMarkerMode, toggleAnnotationMode, toggleMapLabels are already defined and exposed above
+            
+            // Show marker dialog (for add or edit)
+            function showMarkerDialog(mapCoords, callback, existingMarker) {{
+                // Close any existing dialogs first
+                const existingDialogs = document.querySelectorAll('[id^="markerDialog"]');
+                existingDialogs.forEach(d => d.remove());
+                
+                const category = existingMarker ? (markerCategories[existingMarker.category] || markerCategories['other']) : markerCategories['other'];
+                const currentColor = existingMarker && existingMarker.color ? existingMarker.color : category.color;
+                const presetColors = ['#4CAF50', '#F44336', '#FF9800', '#2196F3', '#9C27B0', '#FFD700', '#00BCD4', '#FF5722', '#9E9E9E', '#795548'];
+                
+                const dialog = document.createElement('div');
+                dialog.id = 'markerDialog';
+                dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid #FFD700; border-radius: 10px; padding: 20px; z-index: 10000; min-width: 300px; color: #fff;';
+                dialog.innerHTML = `
+                    <h3 style="color: #FFD700; margin-top: 0;">${existingMarker ? 'Edit Marker' : 'Add Marker'}</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; margin-bottom: 5px;">Name:</label>
+                        <input type="text" id="markerNameInput" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;" placeholder="Location name" value="${existingMarker ? (existingMarker.name || '').replace(/"/g, '&quot;') : ''}">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; margin-bottom: 5px;">Category:</label>
+                        <select id="markerCategoryInput" onchange="updateMarkerColorFromCategory()" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;">
+                            <option value="city" ${existingMarker && existingMarker.category === 'city' ? 'selected' : ''}>🏙️ City</option>
+                            <option value="dungeon" ${existingMarker && existingMarker.category === 'dungeon' ? 'selected' : ''}>🏰 Dungeon</option>
+                            <option value="landmark" ${existingMarker && existingMarker.category === 'landmark' ? 'selected' : ''}>🗿 Landmark</option>
+                            <option value="other" ${existingMarker && existingMarker.category === 'other' ? 'selected' : (!existingMarker ? 'selected' : '')}>📍 Other</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; margin-bottom: 5px;">Color:</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                            ${presetColors.map(c => `<div onclick="selectMarkerColor('${c}')" style="width: 30px; height: 30px; background: ${c}; border: 2px solid ${c === currentColor ? '#fff' : 'transparent'}; border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 ${c === currentColor ? '2px' : '0'} rgba(255,255,255,0.5);"></div>`).join('')}
+                        </div>
+                        <input type="color" id="markerColorInput" value="${currentColor}" onchange="selectMarkerColor(this.value)" style="width: 100%; height: 40px; padding: 0; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; margin-bottom: 5px;">Notes:</label>
+                        <textarea id="markerNotesInput" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; min-height: 60px; resize: vertical; box-sizing: border-box;" placeholder="Additional notes...">${existingMarker ? (existingMarker.notes || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="document.getElementById('markerDialog').remove(); delete window.confirmMarkerDialog; delete window.selectMarkerColor; delete window.updateMarkerColorFromCategory;" style="padding: 8px 16px; background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 4px; color: #fff; cursor: pointer;">Cancel</button>
+                        <button onclick="window.confirmMarkerDialog()" style="padding: 8px 16px; background: rgba(76,175,80,0.3); border: 1px solid #4CAF50; border-radius: 4px; color: #fff; cursor: pointer;">${existingMarker ? 'Save' : 'Add'}</button>
+                    </div>
+                `;
+                document.body.appendChild(dialog);
+                document.getElementById('markerNameInput').focus();
+                
+                let selectedColor = currentColor;
+                window.selectMarkerColor = function(color) {{
+                    selectedColor = color;
+                    document.getElementById('markerColorInput').value = color;
+                    const presetDivs = dialog.querySelectorAll('div[onclick^="selectMarkerColor"]');
+                    presetDivs.forEach(div => {{
+                        const divColor = div.style.background;
+                        div.style.border = divColor === color ? '2px solid #fff' : '2px solid transparent';
+                        div.style.boxShadow = divColor === color ? '0 0 0 2px rgba(255,255,255,0.5)' : '0 0 0 0';
+                    }});
+                }};
+                
+                window.updateMarkerColorFromCategory = function() {{
+                    const category = document.getElementById('markerCategoryInput').value;
+                    const catColor = markerCategories[category]?.color || markerCategories['other'].color;
+                    window.selectMarkerColor(catColor);
+                }};
+                
+                window.confirmMarkerDialog = function() {{
+                    const name = document.getElementById('markerNameInput').value.trim();
+                    if (!name) {{
+                        alert('Please enter a name');
+                        return;
+                    }}
+                    const category = document.getElementById('markerCategoryInput').value;
+                    const notes = document.getElementById('markerNotesInput').value.trim();
+                    const color = selectedColor;
+                    const dialogEl = document.getElementById('markerDialog');
+                    if (dialogEl) dialogEl.remove();
+                    delete window.confirmMarkerDialog;
+                    delete window.selectMarkerColor;
+                    delete window.updateMarkerColorFromCategory;
+                    callback(name, category, notes, color);
+                }};
+            }}
+            
+            // Add marker at click position
+            function addMarkerAt(x, y) {{
+                const mapCoords = screenToMap(x, y);
+                showMarkerDialog(mapCoords, function(name, category, notes, color) {{
+                    const marker = {{
+                        id: Date.now(),
+                        name: name,
+                        category: category,
+                        notes: notes || '',
+                        color: color,
+                        x: mapCoords.x,
+                        y: mapCoords.y
+                    }};
+                    markers.push(marker);
+                    saveMapData();
+                    renderMarkers();
+                    updateLocationList();
+                }});
+            }}
+            
+            // Edit existing marker
+            function editMarker(marker) {{
+                showMarkerDialog(null, function(name, category, notes, color) {{
+                    marker.name = name;
+                    marker.category = category;
+                    marker.notes = notes || '';
+                    marker.color = color;
+                    saveMapData();
+                    renderMarkers();
+                    updateLocationList();
+                }}, marker);
+            }}
+            
+            // Update location list with search
+            function updateLocationList() {{
+                if (!locationList) return;
+                const filter = document.getElementById('markerCategoryFilter')?.value || 'all';
+                const searchTerm = (document.getElementById('markerSearchInput')?.value || '').toLowerCase().trim();
+                
+                let filtered = filter === 'all' ? markers : markers.filter(m => m.category === filter);
+                if (searchTerm) {{
+                    filtered = filtered.filter(m => 
+                        m.name.toLowerCase().includes(searchTerm) || 
+                        (m.notes && m.notes.toLowerCase().includes(searchTerm))
+                    );
+                }}
+                
+                if (filtered.length === 0) {{
+                    locationList.innerHTML = '<p style="color: #666; font-size: 0.85em; font-style: italic;">No locations found.</p>';
+                    return;
+                }}
+                locationList.innerHTML = '';
+                filtered.forEach(function(marker) {{
+                    const category = markerCategories[marker.category] || markerCategories['other'];
+                    const markerColor = marker.color || category.color;
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; cursor: pointer; border-left: 3px solid ' + markerColor + '; margin-bottom: 5px;';
+                    const hasNotes = marker.notes ? '📝' : '';
+                    item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center;"><div style="flex: 1;"><span style="font-size: 1.2em; margin-right: 5px;">' + category.icon + '</span><strong style="color: #fff; font-size: 0.9em;">' + marker.name + '</strong>' + (hasNotes ? ' <span style="color: #aaa; font-size: 0.8em;">' + hasNotes + '</span>' : '') + '</div><button onclick="event.stopPropagation(); deleteMarker(' + marker.id + ')" style="background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 3px; color: #fff; padding: 2px 6px; font-size: 0.75em; cursor: pointer;">×</button></div>';
+                    item.onclick = function(e) {{
+                        if (!e.target.closest('button')) {{
+                            zoomToMarker(marker);
+                        }}
+                    }};
+                    locationList.appendChild(item);
+                }});
+            }}
+            
+            function filterMarkersByCategory() {{
+                updateLocationList();
+            }}
+            
+            function zoomToMarker(marker) {{
+                const rect = mapContainer.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                // Set zoom level first
+                mapScale = Math.max(2, mapScale);
+                // Center the marker: mapX/Y is offset from center, so we need to position the marker at center
+                // The marker's world position * scale gives screen position, then we offset by mapX/Y
+                // To center: centerX = marker.x * mapScale + mapX, so mapX = centerX - marker.x * mapScale
+                mapX = centerX - (marker.x * mapScale);
+                mapY = centerY - (marker.y * mapScale);
+                updateMapTransform();
+            }}
+            
+            // Show marker info dialog
+            function showMarkerInfo(marker) {{
+                // Close any existing dialogs first
+                const existingDialogs = document.querySelectorAll('[id^="markerInfoDialog"]');
+                existingDialogs.forEach(d => d.remove());
+                
+                const category = markerCategories[marker.category] || markerCategories['other'];
+                const dialog = document.createElement('div');
+                dialog.id = 'markerInfoDialog';
+                dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid ' + category.color + '; border-radius: 10px; padding: 20px; z-index: 10000; min-width: 300px; max-width: 500px; color: #fff;';
+                const notesHtml = marker.notes ? `<div style="margin-bottom: 10px;"><strong style="color: #aaa;">Notes:</strong><div style="color: #fff; margin-top: 5px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; white-space: pre-wrap;">${marker.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div></div>` : '';
+                dialog.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: ${category.color}; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.5em;">${category.icon}</span>
+                            ${marker.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                        </h3>
+                        <button onclick="document.getElementById('markerInfoDialog').remove()" style="background: transparent; border: none; color: #fff; font-size: 1.5em; cursor: pointer; padding: 0; width: 30px; height: 30px; line-height: 1;">×</button>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #aaa;">Category:</strong> <span style="color: ${category.color};">${category.name}</span>
+                    </div>
+                    ${notesHtml}
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                        <button onclick="editMarkerById(${marker.id}); document.getElementById('markerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(255,152,0,0.3); border: 1px solid #FF9800; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Edit">✏️</button>
+                        <button onclick="deleteMarker(${marker.id}); document.getElementById('markerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Delete">🗑️</button>
+                        <button onclick="zoomToMarkerById(${marker.id}); document.getElementById('markerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(33,150,243,0.3); border: 1px solid #2196F3; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Zoom To">🔍</button>
+                        <button onclick="document.getElementById('markerInfoDialog').remove()" style="padding: 6px 10px; background: rgba(158,158,158,0.3); border: 1px solid #9E9E9E; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Close">✕</button>
+                    </div>
+                `;
+                document.body.appendChild(dialog);
+            }}
+            
+            function editMarkerById(id) {{
+                const marker = markers.find(m => m.id === id);
+                if (marker) editMarker(marker);
+            }}
+            window.editMarkerById = editMarkerById;
+            
+            function zoomToMarkerById(id) {{
+                const marker = markers.find(m => m.id === id);
+                if (marker) zoomToMarker(marker);
+            }}
+            window.zoomToMarkerById = zoomToMarkerById;
+            
+            function deleteMarker(id) {{
+                if (confirm('Delete this marker?')) {{
+                    markers = markers.filter(m => m.id !== id);
+                    saveMapData();
+                    renderMarkers();
+                    updateLocationList();
+                }}
+            }}
+            
+            // Annotation drawing
+            function startAnnotation(x, y) {{
+                if (!annotationMode) return;
+                isDrawing = true;
+                const mapCoords = screenToMap(x, y);
+                currentPath = {{
+                    id: Date.now(),
+                    points: [mapCoords],
+                    color: '#9C27B0',
+                    width: 2
+                }};
+                annotations.push(currentPath);
+            }}
+            
+            function addAnnotationPoint(x, y) {{
+                if (!isDrawing || !currentPath) return;
+                const mapCoords = screenToMap(x, y);
+                currentPath.points.push(mapCoords);
+                renderAnnotations();
+            }}
+            
+            function finishAnnotation() {{
+                if (isDrawing && currentPath && currentPath.points.length > 1) {{
+                    saveMapData();
+                }}
+                isDrawing = false;
+                currentPath = null;
+            }}
+            
+            // Initialize
+            loadMapData();
+            updateUndoRedoButtons();
+            updateMapTransform();
+            
+            // Expose remaining functions globally (toggleMarkerMode, toggleAnnotationMode, toggleMapLabels already exposed above)
+            window.filterMarkersByCategory = filterMarkersByCategory;
+            window.deleteMarker = deleteMarker;
+            window.showMarkerInfo = showMarkerInfo;
+            window.editMarker = editMarker;
+        }})();
+        </script>
         
         <div id="editorTab" class="tab-content">
             <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
@@ -5266,6 +6376,9 @@ class NPCRelationshipMapper:
                 fixed_lines.append(line)
         
         html = '\n'.join(fixed_lines)
+        
+        # Replace SVG placeholder with actual content
+        html = html.replace('PLACEHOLDER_SVG_CONTENT', svg_js_content)
         
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html)
