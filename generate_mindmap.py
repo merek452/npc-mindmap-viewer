@@ -5407,8 +5407,8 @@ class NPCRelationshipMapper:
                 <div class="inventory-item" 
                      draggable="true" 
                      ondragstart="drag(event, '${{itemId}}', '${{containerIdEscaped}}')"
-                     onclick="if(!event.target.closest('button')) { try { const itemJson = atob(this.dataset.itemJsonBase64 || ''); if(itemJson) showItemDescription(JSON.parse(itemJson)); } catch(e) { console.error('Error showing item description:', e); } }"
-                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { try { const itemJson = atob(this.dataset.itemJsonBase64 || ''); if(itemJson) handleTouchStart(event, JSON.parse(itemJson), '${{containerIdEscaped}}'); } catch(e) { console.error('Error in touch start:', e); } }"
+                     onclick="if(!event.target.closest('button')) { try { const base64 = this.dataset.itemJsonBase64 || ''; if(base64) { const utf8 = atob(base64); const itemJson = decodeURIComponent(escape(utf8)); if(itemJson) showItemDescription(JSON.parse(itemJson)); } } catch(e) { console.error('Error showing item description:', e); } }"
+                     ontouchstart="if(event.touches.length === 1 && !event.target.closest('button')) { try { const base64 = this.dataset.itemJsonBase64 || ''; if(base64) { const utf8 = atob(base64); const itemJson = decodeURIComponent(escape(utf8)); if(itemJson) handleTouchStart(event, JSON.parse(itemJson), '${{containerIdEscaped}}'); } } catch(e) { console.error('Error in touch start:', e); } }"
                      ontouchmove="if(event.touches.length === 1 && !event.target.closest('button')) { handleTouchMove(event); }"
                      ontouchend="if(event.changedTouches.length === 1 && !event.target.closest('button')) { handleTouchEnd(event); }"
                      data-item-id="${{itemId}}"
@@ -6146,8 +6146,12 @@ class NPCRelationshipMapper:
                         let itemData = activeTouchData.item;
                         if (!itemData && activeTouchElement && activeTouchElement.dataset && activeTouchElement.dataset.itemJsonBase64) {
                             try {
-                                const itemJson = atob(activeTouchElement.dataset.itemJsonBase64);
-                                itemData = JSON.parse(itemJson);
+                                const base64 = activeTouchElement.dataset.itemJsonBase64;
+                                if (base64) {{
+                                    const utf8 = atob(base64);
+                                    const itemJson = decodeURIComponent(escape(utf8));
+                                    itemData = JSON.parse(itemJson);
+                                }}
                             } catch(e) {
                                 console.error('Failed to parse item data from dataset:', e);
                             }
