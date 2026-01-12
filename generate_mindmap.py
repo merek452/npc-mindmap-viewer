@@ -2946,8 +2946,9 @@ class NPCRelationshipMapper:
             let tabIndex = -1;
             if (tabName === 'cards') tabIndex = 0;
             else if (tabName === 'mindmap') tabIndex = 1;
-            else if (tabName === 'editor') tabIndex = 2;
-            else if (tabName === 'inventory') tabIndex = 3;
+            else if (tabName === 'map') tabIndex = 2;
+            else if (tabName === 'editor') tabIndex = 3;
+            else if (tabName === 'inventory') tabIndex = 4;
             
             if (tabIndex >= 0 && tabs[tabIndex]) {
                 tabs[tabIndex].classList.add('active');
