@@ -1589,9 +1589,9 @@ class NPCRelationshipMapper:
                             <button id="redoBtn" onclick="redoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Redo">↷ Redo</button>
                             <span id="mapZoomLevel" style="color: #aaa; font-size: 0.9em;">Zoom: 100%</span>
                         </div>
-                        <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: layout style paint;">
-                            <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; will-change: transform; contain: layout style paint;">
-                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate3d(-50%, -50%, 0) scale(1); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: transform;"></div>
+                        <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
+                            <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; will-change: transform; contain: strict; isolation: isolate;">
+                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate3d(-50%, -50%, 0) scale(1); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; perspective: 1000px; -webkit-perspective: 1000px;"></div>
                                 <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
                                 <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                     <p style="font-size: 1.2em; margin-bottom: 10px;">⚠️ Map not found</p>
@@ -2184,7 +2184,10 @@ class NPCRelationshipMapper:
                 if (!isDragging) return;
                 mapX = dragStartMapX + (e.clientX - dragStartX);
                 mapY = dragStartMapY + (e.clientY - dragStartY);
-                updateMapTransform();
+                // Throttle pan updates for better performance
+                if (!transformUpdateScheduled) {{
+                    updateMapTransform();
+                }}
             }});
             
             document.addEventListener('mouseup', function() {{
@@ -2194,11 +2197,24 @@ class NPCRelationshipMapper:
                 if (isDragging) {{
                     isDragging = false;
                     mapContainer.style.cursor = markerMode ? 'crosshair' : (annotationMode ? 'crosshair' : 'grab');
-                    // Force render when dragging stops
-                    if (svgLoaded) {{
-                        renderMarkers();
-                        renderAnnotations();
-                    }}
+                }}
+                
+                // Mark panning as stopped and render markers after delay
+                if (isPanning) {{
+                    isPanning = false;
+                    if (panTimeout) clearTimeout(panTimeout);
+                    panTimeout = setTimeout(function() {{
+                        // Render markers/annotations once pan stops
+                        if (svgLoaded) {{
+                            renderMarkers();
+                            renderAnnotations();
+                            lastRenderTime = Date.now();
+                        }}
+                    }}, 150);
+                }} else if (svgLoaded && !isZooming) {{
+                    // Force render when dragging stops (if not panning)
+                    renderMarkers();
+                    renderAnnotations();
                 }}
             }});
             
@@ -6742,7 +6758,7 @@ class NPCRelationshipMapper:
 def main():
     script_dir = Path(__file__).parent
     # Look for npc_relationships.json in the script directory first (mindmap_viewer folder)
-        json_file = script_dir / "npc_relationships.json"
+    json_file = script_dir / "npc_relationships.json"
     if not json_file.exists():
         # Fallback to parent directory (NPCs folder) for backward compatibility
         json_file = script_dir.parent / "npc_relationships.json"
