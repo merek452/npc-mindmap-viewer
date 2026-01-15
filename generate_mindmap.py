@@ -2027,6 +2027,7 @@ class NPCRelationshipMapper:
                     console.log('   - Transform update tracking: ON');
                     console.log('   - FPS tracking: ON');
                     console.log('   - Render time tracking: ON');
+                    updateDebugIndicator();
                 }},
                 configurable: true,
                 enumerable: true
@@ -2034,6 +2035,51 @@ class NPCRelationshipMapper:
             
             // Helper function to check debug mode (always use this instead of direct variable)
             function isDebugMode() {{ return DEBUG_PERFORMANCE || window.DEBUG_PERFORMANCE; }}
+            
+            // Create visible debug indicator on screen
+            function createDebugIndicator() {{
+                const indicator = document.createElement('div');
+                indicator.id = 'debugPerformanceIndicator';
+                indicator.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.8); color: white; padding: 10px 15px; border-radius: 5px; font-family: monospace; font-size: 12px; z-index: 10000; box-shadow: 0 2px 10px rgba(0,0,0,0.5); pointer-events: none;';
+                indicator.innerHTML = '🔍 DEBUG: OFF';
+                document.body.appendChild(indicator);
+                return indicator;
+            }}
+            
+            function updateDebugIndicator() {{
+                let indicator = document.getElementById('debugPerformanceIndicator');
+                if (!indicator) {{
+                    indicator = createDebugIndicator();
+                }}
+                if (isDebugMode()) {{
+                    indicator.style.background = 'rgba(0, 255, 0, 0.8)';
+                    indicator.innerHTML = '🔍 DEBUG: ON<br>Check Console (F12)';
+                }} else {{
+                    indicator.style.background = 'rgba(255, 0, 0, 0.8)';
+                    indicator.innerHTML = '🔍 DEBUG: OFF';
+                }}
+            }}
+            
+            // Initialize debug indicator
+            if (typeof document !== 'undefined') {{
+                if (document.readyState === 'loading') {{
+                    document.addEventListener('DOMContentLoaded', function() {{
+                        updateDebugIndicator();
+                        console.log('🔍 Performance debugging ENABLED by default');
+                        console.log('   - Transform update tracking: ON');
+                        console.log('   - FPS tracking: ON');
+                        console.log('   - Render time tracking: ON');
+                        console.log('   - Open browser console (F12) to see metrics');
+                    }});
+                }} else {{
+                    updateDebugIndicator();
+                    console.log('🔍 Performance debugging ENABLED by default');
+                    console.log('   - Transform update tracking: ON');
+                    console.log('   - FPS tracking: ON');
+                    console.log('   - Render time tracking: ON');
+                    console.log('   - Open browser console (F12) to see metrics');
+                }}
+            }}
             
             // Undo/Redo history
             let historyStack = [];
