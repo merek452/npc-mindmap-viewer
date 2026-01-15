@@ -2271,14 +2271,22 @@ class NPCRelationshipMapper:
                                     const containerWidth = containerRect.width;
                                     const containerHeight = containerRect.height;
                                     
-                                    // Get map dimensions
+                                    // Get map dimensions from the first page element (.pf) which has the actual size
                                     let mapWidth = 2000;
                                     let mapHeight = 2000;
                                     
                                     if (pageContainer) {{
-                                        const mapRect = pageContainer.getBoundingClientRect();
-                                        mapWidth = mapRect.width || 2000;
-                                        mapHeight = mapRect.height || 2000;
+                                        const firstPage = pageContainer.querySelector('.pf');
+                                        if (firstPage) {{
+                                            // Get the actual page dimensions
+                                            const pageRect = firstPage.getBoundingClientRect();
+                                            mapWidth = pageRect.width || 2000;
+                                            mapHeight = pageRect.height || 2000;
+                                        }} else {{
+                                            const mapRect = pageContainer.getBoundingClientRect();
+                                            mapWidth = mapRect.width || 2000;
+                                            mapHeight = mapRect.height || 2000;
+                                        }}
                                     }} else {{
                                         const mapRect = mapSvgContainer.getBoundingClientRect();
                                         mapWidth = mapRect.width || 2000;
@@ -2286,21 +2294,26 @@ class NPCRelationshipMapper:
                                     }}
                                     
                                     // Calculate scale to fit map in viewport (with some padding)
-                                    const padding = 0.9; // 90% of viewport
+                                    const padding = 0.85; // 85% of viewport
                                     const scaleX = (containerWidth * padding) / mapWidth;
                                     const scaleY = (containerHeight * padding) / mapHeight;
                                     mapScale = Math.min(scaleX, scaleY);
                                     
-                                    // Center the map
+                                    // Ensure minimum scale of 0.5 and maximum of 2.0
+                                    mapScale = Math.max(0.5, Math.min(2.0, mapScale));
+                                    
+                                    // Center the map (mapX/Y = 0 means centered since container is already centered)
                                     mapX = 0;
                                     mapY = 0;
                                     
-                                    // Update bounds for panning
+                                    // Update bounds for panning (based on scaled map size)
+                                    const scaledWidth = mapWidth * mapScale;
+                                    const scaledHeight = mapHeight * mapScale;
                                     mapBounds = {{
-                                        minX: -mapWidth / 2,
-                                        maxX: mapWidth / 2,
-                                        minY: -mapHeight / 2,
-                                        maxY: mapHeight / 2
+                                        minX: -(scaledWidth / 2),
+                                        maxX: scaledWidth / 2,
+                                        minY: -(scaledHeight / 2),
+                                        maxY: scaledHeight / 2
                                     }};
                                     
                                     if (isDebugMode()) {{
@@ -2312,7 +2325,7 @@ class NPCRelationshipMapper:
                                     }}
                                     
                                     updateMapTransform();
-                                }}, 100);
+                                }}, 150);
                             }}
                         }} else {{
                             // Fallback: Unknown format or no canvas support - render as-is
