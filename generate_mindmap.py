@@ -2012,7 +2012,7 @@ class NPCRelationshipMapper:
             let transformUpdateScheduled = false;
             
             // Performance debugging - enable from console: window.DEBUG_PERFORMANCE = true
-            let DEBUG_PERFORMANCE = false;
+            let DEBUG_PERFORMANCE = true;
             let frameCount = 0;
             let lastFpsTime = Date.now();
             let transformUpdateCount = 0;
