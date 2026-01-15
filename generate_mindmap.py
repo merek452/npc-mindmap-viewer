@@ -2286,6 +2286,20 @@ class NPCRelationshipMapper:
                         
                         mapScale = newScale;
                         lastTouchDistance = currentDistance;
+                        
+                        // Mark as zooming and defer marker rendering
+                        isZooming = true;
+                        if (zoomTimeout) clearTimeout(zoomTimeout);
+                        zoomTimeout = setTimeout(function() {{
+                            isZooming = false;
+                            // Render markers/annotations once zoom stops
+                            if (svgLoaded) {{
+                                renderMarkers();
+                                renderAnnotations();
+                                lastRenderTime = Date.now();
+                            }}
+                        }}, 150); // Wait 150ms after last zoom event
+                        
                         updateMapTransform();
                     }} else {{
                         // Two-finger pan: use the movement of the center point
