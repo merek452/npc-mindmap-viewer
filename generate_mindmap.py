@@ -2012,7 +2012,17 @@ class NPCRelationshipMapper:
             let transformUpdateScheduled = false;
             
             // Performance debugging (set to true to enable)
-            const DEBUG_PERFORMANCE = false;
+            // To enable: Open browser console and type: window.DEBUG_PERFORMANCE = true
+            let DEBUG_PERFORMANCE = false;
+            // Allow enabling from console
+            window.DEBUG_PERFORMANCE = false;
+            Object.defineProperty(window, 'DEBUG_PERFORMANCE', {{
+                get: function() {{ return DEBUG_PERFORMANCE; }},
+                set: function(val) {{ 
+                    DEBUG_PERFORMANCE = val;
+                    console.log('Performance debugging', val ? 'ENABLED' : 'DISABLED');
+                }}
+            }});
             let frameCount = 0;
             let lastFpsTime = Date.now();
             let transformUpdateCount = 0;
