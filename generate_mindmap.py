@@ -2331,7 +2331,10 @@ class NPCRelationshipMapper:
                         mapY = twoFingerPanStart.y + dy;
                         lastTouchCenterX = centerX;
                         lastTouchCenterY = centerY;
-                        updateMapTransform();
+                        // Throttle two-finger pan updates
+                        if (!transformUpdateScheduled) {{
+                            updateMapTransform();
+                        }}
                     }}
                 }}
             }}, {{ passive: false }});
