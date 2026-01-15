@@ -266,10 +266,14 @@ class NPCRelationshipMapper:
         print(f"Loaded items and formatted for JavaScript")
         
         # Prepare SVG content for JavaScript
-        # Use JSON encoding to safely embed the SVG content and avoid template literal conflicts
-        import json
+        # Use base64 encoding to safely embed large content and avoid any syntax issues
+        import base64
         if svg_map_content:
-            svg_js_content = json.dumps(svg_map_content)
+            # Encode to base64, then decode to get a safe ASCII string
+            svg_bytes = svg_map_content.encode('utf-8')
+            svg_base64 = base64.b64encode(svg_bytes).decode('ascii')
+            # Embed as a base64 string that will be decoded in JavaScript
+            svg_js_content = f'atob("{svg_base64}")'
         else:
             svg_js_content = "''"
         
@@ -7046,8 +7050,8 @@ class NPCRelationshipMapper:
         html = '\n'.join(fixed_lines)
         
         # Replace SVG placeholder with actual content
-        # JSON.parse will safely decode the string and handle all escaping
-        html = html.replace('PLACEHOLDER_SVG_CONTENT', f'JSON.parse({svg_js_content})')
+        # Base64 decoding will safely decode the string without any syntax issues
+        html = html.replace('PLACEHOLDER_SVG_CONTENT', svg_js_content)
         
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html)
