@@ -4488,7 +4488,7 @@
                         <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
                             <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; contain: strict; isolation: isolate;">
                                 <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d;">
-                                    <canvas id="worldMapCanvas" style="display: none; max-width: 100%; max-height: 100%;"></canvas>
+                                    <canvas id="worldMapCanvas" style="display: none; max-width: 100%; max-height: 100%; pointer-events: none;"></canvas>
                                 </div>
                                 <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
                                 <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
@@ -5008,7 +5008,23 @@
                 if (mapContent && mapContent.trim() !== '') {
                     try {
                         // Check if it's HTML/Canvas format (contains <canvas> or <html>)
-                        const isHtmlFormat = mapContent.includes('<canvas') || mapContent.includes('<html') || mapContent.includes('<!DOCTYPE');
+                        // Also check for common HTML patterns
+                        const isHtmlFormat = mapContent.includes('<canvas') || 
+                                            mapContent.includes('<html') || 
+                                            mapContent.includes('<!DOCTYPE') ||
+                                            mapContent.includes('<HTML') ||
+                                            mapContent.includes('<CANVAS') ||
+                                            (mapContent.includes('<body') && mapContent.includes('canvas'));
+                        
+                        if (isDebugMode()) {
+                            console.log('🔍 Map content check:', {
+                                length: mapContent.length,
+                                hasCanvas: mapContent.includes('<canvas'),
+                                hasHtml: mapContent.includes('<html'),
+                                hasDoctype: mapContent.includes('<!DOCTYPE'),
+                                firstChars: mapContent.substring(0, 100)
+                            });
+                        }
                         
                         if (isHtmlFormat && mapCanvas) {
                             // HTML/Canvas mode - much faster for large files
