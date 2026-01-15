@@ -2231,9 +2231,9 @@ class NPCRelationshipMapper:
                                 }}
                             }} else {{
                                 // No canvas found - this is HTML (like PDF-to-HTML conversion)
-                                // Convert to high-resolution canvas for better quality and performance
+                                // Render directly - simple and works
                                 if (isDebugMode()) {{
-                                    console.log('   - HTML format detected (no canvas), converting to canvas for quality');
+                                    console.log('   - HTML format detected, rendering directly');
                                 }}
                                 
                                 // Extract body content if it's a full HTML document
@@ -2247,120 +2247,30 @@ class NPCRelationshipMapper:
                                     }}
                                 }}
                                 
-                                // Create a temporary container to render the HTML
-                                const tempContainer = document.createElement('div');
-                                tempContainer.style.position = 'absolute';
-                                tempContainer.style.left = '-9999px';
-                                tempContainer.style.top = '0';
-                                tempContainer.style.width = 'auto';
-                                tempContainer.style.height = 'auto';
-                                tempContainer.innerHTML = htmlContent;
-                                document.body.appendChild(tempContainer);
+                                // Render HTML content directly
+                                mapSvgContainer.innerHTML = htmlContent;
                                 
-                                // Find the page-container to get dimensions
-                                const pageContainer = tempContainer.querySelector('#page-container');
-                                let targetWidth = 2000;
-                                let targetHeight = 2000;
-                                
+                                // Find and fix page-container positioning
+                                const pageContainer = mapSvgContainer.querySelector('#page-container');
                                 if (pageContainer) {{
-                                    // Reset positioning to get natural dimensions
                                     pageContainer.style.position = 'relative';
-                                    pageContainer.style.top = 'auto';
-                                    pageContainer.style.left = 'auto';
-                                    pageContainer.style.right = 'auto';
-                                    pageContainer.style.bottom = 'auto';
-                                    
-                                    // Wait for layout to calculate dimensions
-                                    setTimeout(function() {{
-                                        const rect = pageContainer.getBoundingClientRect();
-                                        targetWidth = rect.width || 2000;
-                                        targetHeight = rect.height || 2000;
-                                        
-                                        if (isDebugMode()) {{
-                                            console.log('   - Page dimensions:', targetWidth, 'x', targetHeight);
-                                        }}
-                                        
-                                        // Use html2canvas to convert to high-resolution canvas
-                                        // Scale factor of 2-3 for better quality
-                                        const scale = 2;
-                                        
-                                        if (typeof html2canvas !== 'undefined') {{
-                                            html2canvas(pageContainer, {{
-                                                scale: scale,
-                                                useCORS: true,
-                                                allowTaint: false,
-                                                backgroundColor: null,
-                                                width: targetWidth,
-                                                height: targetHeight,
-                                                logging: isDebugMode()
-                                            }}).then(function(canvas) {{
-                                                // Set canvas dimensions (internal resolution)
-                                                mapCanvas.width = canvas.width;
-                                                mapCanvas.height = canvas.height;
-                                                
-                                                // Set CSS dimensions for display - MUST set these or canvas won't be visible!
-                                                // Use the actual canvas dimensions
-                                                mapCanvas.style.width = canvas.width + 'px';
-                                                mapCanvas.style.height = canvas.height + 'px';
-                                                
-                                                // Draw the rendered canvas to our canvas
-                                                const ctx = mapCanvas.getContext('2d');
-                                                ctx.drawImage(canvas, 0, 0);
-                                                
-                                                // Clean up temporary container
-                                                document.body.removeChild(tempContainer);
-                                                
-                                                // Make sure canvas is visible and properly styled
-                                                mapCanvas.style.display = 'block';
-                                                mapCanvas.style.visibility = 'visible';
-                                                mapCanvas.style.opacity = '1';
-                                                mapCanvas.style.position = 'absolute';
-                                                mapCanvas.style.top = '50%';
-                                                mapCanvas.style.left = '50%';
-                                                
-                                                // Hide container
-                                                mapSvgContainer.style.display = 'none';
-                                                
-                                                isCanvasMode = true;
-                                                svgLoaded = true;
-                                                
-                                                if (isDebugMode()) {{
-                                                    const loadTime = performance.now() - loadStart;
-                                                    console.log(`✅ HTML converted to canvas (${scale}x scale) in ${{loadTime.toFixed(2)}}ms`);
-                                                    console.log('   - Canvas size:', canvas.width, 'x', canvas.height);
-                                                    console.log('   - Canvas element size:', mapCanvas.width, 'x', mapCanvas.height);
-                                                    console.log('   - Canvas CSS size:', mapCanvas.style.width, 'x', mapCanvas.style.height);
-                                                    const rect = mapCanvas.getBoundingClientRect();
-                                                    console.log('   - Canvas display size:', rect.width, 'x', rect.height);
-                                                    console.log('   - Canvas visible:', mapCanvas.style.display, mapCanvas.style.visibility);
-                                                }}
-                                                
-                                                // Force a transform update to center the canvas
-                                                updateMapTransform();
-                                            }}).catch(function(error) {{
-                                                console.error('html2canvas conversion failed:', error);
-                                                // Fallback to direct rendering
-                                                document.body.removeChild(tempContainer);
-                                                mapSvgContainer.innerHTML = htmlContent;
-                                                svgLoaded = true;
-                                                updateMapTransform();
-                                            }});
-                                        }} else {{
-                                            // Fallback if html2canvas not available
-                                            console.warn('html2canvas not available, using direct rendering');
-                                            document.body.removeChild(tempContainer);
-                                            mapSvgContainer.innerHTML = htmlContent;
-                                            svgLoaded = true;
-                                            updateMapTransform();
-                                        }}
-                                    }}, 100);
-                                }} else {{
-                                    // No page-container found, render directly
-                                    document.body.removeChild(tempContainer);
-                                    mapSvgContainer.innerHTML = htmlContent;
-                                    svgLoaded = true;
-                                    updateMapTransform();
+                                    pageContainer.style.top = '0';
+                                    pageContainer.style.left = '0';
                                 }}
+                                
+                                // Make sure container is visible
+                                mapSvgContainer.style.display = 'block';
+                                mapSvgContainer.style.visibility = 'visible';
+                                mapSvgContainer.style.opacity = '1';
+                                
+                                svgLoaded = true;
+                                
+                                if (isDebugMode()) {{
+                                    const loadTime = performance.now() - loadStart;
+                                    console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
+                                }}
+                                
+                                updateMapTransform();
                             }}
                         }} else {{
                             // Fallback: Unknown format or no canvas support - render as-is
