@@ -5004,7 +5004,21 @@
                 if (svgContent && svgContent.trim() !== '') {
                     try {
                         if (isDebugMode()) {
-                            console.log('📊 Loading SVG, size:', (svgContent.length / 1024).toFixed(2), 'KB');
+                            const svgSizeKB = (svgContent.length / 1024).toFixed(2);
+                            console.log('📊 Loading SVG, size:', svgSizeKB, 'KB');
+                            // Count SVG elements for performance analysis
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = svgContent;
+                            const svgEl = tempDiv.querySelector('svg');
+                            if (svgEl) {
+                                const pathCount = svgEl.querySelectorAll('path').length;
+                                const groupCount = svgEl.querySelectorAll('g').length;
+                                const totalElements = svgEl.querySelectorAll('*').length;
+                                console.log('   - Paths:', pathCount, '| Groups:', groupCount, '| Total elements:', totalElements);
+                                if (totalElements > 1000) {
+                                    console.warn('⚠️ High element count may cause performance issues');
+                                }
+                            }
                         }
                         
                         // Use innerHTML for large SVGs (DOMParser can be slower)
