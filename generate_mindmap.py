@@ -271,8 +271,13 @@ class NPCRelationshipMapper:
         dnd_items_js = self.load_items_for_html()
         print(f"Loaded items and formatted for JavaScript")
         
-        # Prepare SVG content for JavaScript (escape and format)
-        svg_js_content = repr(svg_map_content) if svg_map_content else "''"
+        # Prepare SVG content for JavaScript
+        # Use JSON encoding to safely embed the SVG content and avoid template literal conflicts
+        import json
+        if svg_map_content:
+            svg_js_content = json.dumps(svg_map_content)
+        else:
+            svg_js_content = "''"
         
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -7047,7 +7052,8 @@ class NPCRelationshipMapper:
         html = '\n'.join(fixed_lines)
         
         # Replace SVG placeholder with actual content
-        html = html.replace('PLACEHOLDER_SVG_CONTENT', svg_js_content)
+        # JSON.parse will safely decode the string and handle all escaping
+        html = html.replace('PLACEHOLDER_SVG_CONTENT', f'JSON.parse({svg_js_content})')
         
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html)
