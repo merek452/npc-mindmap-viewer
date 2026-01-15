@@ -6433,8 +6433,20 @@ class NPCRelationshipMapper:
             }
         }
         
-        function drop(ev, targetContainer) {
+        function drop(ev, targetContainer) {{
             ev.preventDefault();
+            
+            // Ensure inventoryData structure is valid
+            if (!inventoryData) {{
+                console.error("inventoryData is undefined in drop function");
+                return;
+            }}
+            if (!inventoryData.players || !Array.isArray(inventoryData.players)) {{
+                inventoryData.players = [];
+            }}
+            if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
+                inventoryData.bagOfHolding = [];
+            }}
             
             // Check if dragging from lookup table or inventory
             const itemData = ev.dataTransfer.getData('item');
@@ -6473,6 +6485,11 @@ class NPCRelationshipMapper:
                     logger.log('Adding item to player index', playerIndex, 'container:', targetContainer);
                     logger.log('Total players:', inventoryData.players ? inventoryData.players.length : 0);
                     if (inventoryData.players && inventoryData.players[playerIndex]) {{
+                        // Ensure player.items is an array
+                        if (!inventoryData.players[playerIndex].items || !Array.isArray(inventoryData.players[playerIndex].items)) {{
+                            inventoryData.players[playerIndex].items = [];
+                        }}
+                        
                         // Auto-stack if item already exists
                         const existingIndex = inventoryData.players[playerIndex].items.findIndex(function(existing) {{
                             return existing.name === itemCopy.name && 
