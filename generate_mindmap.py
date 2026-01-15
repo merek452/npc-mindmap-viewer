@@ -2040,11 +2040,25 @@ class NPCRelationshipMapper:
             function loadSvgMap() {{
                 if (svgLoaded) return;
                 
+                const loadStart = DEBUG_PERFORMANCE ? performance.now() : 0;
                 const svgContent = PLACEHOLDER_SVG_CONTENT;
                 if (svgContent && svgContent.trim() !== '') {{
                     try {{
+                        if (DEBUG_PERFORMANCE) {{
+                            console.log('Loading SVG, size:', (svgContent.length / 1024).toFixed(2), 'KB');
+                        }}
+                        
+                        // Use innerHTML for large SVGs (DOMParser can be slower)
                         mapSvgContainer.innerHTML = svgContent;
                         svgLoaded = true;
+                        
+                        if (DEBUG_PERFORMANCE) {{
+                            const loadTime = performance.now() - loadStart;
+                            console.log(`SVG loaded in ${{loadTime.toFixed(2)}}ms`);
+                        }}
+                        
+                        // Force initial render
+                        updateMapTransform();
                     }} catch(e) {{
                         console.error('Failed to load SVG:', e);
                         if (mapError) mapError.style.display = 'block';
@@ -2087,20 +2101,56 @@ class NPCRelationshipMapper:
             function updateMapTransform() {{
                 if (!mapSvgContainer) return;
                 
-                // Constrain pan to bounds
-                constrainPan();
+                // Performance debugging
+                if (DEBUG_PERFORMANCE) {{
+                    transformUpdateCount++;
+                    const now = Date.now();
+                    if (now - lastTransformTime > 1000) {{
+                        console.log(`Transform updates: ${{transformUpdateCount}}/sec`);
+                        transformUpdateCount = 0;
+                        lastTransformTime = now;
+                    }}
+                }}
+                
+                // Constrain pan to bounds (only when not actively panning/zooming for performance)
+                if (!isPanning && !isZooming) {{
+                    constrainPan();
+                }}
                 
                 // Throttle transform updates during pan/zoom for better performance
                 if (transformUpdateScheduled) return;
                 
                 transformUpdateScheduled = true;
+                const startTime = DEBUG_PERFORMANCE ? performance.now() : 0;
+                
                 requestAnimationFrame(function() {{
-                    // Use translate3d for GPU acceleration
-                    mapSvgContainer.style.transform = `translate3d(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px), 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
-                    if (zoomLevelDisplay) {{
+                    // Use translate3d for GPU acceleration - cache transform string
+                    const transformStr = `translate3d(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px), 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
+                    mapSvgContainer.style.transform = transformStr;
+                    
+                    if (DEBUG_PERFORMANCE) {{
+                        const transformTime = performance.now() - startTime;
+                        if (transformTime > 5) {{
+                            console.warn(`Slow transform update: ${{transformTime.toFixed(2)}}ms`);
+                        }}
+                    }}
+                    
+                    // Only update zoom display occasionally to reduce DOM writes
+                    if (zoomLevelDisplay && (!isZooming || Math.random() < 0.1)) {{
                         zoomLevelDisplay.textContent = `Zoom: ${{Math.round(mapScale * 100)}}%`;
                     }}
                     transformUpdateScheduled = false;
+                    
+                    // FPS tracking
+                    if (DEBUG_PERFORMANCE) {{
+                        frameCount++;
+                        const now = Date.now();
+                        if (now - lastFpsTime > 1000) {{
+                            console.log(`FPS: ${{frameCount}}`);
+                            frameCount = 0;
+                            lastFpsTime = now;
+                        }}
+                    }}
                     
                     // Skip marker/annotation rendering during active zoom/pan for better performance
                     // SVG scales perfectly without needing to re-render markers
@@ -2108,8 +2158,15 @@ class NPCRelationshipMapper:
                     if (svgLoaded && !isZooming && !isPanning && (now - lastRenderTime > RENDER_THROTTLE)) {{
                         if (renderRafId) cancelAnimationFrame(renderRafId);
                         renderRafId = requestAnimationFrame(function() {{
+                            const renderStart = DEBUG_PERFORMANCE ? performance.now() : 0;
                             renderMarkers();
                             renderAnnotations();
+                            if (DEBUG_PERFORMANCE) {{
+                                const renderTime = performance.now() - renderStart;
+                                if (renderTime > 10) {{
+                                    console.warn(`Slow marker render: ${{renderTime.toFixed(2)}}ms`);
+                                }}
+                            }}
                             lastRenderTime = now;
                             renderRafId = null;
                         }});
@@ -2119,47 +2176,41 @@ class NPCRelationshipMapper:
             
             // resetMapView is already defined and exposed above
             
-            // Mouse wheel zoom with debouncing
-            let wheelTimeout = null;
+            // Mouse wheel zoom - simplified, no debouncing (debouncing was causing lag)
             mapContainer.addEventListener('wheel', function(e) {{
                 e.preventDefault();
                 
-                // Debounce rapid wheel events for better performance
-                if (wheelTimeout) clearTimeout(wheelTimeout);
+                const rect = mapContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
                 
-                wheelTimeout = setTimeout(function() {{
-                    const rect = mapContainer.getBoundingClientRect();
-                    const mouseX = e.clientX - rect.left;
-                    const mouseY = e.clientY - rect.top;
-                    
-                    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                    const newScale = Math.max(0.5, Math.min(20, mapScale * delta)); // Increased max zoom to 2000%
-                    
-                    // Zoom towards mouse position
-                    const scaleChange = newScale / mapScale;
-                    const containerCenterX = rect.width / 2;
-                    const containerCenterY = rect.height / 2;
-                    
-                    mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
-                    mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
-                    
-                    mapScale = newScale;
-                    
-                    // Mark as zooming and defer marker rendering
-                    isZooming = true;
-                    if (zoomTimeout) clearTimeout(zoomTimeout);
-                    zoomTimeout = setTimeout(function() {{
-                        isZooming = false;
-                        // Render markers/annotations once zoom stops
-                        if (svgLoaded) {{
-                            renderMarkers();
-                            renderAnnotations();
-                            lastRenderTime = Date.now();
-                        }}
-                    }}, 200); // Wait 200ms after last zoom event
-                    
-                    updateMapTransform();
-                }}, 16); // ~60fps throttling (16ms)
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.max(0.5, Math.min(20, mapScale * delta));
+                
+                // Zoom towards mouse position
+                const scaleChange = newScale / mapScale;
+                const containerCenterX = rect.width / 2;
+                const containerCenterY = rect.height / 2;
+                
+                mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
+                mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
+                
+                mapScale = newScale;
+                
+                // Mark as zooming and defer marker rendering
+                isZooming = true;
+                if (zoomTimeout) clearTimeout(zoomTimeout);
+                zoomTimeout = setTimeout(function() {{
+                    isZooming = false;
+                    // Render markers/annotations once zoom stops
+                    if (svgLoaded) {{
+                        renderMarkers();
+                        renderAnnotations();
+                        lastRenderTime = Date.now();
+                    }}
+                }}, 200);
+                
+                updateMapTransform();
             }}, {{ passive: false }});
             
             // Mouse drag to pan or add marker/annotation
