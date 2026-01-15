@@ -2265,12 +2265,54 @@ class NPCRelationshipMapper:
                                 
                                 svgLoaded = true;
                                 
-                                if (isDebugMode()) {{
-                                    const loadTime = performance.now() - loadStart;
-                                    console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
-                                }}
-                                
-                                updateMapTransform();
+                                // Wait for layout, then auto-fit and center the map
+                                setTimeout(function() {{
+                                    const containerRect = mapContainer.getBoundingClientRect();
+                                    const containerWidth = containerRect.width;
+                                    const containerHeight = containerRect.height;
+                                    
+                                    // Get map dimensions
+                                    let mapWidth = 2000;
+                                    let mapHeight = 2000;
+                                    
+                                    if (pageContainer) {{
+                                        const mapRect = pageContainer.getBoundingClientRect();
+                                        mapWidth = mapRect.width || 2000;
+                                        mapHeight = mapRect.height || 2000;
+                                    }} else {{
+                                        const mapRect = mapSvgContainer.getBoundingClientRect();
+                                        mapWidth = mapRect.width || 2000;
+                                        mapHeight = mapRect.height || 2000;
+                                    }}
+                                    
+                                    // Calculate scale to fit map in viewport (with some padding)
+                                    const padding = 0.9; // 90% of viewport
+                                    const scaleX = (containerWidth * padding) / mapWidth;
+                                    const scaleY = (containerHeight * padding) / mapHeight;
+                                    mapScale = Math.min(scaleX, scaleY);
+                                    
+                                    // Center the map
+                                    mapX = 0;
+                                    mapY = 0;
+                                    
+                                    // Update bounds for panning
+                                    mapBounds = {{
+                                        minX: -mapWidth / 2,
+                                        maxX: mapWidth / 2,
+                                        minY: -mapHeight / 2,
+                                        maxY: mapHeight / 2
+                                    }};
+                                    
+                                    if (isDebugMode()) {{
+                                        const loadTime = performance.now() - loadStart;
+                                        console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
+                                        console.log(`   - Map size: ${{mapWidth}} x ${{mapHeight}}`);
+                                        console.log(`   - Container size: ${{containerWidth}} x ${{containerHeight}}`);
+                                        console.log(`   - Auto-fit scale: ${{mapScale.toFixed(2)}}`);
+                                    }}
+                                    
+                                    updateMapTransform();
+                                }}, 100);
                             }}
                         }} else {{
                             // Fallback: Unknown format or no canvas support - render as-is
