@@ -2574,9 +2574,14 @@ class NPCRelationshipMapper:
             // Render markers on overlay with clustering
             function renderMarkers() {{
                 if (!mapOverlay) return;
+                const renderStart = DEBUG_PERFORMANCE ? performance.now() : 0;
                 // Remove all marker-related elements including cluster text
                 const existingMarkers = mapOverlay.querySelectorAll('.map-marker, .map-marker-label, .map-cluster, .map-cluster-text');
+                const removeStart = DEBUG_PERFORMANCE ? performance.now() : 0;
                 existingMarkers.forEach(m => m.remove());
+                if (DEBUG_PERFORMANCE && existingMarkers.length > 0) {{
+                    console.log(`Removed ${{existingMarkers.length}} markers in ${{(performance.now() - removeStart).toFixed(2)}}ms`);
+                }}
                 // Also remove any text elements that might be cluster numbers
                 const allTexts = mapOverlay.querySelectorAll('text');
                 allTexts.forEach(function(text) {{
@@ -2768,6 +2773,11 @@ class NPCRelationshipMapper:
                     }};
                     mapOverlay.appendChild(deleteBtn);
                 }});
+                
+                if (DEBUG_PERFORMANCE) {{
+                    const renderTime = performance.now() - renderStart;
+                    console.log(`Rendered annotations in ${{renderTime.toFixed(2)}}ms`);
+                }}
             }}
             
             // toggleMarkerMode, toggleAnnotationMode, toggleMapLabels are already defined and exposed above
