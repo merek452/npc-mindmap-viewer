@@ -2256,50 +2256,15 @@ class NPCRelationshipMapper:
                                 updateMapTransform();
                             }}
                         }} else {{
-                            // SVG mode
+                            // Fallback: Unknown format or no canvas support - render as-is
                             if (isDebugMode()) {{
-                                const svgSizeKB = (mapContent.length / 1024).toFixed(2);
-                                console.log('📊 Loading SVG map, size:', svgSizeKB, 'KB');
-                                // Count SVG elements for performance analysis
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = mapContent;
-                                const svgEl = tempDiv.querySelector('svg');
-                                if (svgEl) {{
-                                    const pathCount = svgEl.querySelectorAll('path').length;
-                                    const groupCount = svgEl.querySelectorAll('g').length;
-                                    const totalElements = svgEl.querySelectorAll('*').length;
-                                    console.log('   - Paths:', pathCount, '| Groups:', groupCount, '| Total elements:', totalElements);
-                                    if (totalElements > 1000) {{
-                                        console.warn('⚠️ High element count may cause performance issues');
-                                    }}
-                                }}
+                                const mapSizeKB = (mapContent.length / 1024).toFixed(2);
+                                console.log('📊 Loading map (unknown format), size:', mapSizeKB, 'KB');
+                                console.warn('⚠️ Falling back to direct rendering - performance may be poor');
                             }}
                             
-                            // Use innerHTML for large SVGs (DOMParser can be slower)
                             mapSvgContainer.innerHTML = mapContent;
-                            
-                            // CRITICAL: Optimize the SVG element itself for performance
-                            const svgElement = mapSvgContainer.querySelector('svg');
-                            if (svgElement) {{
-                                // Force the SVG to be a composite layer (GPU accelerated)
-                                svgElement.style.willChange = 'contents';
-                                svgElement.style.transform = 'translateZ(0)';
-                                svgElement.style.isolation = 'isolate';
-                                // Optimize rendering quality vs performance
-                                svgElement.style.imageRendering = 'auto';
-                                svgElement.style.shapeRendering = 'auto';
-                                // Prevent reflows
-                                svgElement.style.contain = 'layout style paint';
-                            }}
-                            
                             svgLoaded = true;
-                            
-                            if (isDebugMode()) {{
-                                const loadTime = performance.now() - loadStart;
-                                console.log(`✅ SVG loaded in ${{loadTime.toFixed(2)}}ms`);
-                            }}
-                            
-                            // Force initial render
                             updateMapTransform();
                         }}
                     }} catch(e) {{
