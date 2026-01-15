@@ -2011,6 +2011,13 @@ class NPCRelationshipMapper:
             let panTimeout = null;
             let transformUpdateScheduled = false;
             
+            // Performance debugging (set to true to enable)
+            const DEBUG_PERFORMANCE = false;
+            let frameCount = 0;
+            let lastFpsTime = Date.now();
+            let transformUpdateCount = 0;
+            let lastTransformTime = Date.now();
+            
             // Undo/Redo history
             let historyStack = [];
             let historyIndex = -1;
