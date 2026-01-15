@@ -2113,6 +2113,21 @@ class NPCRelationshipMapper:
                         
                         // Use innerHTML for large SVGs (DOMParser can be slower)
                         mapSvgContainer.innerHTML = svgContent;
+                        
+                        // CRITICAL: Optimize the SVG element itself for performance
+                        const svgElement = mapSvgContainer.querySelector('svg');
+                        if (svgElement) {{
+                            // Force the SVG to be a composite layer (GPU accelerated)
+                            svgElement.style.willChange = 'contents';
+                            svgElement.style.transform = 'translateZ(0)';
+                            svgElement.style.isolation = 'isolate';
+                            // Optimize rendering quality vs performance
+                            svgElement.style.imageRendering = 'auto';
+                            svgElement.style.shapeRendering = 'auto';
+                            // Prevent reflows
+                            svgElement.style.contain = 'layout style paint';
+                        }}
+                        
                         svgLoaded = true;
                         
                         if (isDebugMode()) {{
