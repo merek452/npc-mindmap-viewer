@@ -2116,60 +2116,147 @@ class NPCRelationshipMapper:
                 mapY = Math.max(minY, Math.min(maxY, mapY));
             }}
             
-            // Simple function to load SVG map
+            // Function to load map (SVG or HTML/Canvas)
             function loadSvgMap() {{
                 if (svgLoaded) return;
                 
                 const loadStart = isDebugMode() ? performance.now() : 0;
-                const svgContent = PLACEHOLDER_SVG_CONTENT;
-                if (svgContent && svgContent.trim() !== '') {{
+                const mapContent = PLACEHOLDER_SVG_CONTENT;
+                if (mapContent && mapContent.trim() !== '') {{
                     try {{
-                        if (isDebugMode()) {{
-                            const svgSizeKB = (svgContent.length / 1024).toFixed(2);
-                            console.log('📊 Loading SVG, size:', svgSizeKB, 'KB');
-                            // Count SVG elements for performance analysis
+                        // Check if it's HTML/Canvas format (contains <canvas> or <html>)
+                        const isHtmlFormat = mapContent.includes('<canvas') || mapContent.includes('<html') || mapContent.includes('<!DOCTYPE');
+                        
+                        if (isHtmlFormat && mapCanvas) {{
+                            // HTML/Canvas mode - much faster for large files
+                            if (isDebugMode()) {{
+                                const mapSizeKB = (mapContent.length / 1024).toFixed(2);
+                                console.log('📊 Loading HTML/Canvas map, size:', mapSizeKB, 'KB');
+                                console.log('   - Using canvas rendering for better performance');
+                            }}
+                            
+                            // Create a temporary container to parse HTML
                             const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = svgContent;
-                            const svgEl = tempDiv.querySelector('svg');
-                            if (svgEl) {{
-                                const pathCount = svgEl.querySelectorAll('path').length;
-                                const groupCount = svgEl.querySelectorAll('g').length;
-                                const totalElements = svgEl.querySelectorAll('*').length;
-                                console.log('   - Paths:', pathCount, '| Groups:', groupCount, '| Total elements:', totalElements);
-                                if (totalElements > 1000) {{
-                                    console.warn('⚠️ High element count may cause performance issues');
+                            tempDiv.innerHTML = mapContent;
+                            
+                            // Find canvas element in the HTML
+                            const canvasEl = tempDiv.querySelector('canvas');
+                            if (canvasEl) {{
+                                // Copy canvas dimensions and content
+                                mapCanvas.width = canvasEl.width || 2000;
+                                mapCanvas.height = canvasEl.height || 2000;
+                                
+                                // Get the canvas context and draw the source canvas
+                                const ctx = mapCanvas.getContext('2d');
+                                
+                                // Try to copy canvas directly
+                                try {{
+                                    ctx.drawImage(canvasEl, 0, 0);
+                                    
+                                    // Show canvas, hide container
+                                    mapCanvas.style.display = 'block';
+                                    mapSvgContainer.style.display = 'none';
+                                    isCanvasMode = true;
+                                    svgLoaded = true;
+                                    
+                                    if (isDebugMode()) {{
+                                        const loadTime = performance.now() - loadStart;
+                                        console.log(`✅ Canvas map loaded (direct copy) in ${{loadTime.toFixed(2)}}ms`);
+                                    }}
+                                    
+                                    updateMapTransform();
+                                }} catch(canvasError) {{
+                                    // If direct copy fails, try image approach
+                                    const img = new Image();
+                                    img.onload = function() {{
+                                        mapCanvas.width = img.width || canvasEl.width || 2000;
+                                        mapCanvas.height = img.height || canvasEl.height || 2000;
+                                        ctx.drawImage(img, 0, 0);
+                                        mapCanvas.style.display = 'block';
+                                        mapSvgContainer.style.display = 'none';
+                                        isCanvasMode = true;
+                                        svgLoaded = true;
+                                        
+                                        if (isDebugMode()) {{
+                                            const loadTime = performance.now() - loadStart;
+                                            console.log(`✅ Canvas map loaded (via image) in ${{loadTime.toFixed(2)}}ms`);
+                                        }}
+                                        
+                                        updateMapTransform();
+                                    }};
+                                    
+                                    // Try to find image source
+                                    const imgEl = tempDiv.querySelector('img');
+                                    if (imgEl && imgEl.src) {{
+                                        img.src = imgEl.src;
+                                    }} else {{
+                                        // Use canvas data URL
+                                        try {{
+                                            img.src = canvasEl.toDataURL();
+                                        }} catch(e) {{
+                                            console.error('Failed to get canvas data:', e);
+                                            // Fallback to SVG mode
+                                            mapSvgContainer.innerHTML = mapContent;
+                                            svgLoaded = true;
+                                            updateMapTransform();
+                                        }}
+                                    }}
+                                }}
+                            }} else {{
+                                // No canvas found, treat as regular HTML
+                                mapSvgContainer.innerHTML = mapContent;
+                                svgLoaded = true;
+                                updateMapTransform();
+                            }}
+                        }} else {{
+                            // SVG mode
+                            if (isDebugMode()) {{
+                                const svgSizeKB = (mapContent.length / 1024).toFixed(2);
+                                console.log('📊 Loading SVG map, size:', svgSizeKB, 'KB');
+                                // Count SVG elements for performance analysis
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = mapContent;
+                                const svgEl = tempDiv.querySelector('svg');
+                                if (svgEl) {{
+                                    const pathCount = svgEl.querySelectorAll('path').length;
+                                    const groupCount = svgEl.querySelectorAll('g').length;
+                                    const totalElements = svgEl.querySelectorAll('*').length;
+                                    console.log('   - Paths:', pathCount, '| Groups:', groupCount, '| Total elements:', totalElements);
+                                    if (totalElements > 1000) {{
+                                        console.warn('⚠️ High element count may cause performance issues');
+                                    }}
                                 }}
                             }}
+                            
+                            // Use innerHTML for large SVGs (DOMParser can be slower)
+                            mapSvgContainer.innerHTML = mapContent;
+                            
+                            // CRITICAL: Optimize the SVG element itself for performance
+                            const svgElement = mapSvgContainer.querySelector('svg');
+                            if (svgElement) {{
+                                // Force the SVG to be a composite layer (GPU accelerated)
+                                svgElement.style.willChange = 'contents';
+                                svgElement.style.transform = 'translateZ(0)';
+                                svgElement.style.isolation = 'isolate';
+                                // Optimize rendering quality vs performance
+                                svgElement.style.imageRendering = 'auto';
+                                svgElement.style.shapeRendering = 'auto';
+                                // Prevent reflows
+                                svgElement.style.contain = 'layout style paint';
+                            }}
+                            
+                            svgLoaded = true;
+                            
+                            if (isDebugMode()) {{
+                                const loadTime = performance.now() - loadStart;
+                                console.log(`✅ SVG loaded in ${{loadTime.toFixed(2)}}ms`);
+                            }}
+                            
+                            // Force initial render
+                            updateMapTransform();
                         }}
-                        
-                        // Use innerHTML for large SVGs (DOMParser can be slower)
-                        mapSvgContainer.innerHTML = svgContent;
-                        
-                        // CRITICAL: Optimize the SVG element itself for performance
-                        const svgElement = mapSvgContainer.querySelector('svg');
-                        if (svgElement) {{
-                            // Force the SVG to be a composite layer (GPU accelerated)
-                            svgElement.style.willChange = 'contents';
-                            svgElement.style.transform = 'translateZ(0)';
-                            svgElement.style.isolation = 'isolate';
-                            // Optimize rendering quality vs performance
-                            svgElement.style.imageRendering = 'auto';
-                            svgElement.style.shapeRendering = 'auto';
-                            // Prevent reflows
-                            svgElement.style.contain = 'layout style paint';
-                        }}
-                        
-                        svgLoaded = true;
-                        
-                        if (isDebugMode()) {{
-                            const loadTime = performance.now() - loadStart;
-                            console.log(`✅ SVG loaded in ${{loadTime.toFixed(2)}}ms`);
-                        }}
-                        
-                        // Force initial render
-                        updateMapTransform();
                     }} catch(e) {{
-                        console.error('Failed to load SVG:', e);
+                        console.error('Failed to load map:', e);
                         if (mapError) mapError.style.display = 'block';
                     }}
                 }} else {{
