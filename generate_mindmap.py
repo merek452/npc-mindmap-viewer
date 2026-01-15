@@ -2323,6 +2323,16 @@ class NPCRelationshipMapper:
                 if (touches.length === 0) {{
                     isDragging = false;
                     isPinching = false;
+                    // If zooming was active, render markers now
+                    if (isZooming) {{
+                        isZooming = false;
+                        if (zoomTimeout) clearTimeout(zoomTimeout);
+                        if (svgLoaded) {{
+                            renderMarkers();
+                            renderAnnotations();
+                            lastRenderTime = Date.now();
+                        }}
+                    }}
                     if (isDrawing && annotationMode) {{
                         finishAnnotation();
                     }}
