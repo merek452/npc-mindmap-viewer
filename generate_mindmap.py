@@ -2004,9 +2004,12 @@ class NPCRelationshipMapper:
             let svgLoaded = false;
             let renderRafId = null;
             let lastRenderTime = 0;
-            const RENDER_THROTTLE = 100; // Only render markers/annotations every 100ms
+            const RENDER_THROTTLE = 200; // Increased throttle to 200ms for better performance
             let isZooming = false;
             let zoomTimeout = null;
+            let isPanning = false;
+            let panTimeout = null;
+            let transformUpdateScheduled = false;
             
             // Undo/Redo history
             let historyStack = [];
@@ -2080,22 +2083,22 @@ class NPCRelationshipMapper:
                 // Constrain pan to bounds
                 constrainPan();
                 
-                // Use requestAnimationFrame for smooth updates
-                if (rafId) {{
-                    pendingUpdate = true;
-                    return;
-                }}
+                // Throttle transform updates during pan/zoom for better performance
+                if (transformUpdateScheduled) return;
                 
-                rafId = requestAnimationFrame(function() {{
+                transformUpdateScheduled = true;
+                requestAnimationFrame(function() {{
                     // Use translate3d for GPU acceleration
                     mapSvgContainer.style.transform = `translate3d(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px), 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
                     if (zoomLevelDisplay) {{
                         zoomLevelDisplay.textContent = `Zoom: ${{Math.round(mapScale * 100)}}%`;
                     }}
-                    // Skip marker/annotation rendering during active zoom for better performance
+                    transformUpdateScheduled = false;
+                    
+                    // Skip marker/annotation rendering during active zoom/pan for better performance
                     // SVG scales perfectly without needing to re-render markers
                     const now = Date.now();
-                    if (svgLoaded && !isZooming && (now - lastRenderTime > RENDER_THROTTLE || !isDragging)) {{
+                    if (svgLoaded && !isZooming && !isPanning && (now - lastRenderTime > RENDER_THROTTLE)) {{
                         if (renderRafId) cancelAnimationFrame(renderRafId);
                         renderRafId = requestAnimationFrame(function() {{
                             renderMarkers();
@@ -2103,11 +2106,6 @@ class NPCRelationshipMapper:
                             lastRenderTime = now;
                             renderRafId = null;
                         }});
-                    }}
-                    rafId = null;
-                    if (pendingUpdate) {{
-                        pendingUpdate = false;
-                        updateMapTransform();
                     }}
                 }});
             }}
@@ -2153,6 +2151,10 @@ class NPCRelationshipMapper:
             // Mouse drag to pan or add marker/annotation
             mapContainer.addEventListener('mousedown', function(e) {{
                 if (e.button !== 0) return; // Only left mouse button
+                
+                // Mark as panning
+                isPanning = true;
+                if (panTimeout) clearTimeout(panTimeout);
                 e.stopPropagation(); // Prevent event bubbling
                 
                 if (markerMode) {{
@@ -2332,6 +2334,18 @@ class NPCRelationshipMapper:
                             renderAnnotations();
                             lastRenderTime = Date.now();
                         }}
+                    }}
+                    // If panning was active, render markers after delay
+                    if (isPanning) {{
+                        isPanning = false;
+                        if (panTimeout) clearTimeout(panTimeout);
+                        panTimeout = setTimeout(function() {{
+                            if (svgLoaded) {{
+                                renderMarkers();
+                                renderAnnotations();
+                                lastRenderTime = Date.now();
+                            }}
+                        }}, 150);
                     }}
                     if (isDrawing && annotationMode) {{
                         finishAnnotation();
@@ -5444,23 +5458,23 @@ class NPCRelationshipMapper:
             loadFromFirebase('inventory_data', function(data) {
                 if (data) {
                     inventoryData = data;
-                }
-                
-                // Initialize default players if none exist
-                if (inventoryData.players.length === 0) {
-                    const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
-                    inventoryData.players = defaultPlayers.map(name => ({
-                        name: name,
-                        gold: 0,
-                        items: []
-                    }));
-                }
-                
-                // Set party gold
-                const partyGoldEl = getEl('partyGold');
-                if (partyGoldEl) {
-                    partyGoldEl.value = inventoryData.partyGold || 0;
-                }
+            }
+            
+            // Initialize default players if none exist
+            if (inventoryData.players.length === 0) {
+                const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
+                inventoryData.players = defaultPlayers.map(name => ({
+                    name: name,
+                    gold: 0,
+                    items: []
+                }));
+            }
+            
+            // Set party gold
+            const partyGoldEl = getEl('partyGold');
+            if (partyGoldEl) {
+                partyGoldEl.value = inventoryData.partyGold || 0;
+            }
             });
         }
         
@@ -5933,14 +5947,14 @@ class NPCRelationshipMapper:
                     itemDiv.onclick = function(e) { 
                         // Only handle click if not a touch device
                         if (!('ontouchstart' in window)) {
-                            e.stopPropagation();
-                            showItemDescription(item);
+                        e.stopPropagation();
+                        showItemDescription(item);
                         }
                     };
                     itemDiv.ondblclick = function(e) {
                         if (!('ontouchstart' in window)) {
-                            e.stopPropagation();
-                            addItemFromLookup(item);
+                        e.stopPropagation();
+                        addItemFromLookup(item);
                         }
                     };
                     itemDiv.draggable = true;
@@ -6329,7 +6343,7 @@ class NPCRelationshipMapper:
                 if (deltaX > 3 || deltaY > 3) {
                     activeTouchData.moved = true;
                     if (deltaX > 5) {
-                        ev.preventDefault();
+            ev.preventDefault();
                     }
                 }
             } catch(e) {
@@ -6577,9 +6591,9 @@ class NPCRelationshipMapper:
             // Get item from source
             if (sourceContainer === 'bagOfHolding') {{
                 if (inventoryData.bagOfHolding && Array.isArray(inventoryData.bagOfHolding)) {{
-                    item = inventoryData.bagOfHolding[itemIndex];
+                item = inventoryData.bagOfHolding[itemIndex];
                     if (item) {{
-                        inventoryData.bagOfHolding.splice(itemIndex, 1);
+                    inventoryData.bagOfHolding.splice(itemIndex, 1);
                     }}
                 }}
             }} else if (sourceContainer.startsWith('player_')) {{
@@ -6728,7 +6742,7 @@ class NPCRelationshipMapper:
 def main():
     script_dir = Path(__file__).parent
     # Look for npc_relationships.json in the script directory first (mindmap_viewer folder)
-    json_file = script_dir / "npc_relationships.json"
+        json_file = script_dir / "npc_relationships.json"
     if not json_file.exists():
         # Fallback to parent directory (NPCs folder) for backward compatibility
         json_file = script_dir.parent / "npc_relationships.json"
