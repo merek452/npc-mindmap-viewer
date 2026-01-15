@@ -239,8 +239,13 @@ class NPCRelationshipMapper:
             try:
                 with open(map_file_path, 'r', encoding='utf-8') as f:
                     svg_map_content = f.read()
-                    # Escape for JavaScript template literal
-                    svg_map_content = svg_map_content.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
+                    # Escape for JavaScript template literal - must escape $ before other replacements
+                    # Also escape ${} patterns which are template literal syntax
+                    svg_map_content = (svg_map_content
+                                      .replace('\\', '\\\\')  # Escape backslashes first
+                                      .replace('`', '\\`')    # Escape backticks
+                                      .replace('${', '\\${') # Escape template literal start
+                                      .replace('$', '\\$'))   # Escape any remaining $ signs
             except Exception as e:
                 print(f"Warning: Could not load map file: {e}")
                 svg_map_content = ""
