@@ -2222,9 +2222,37 @@ class NPCRelationshipMapper:
                                     }}
                                 }}
                             }} else {{
-                                // No canvas found, treat as regular HTML
-                                mapSvgContainer.innerHTML = mapContent;
+                                // No canvas found - this is HTML (like PDF-to-HTML conversion)
+                                // Render it directly in the container
+                                if (isDebugMode()) {{
+                                    console.log('   - HTML format detected (no canvas), rendering directly');
+                                }}
+                                
+                                // Extract body content if it's a full HTML document
+                                let htmlContent = mapContent;
+                                if (mapContent.includes('<body')) {{
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = mapContent;
+                                    const bodyEl = tempDiv.querySelector('body');
+                                    if (bodyEl) {{
+                                        htmlContent = bodyEl.innerHTML;
+                                    }}
+                                }}
+                                
+                                // Render HTML content directly
+                                mapSvgContainer.innerHTML = htmlContent;
+                                
+                                // Optimize the HTML content for performance
+                                mapSvgContainer.style.willChange = 'transform';
+                                mapSvgContainer.style.transform = 'translateZ(0)';
+                                
                                 svgLoaded = true;
+                                
+                                if (isDebugMode()) {{
+                                    const loadTime = performance.now() - loadStart;
+                                    console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
+                                }}
+                                
                                 updateMapTransform();
                             }}
                         }} else {{
