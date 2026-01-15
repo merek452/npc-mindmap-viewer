@@ -5662,7 +5662,10 @@ class NPCRelationshipMapper:
                      data-container="${{containerIdEscaped}}"
                      data-item-index="${{index}}"
                      data-item-json-base64="${{itemJsonBase64}}"
-                     style="padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
+                     style="position: relative; padding: 6px; padding-top: 30px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
+                    <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;" 
+                            ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;"
+                            style="position: absolute; top: 4px; right: 4px; padding: 4px 8px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 32px; min-height: 32px; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">✕</button>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                             <strong style="color: #fff; font-size: 0.9em;">${{item.name}}</strong>
@@ -5674,7 +5677,7 @@ class NPCRelationshipMapper:
                         </div>
                         ${{propertiesHtml ? `<div style="font-size: 0.7em; color: #aaa; margin-top: 2px;">${{propertiesHtml}}</div>` : ''}}
                     </div>
-                    <div style="display: flex; align-items: center; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
                         ${{isStackableItem ? `
                             <button onclick="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, -1); return false;" 
                                     ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, -1); return false;"
@@ -5684,9 +5687,6 @@ class NPCRelationshipMapper:
                                     ontouchstart="event.stopPropagation(); event.preventDefault(); changeQuantity('${{containerIdEscaped}}', ${{index}}, 1); return false;"
                                     style="padding: 2px 6px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.7em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(102, 102, 102, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">+</button>
                         ` : ''}}
-                        <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;" 
-                                ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;"
-                                style="padding: 3px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; margin-left: 5px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">✕</button>
                     </div>
                 </div>
             `;
