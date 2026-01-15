@@ -1650,24 +1650,35 @@ class NPCRelationshipMapper:
         let database = null;
         
         function initFirebase() {{
-            if (firebaseInitialized) return;
+            if (firebaseInitialized) {{
+                console.log("Firebase already initialized");
+                return;
+            }}
+            
+            // Check if Firebase SDK is loaded
+            if (typeof firebase === 'undefined') {{
+                console.error("Firebase SDK not loaded - check script tags");
+                return;
+            }}
             
             // Check if Firebase config is set
-            if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {{
+            if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY" || !FIREBASE_CONFIG.apiKey) {{
                 console.log("Firebase not configured - using localStorage only");
                 return;
             }}
             
             try {{
+                console.log("Initializing Firebase with config:", FIREBASE_CONFIG.projectId);
                 firebase.initializeApp(FIREBASE_CONFIG);
                 database = firebase.database();
                 firebaseInitialized = true;
-                console.log("Firebase initialized successfully");
+                console.log("✅ Firebase initialized successfully");
                 
                 // Set up real-time listeners
                 setupRealtimeSync();
             }} catch(e) {{
-                console.error("Failed to initialize Firebase:", e);
+                console.error("❌ Failed to initialize Firebase:", e);
+                console.error("Error details:", e.message, e.stack);
                 console.log("Falling back to localStorage");
             }}
         }}
@@ -1805,14 +1816,30 @@ class NPCRelationshipMapper:
         }}
         
         // Initialize Firebase when page loads
-        if (typeof firebase !== 'undefined') {{
-            initFirebase();
+        // Wait for Firebase SDK to load
+        let firebaseInitAttempts = 0;
+        const MAX_FIREBASE_INIT_ATTEMPTS = 50; // 5 seconds max wait
+        
+        function waitForFirebase() {{
+            firebaseInitAttempts++;
+            
+            if (typeof firebase !== 'undefined') {{
+                console.log("Firebase SDK loaded, initializing...");
+                initFirebase();
+            }} else if (firebaseInitAttempts < MAX_FIREBASE_INIT_ATTEMPTS) {{
+                // Try again after a short delay
+                setTimeout(waitForFirebase, 100);
+            }} else {{
+                console.error("Firebase SDK failed to load after 5 seconds - check network/script tags");
+                console.log("Falling back to localStorage only");
+            }}
+        }}
+        
+        // Start waiting when DOM is ready
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', waitForFirebase);
         }} else {{
-            window.addEventListener('load', function() {{
-                if (typeof firebase !== 'undefined') {{
-                    initFirebase();
-                }}
-            }});
+            waitForFirebase();
         }}
         
         // Map zoom and pan functionality
