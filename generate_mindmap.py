@@ -1604,7 +1604,9 @@ class NPCRelationshipMapper:
                         </div>
                         <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
                             <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; contain: strict; isolation: isolate;">
-                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d;"></div>
+                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d;">
+                                    <canvas id="worldMapCanvas" style="display: none; max-width: 100%; max-height: 100%;"></canvas>
+                                </div>
                                 <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
                                 <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                     <p style="font-size: 1.2em; margin-bottom: 10px;">⚠️ Map not found</p>
@@ -1933,12 +1935,14 @@ class NPCRelationshipMapper:
             }};
             
             const mapSvgContainer = document.getElementById('worldMapSvgContainer');
+            const mapCanvas = document.getElementById('worldMapCanvas');
             const mapContainer = document.getElementById('mapContainer');
             const mapWrapper = document.getElementById('mapWrapper');
             const zoomLevelDisplay = document.getElementById('mapZoomLevel');
             const mapError = document.getElementById('mapError');
             const mapOverlay = document.getElementById('mapOverlay');
             const locationList = document.getElementById('locationList');
+            let isCanvasMode = false;
             
             // Expose functions globally first, even if elements don't exist yet
             function resetMapView() {{
@@ -2231,6 +2235,7 @@ class NPCRelationshipMapper:
                 requestAnimationFrame(function() {{
                     // Canvas mode is MUCH faster - just transform the canvas element
                     if (isCanvasMode && mapCanvas) {{
+                        // Transform canvas directly - it's already positioned at center
                         mapCanvas.style.transform = `translate(${{mapX}}px, ${{mapY}}px) scale(${{mapScale}})`;
                         mapCanvas.style.transformOrigin = 'center center';
                     }} else if (mapSvgContainer) {{
