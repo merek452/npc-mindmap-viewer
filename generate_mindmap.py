@@ -1590,8 +1590,8 @@ class NPCRelationshipMapper:
                             <span id="mapZoomLevel" style="color: #aaa; font-size: 0.9em;">Zoom: 100%</span>
                         </div>
                         <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
-                            <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; will-change: transform; contain: strict; isolation: isolate;">
-                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate3d(-50%, -50%, 0) scale(1); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; perspective: 1000px; -webkit-perspective: 1000px;"></div>
+                            <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; contain: strict; isolation: isolate;">
+                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d;"></div>
                                 <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
                                 <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                     <p style="font-size: 1.2em; margin-bottom: 10px;">⚠️ Map not found</p>
@@ -2187,15 +2187,16 @@ class NPCRelationshipMapper:
                 const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {{
-                    // Optimize: Calculate transform without calc() - much faster
-                    // The container is at 50% 50%, so we translate from center
-                    // Use translate3d for GPU acceleration but avoid calc()
-                    const translateX = mapX;
-                    const translateY = mapY;
+                    // CRITICAL OPTIMIZATION: Transform the container, not the SVG directly
+                    // This avoids recalculating the entire 2MB SVG on every frame
+                    // Calculate the actual pixel offset from center
+                    const rect = mapContainer.getBoundingClientRect();
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
                     
-                    // Use translate3d with scale3d for GPU acceleration
-                    // Avoid calc() - browser handles the 50% offset via transform-origin
-                    mapSvgContainer.style.transform = `translate3d(${{translateX}}px, ${{translateY}}px, 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
+                    // Apply transform to container (much faster than transforming SVG)
+                    // Use simple translate + scale (browser optimizes this better than translate3d for large elements)
+                    mapSvgContainer.style.transform = `translate(${{mapX}}px, ${{mapY}}px) scale(${{mapScale}})`;
                     mapSvgContainer.style.transformOrigin = 'center center';
                     
                     if (isDebugMode()) {{
