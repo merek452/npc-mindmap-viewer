@@ -5083,9 +5083,16 @@
                 const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {
-                    // Use translate3d for GPU acceleration - cache transform string
-                    const transformStr = `translate3d(calc(-50% + ${mapX}px), calc(-50% + ${mapY}px), 0) scale3d(${mapScale}, ${mapScale}, 1)`;
-                    mapSvgContainer.style.transform = transformStr;
+                    // Optimize: Use separate translate and scale for better performance
+                    // Avoid calc() which is expensive - calculate values directly
+                    const centerX = -50; // -50% in pixels will be handled by transform-origin
+                    const centerY = -50;
+                    const translateX = mapX;
+                    const translateY = mapY;
+                    
+                    // Use simpler transform format - browser optimizes this better
+                    mapSvgContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${mapScale})`;
+                    mapSvgContainer.style.transformOrigin = 'center center';
                     
                     if (isDebugMode()) {
                         const transformTime = performance.now() - startTime;
