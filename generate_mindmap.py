@@ -6534,34 +6534,47 @@ class NPCRelationshipMapper:
             let item = null;
             
             // Get item from source
-            if (sourceContainer === 'bagOfHolding') {
-                item = inventoryData.bagOfHolding[itemIndex];
-                if (item) {
-                    inventoryData.bagOfHolding.splice(itemIndex, 1);
-                }
-            } else if (sourceContainer.startsWith('player_')) {
+            if (sourceContainer === 'bagOfHolding') {{
+                if (inventoryData.bagOfHolding && Array.isArray(inventoryData.bagOfHolding)) {{
+                    item = inventoryData.bagOfHolding[itemIndex];
+                    if (item) {{
+                        inventoryData.bagOfHolding.splice(itemIndex, 1);
+                    }}
+                }}
+            }} else if (sourceContainer.startsWith('player_')) {{
                 const playerIndex = parseInt(sourceContainer.split('_')[1]);
-                if (inventoryData.players[playerIndex]) {
+                if (inventoryData.players && inventoryData.players[playerIndex]) {{
+                    // Ensure player.items is an array
+                    if (!inventoryData.players[playerIndex].items || !Array.isArray(inventoryData.players[playerIndex].items)) {{
+                        inventoryData.players[playerIndex].items = [];
+                    }}
                     item = inventoryData.players[playerIndex].items[itemIndex];
-                    if (item) {
+                    if (item) {{
                         inventoryData.players[playerIndex].items.splice(itemIndex, 1);
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
             
             if (!item) return;
             
             // Add to target
-            if (targetContainer === 'bagOfHolding') {
+            if (targetContainer === 'bagOfHolding') {{
+                if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
+                    inventoryData.bagOfHolding = [];
+                }}
                 inventoryData.bagOfHolding.push(item);
                 updateBagWeight();
-            } else if (targetContainer.startsWith('player_')) {
+            }} else if (targetContainer.startsWith('player_')) {{
                 const playerIndex = parseInt(targetContainer.split('_')[1]);
-                if (inventoryData.players[playerIndex]) {
+                if (inventoryData.players && inventoryData.players[playerIndex]) {{
+                    // Ensure player.items is an array
+                    if (!inventoryData.players[playerIndex].items || !Array.isArray(inventoryData.players[playerIndex].items)) {{
+                        inventoryData.players[playerIndex].items = [];
+                    }}
                     inventoryData.players[playerIndex].items.push(item);
                     renderPlayers();
-                }
-            }
+                }}
+            }}
             
             saveInventoryData();
         }
