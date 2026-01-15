@@ -2124,14 +2124,15 @@ class NPCRelationshipMapper:
                 const mapContent = PLACEHOLDER_SVG_CONTENT;
                 if (mapContent && mapContent.trim() !== '') {{
                     try {{
-                        // Check if it's HTML/Canvas format (contains <canvas> or <html>)
-                        // Also check for common HTML patterns
+                        // Check if it's HTML format (contains <html>, <!DOCTYPE, or <body>)
+                        // This includes both canvas-based HTML and PDF-to-HTML conversions
                         const isHtmlFormat = mapContent.includes('<canvas') || 
                                             mapContent.includes('<html') || 
                                             mapContent.includes('<!DOCTYPE') ||
                                             mapContent.includes('<HTML') ||
                                             mapContent.includes('<CANVAS') ||
-                                            (mapContent.includes('<body') && mapContent.includes('canvas'));
+                                            mapContent.includes('<body') ||
+                                            mapContent.includes('<BODY');
                         
                         if (isDebugMode()) {{
                             console.log('🔍 Map content check:', {{
@@ -2139,10 +2140,12 @@ class NPCRelationshipMapper:
                                 hasCanvas: mapContent.includes('<canvas'),
                                 hasHtml: mapContent.includes('<html'),
                                 hasDoctype: mapContent.includes('<!DOCTYPE'),
+                                hasBody: mapContent.includes('<body'),
                                 firstChars: mapContent.substring(0, 100)
                             }});
                         }}
                         
+                        // For HTML files, try canvas extraction first, then fall back to direct HTML rendering
                         if (isHtmlFormat && mapCanvas) {{
                             // HTML/Canvas mode - much faster for large files
                             if (isDebugMode()) {{
