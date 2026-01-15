@@ -2730,6 +2730,7 @@ class NPCRelationshipMapper:
             // Render annotations on overlay
             function renderAnnotations() {{
                 if (!mapOverlay) return;
+                const renderStart = isDebugMode() ? performance.now() : 0;
                 const existingPaths = mapOverlay.querySelectorAll('.map-annotation, .map-annotation-delete');
                 existingPaths.forEach(p => p.remove());
                 
