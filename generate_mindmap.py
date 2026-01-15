@@ -1689,6 +1689,7 @@ class NPCRelationshipMapper:
                 // Fallback to localStorage
                 try {{
                     localStorage.setItem(path, JSON.stringify(data));
+                    console.log("💾 Saved to localStorage (Firebase not available):", path);
                 }} catch(e) {{
                     console.error("Failed to save to localStorage:", e);
                 }}
@@ -1698,12 +1699,13 @@ class NPCRelationshipMapper:
             try {{
                 const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{path}}`);
                 ref.set(data).then(function() {{
-                    console.log("Data saved to Firebase:", path);
+                    console.log("✅ Data saved to Firebase:", path);
                 }}).catch(function(error) {{
-                    console.error("Error saving to Firebase:", error);
+                    console.error("❌ Error saving to Firebase:", error);
                     // Fallback to localStorage
                     try {{
                         localStorage.setItem(path, JSON.stringify(data));
+                        console.log("💾 Fallback: Saved to localStorage");
                     }} catch(e) {{
                         console.error("Failed to save to localStorage:", e);
                     }}
@@ -1719,8 +1721,10 @@ class NPCRelationshipMapper:
                 try {{
                     const saved = localStorage.getItem(path);
                     if (saved) {{
+                        console.log("📂 Loaded from localStorage (Firebase not available):", path);
                         callback(JSON.parse(saved));
                     }} else {{
+                        console.log("📂 No data found in localStorage:", path);
                         callback(null);
                     }}
                 }} catch(e) {{
@@ -1734,13 +1738,19 @@ class NPCRelationshipMapper:
                 const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{path}}`);
                 ref.once('value').then(function(snapshot) {{
                     const data = snapshot.val();
+                    if (data) {{
+                        console.log("✅ Loaded from Firebase:", path);
+                    }} else {{
+                        console.log("📂 No data found in Firebase:", path);
+                    }}
                     callback(data);
                 }}).catch(function(error) {{
-                    console.error("Error loading from Firebase:", error);
+                    console.error("❌ Error loading from Firebase:", error);
                     // Fallback to localStorage
                     try {{
                         const saved = localStorage.getItem(path);
                         if (saved) {{
+                            console.log("💾 Fallback: Loaded from localStorage");
                             callback(JSON.parse(saved));
                         }} else {{
                             callback(null);
@@ -1758,7 +1768,12 @@ class NPCRelationshipMapper:
         
         // Set up real-time sync listeners
         function setupRealtimeSync() {{
-            if (!database) return;
+            if (!database) {{
+                console.log("No database connection - skipping real-time sync setup");
+                return;
+            }}
+            
+            console.log("Setting up real-time sync for campaign:", CAMPAIGN_ID);
             
             // Sync inventory data
             const inventoryRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/inventory_data`);
@@ -1769,6 +1784,7 @@ class NPCRelationshipMapper:
                     const currentDataStr = JSON.stringify(inventoryData);
                     const newDataStr = JSON.stringify(data);
                     if (currentDataStr !== newDataStr) {{
+                        console.log("📦 Inventory data updated from Firebase");
                         inventoryData = data;
                         if (typeof renderPlayers === 'function') {{
                             renderPlayers();
@@ -1777,6 +1793,8 @@ class NPCRelationshipMapper:
                         }}
                     }}
                 }}
+            }}, function(error) {{
+                console.error("Error listening to inventory data:", error);
             }});
             
             // Sync map markers
