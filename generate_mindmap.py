@@ -1784,7 +1784,29 @@ class NPCRelationshipMapper:
                     const currentDataStr = JSON.stringify(inventoryData);
                     const newDataStr = JSON.stringify(data);
                     if (currentDataStr !== newDataStr) {{
-                        console.log("📦 Inventory data updated from Firebase");
+                        console.log("📦 Inventory data updated from Firebase (real-time sync)");
+                        
+                        // Ensure data structure is valid
+                        if (!data.players || !Array.isArray(data.players)) {{
+                            data.players = [];
+                        }}
+                        if (!data.bagOfHolding || !Array.isArray(data.bagOfHolding)) {{
+                            data.bagOfHolding = [];
+                        }}
+                        if (typeof data.partyGold !== 'number') {{
+                            data.partyGold = 0;
+                        }}
+                        
+                        // Ensure each player has items array
+                        data.players.forEach(function(player) {{
+                            if (!player.items || !Array.isArray(player.items)) {{
+                                player.items = [];
+                            }}
+                            if (typeof player.gold !== 'number') {{
+                                player.gold = 0;
+                            }}
+                        }});
+                        
                         inventoryData = data;
                         if (typeof renderPlayers === 'function') {{
                             renderPlayers();
@@ -1794,7 +1816,7 @@ class NPCRelationshipMapper:
                     }}
                 }}
             }}, function(error) {{
-                console.error("Error listening to inventory data:", error);
+                console.error("❌ Error listening to inventory data:", error);
             }});
             
             // Sync map markers
@@ -5512,12 +5534,23 @@ class NPCRelationshipMapper:
             const container = getEl('playerInventories');
             if (!container) return;
             
+            // Ensure inventoryData structure is valid
+            if (!inventoryData) {{
+                console.error("inventoryData is undefined");
+                return;
+            }}
+            if (!inventoryData.players || !Array.isArray(inventoryData.players)) {{
+                console.error("inventoryData.players is not a valid array");
+                inventoryData.players = [];
+            }}
+            
             container.innerHTML = '';
             
             // Update player count badge
             const countBadge = getEl('playerCountBadge');
             if (countBadge) {{
                 const totalItems = inventoryData.players.reduce(function(sum, player) {{
+                    if (!player || !player.items || !Array.isArray(player.items)) return sum;
                     return sum + player.items.reduce(function(itemSum, item) {{
                         return itemSum + (parseInt(item.quantity) || 1);
                     }}, 0);
@@ -5530,15 +5563,22 @@ class NPCRelationshipMapper:
                 return (a.name || '').localeCompare(b.name || '');
             }});
             
-            sortedPlayers.forEach(function(player) {
+            sortedPlayers.forEach(function(player) {{
+                if (!player) return;
+                
+                // Ensure player.items is an array
+                if (!player.items || !Array.isArray(player.items)) {{
+                    player.items = [];
+                }}
+                
                 // Find original index for gold updates
-                const index = inventoryData.players.findIndex(function(p) { return p.name === player.name; });
+                const index = inventoryData.players.findIndex(function(p) {{ return p && p.name === player.name; }});
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-inventory';
                 playerDiv.style.cssText = 'padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 8px;';
                 
-                const totalWeight = calculateTotalWeight(player.items);
-                const itemCount = player.items.reduce(function(sum, item) {{
+                const totalWeight = calculateTotalWeight(player.items || []);
+                const itemCount = (player.items || []).reduce(function(sum, item) {{
                     return sum + (parseInt(item.quantity) || 1);
                 }}, 0);
                 
