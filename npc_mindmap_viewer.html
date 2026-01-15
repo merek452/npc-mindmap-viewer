@@ -5087,7 +5087,7 @@
             }
             
             function updateMapTransform() {
-                if (!mapSvgContainer) return;
+                if (!mapSvgContainer && !mapCanvas) return;
                 
                 // Performance debugging
                 if (isDebugMode()) {
@@ -5112,17 +5112,15 @@
                 const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {
-                    // CRITICAL OPTIMIZATION: Transform the container, not the SVG directly
-                    // This avoids recalculating the entire 2MB SVG on every frame
-                    // Calculate the actual pixel offset from center
-                    const rect = mapContainer.getBoundingClientRect();
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    
-                    // Apply transform to container (much faster than transforming SVG)
-                    // Use simple translate + scale (browser optimizes this better than translate3d for large elements)
-                    mapSvgContainer.style.transform = `translate(${mapX}px, ${mapY}px) scale(${mapScale})`;
-                    mapSvgContainer.style.transformOrigin = 'center center';
+                    // Canvas mode is MUCH faster - just transform the canvas element
+                    if (isCanvasMode && mapCanvas) {
+                        mapCanvas.style.transform = `translate(${mapX}px, ${mapY}px) scale(${mapScale})`;
+                        mapCanvas.style.transformOrigin = 'center center';
+                    } else if (mapSvgContainer) {
+                        // SVG mode - transform the container
+                        mapSvgContainer.style.transform = `translate(${mapX}px, ${mapY}px) scale(${mapScale})`;
+                        mapSvgContainer.style.transformOrigin = 'center center';
+                    }
                     
                     if (isDebugMode()) {
                         const transformTime = performance.now() - startTime;

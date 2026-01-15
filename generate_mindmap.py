@@ -219,17 +219,30 @@ class NPCRelationshipMapper:
         relationship_types = self.data.get('relationship_types', [])
         factions = self.data.get('factions', [])
         
-        # Load SVG map content to embed directly
+        # Load map content (SVG or HTML/Canvas) to embed directly
         svg_map_content = ""
-        svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
-        if svg_map_path.exists():
+        map_file_path = None
+        
+        # Try HTML/Canvas version first (better performance)
+        html_map_path = Path(__file__).parent / "Images" / "Gienia-World-Map.html"
+        if html_map_path.exists():
+            map_file_path = html_map_path
+            print(f"Found HTML/Canvas map: {html_map_path.name}")
+        else:
+            # Fallback to SVG
+            svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
+            if svg_map_path.exists():
+                map_file_path = svg_map_path
+                print(f"Found SVG map: {svg_map_path.name}")
+        
+        if map_file_path and map_file_path.exists():
             try:
-                with open(svg_map_path, 'r', encoding='utf-8') as f:
+                with open(map_file_path, 'r', encoding='utf-8') as f:
                     svg_map_content = f.read()
                     # Escape for JavaScript template literal
                     svg_map_content = svg_map_content.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
             except Exception as e:
-                print(f"Warning: Could not load SVG map: {e}")
+                print(f"Warning: Could not load map file: {e}")
                 svg_map_content = ""
         
         # Faction colors
@@ -2191,7 +2204,7 @@ class NPCRelationshipMapper:
             }}
             
             function updateMapTransform() {{
-                if (!mapSvgContainer) return;
+                if (!mapSvgContainer && !mapCanvas) return;
                 
                 // Performance debugging
                 if (isDebugMode()) {{
@@ -2216,17 +2229,15 @@ class NPCRelationshipMapper:
                 const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {{
-                    // CRITICAL OPTIMIZATION: Transform the container, not the SVG directly
-                    // This avoids recalculating the entire 2MB SVG on every frame
-                    // Calculate the actual pixel offset from center
-                    const rect = mapContainer.getBoundingClientRect();
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    
-                    // Apply transform to container (much faster than transforming SVG)
-                    // Use simple translate + scale (browser optimizes this better than translate3d for large elements)
-                    mapSvgContainer.style.transform = `translate(${{mapX}}px, ${{mapY}}px) scale(${{mapScale}})`;
-                    mapSvgContainer.style.transformOrigin = 'center center';
+                    // Canvas mode is MUCH faster - just transform the canvas element
+                    if (isCanvasMode && mapCanvas) {{
+                        mapCanvas.style.transform = `translate(${{mapX}}px, ${{mapY}}px) scale(${{mapScale}})`;
+                        mapCanvas.style.transformOrigin = 'center center';
+                    }} else if (mapSvgContainer) {{
+                        // SVG mode - transform the container
+                        mapSvgContainer.style.transform = `translate(${{mapX}}px, ${{mapY}}px) scale(${{mapScale}})`;
+                        mapSvgContainer.style.transformOrigin = 'center center';
+                    }}
                     
                     if (isDebugMode()) {{
                         const transformTime = performance.now() - startTime;
