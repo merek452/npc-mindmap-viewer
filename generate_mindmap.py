@@ -5664,11 +5664,11 @@ class NPCRelationshipMapper:
                      data-item-json-base64="${{itemJsonBase64}}"
                      style="position: relative; padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
                     <div style="flex: 1; min-width: 0; position: relative;">
-                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <strong style="color: #fff; font-size: 0.9em;">${{item.name}}</strong>
+                        <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; position: relative;">
+                            <strong style="color: #fff; font-size: 0.9em; line-height: 1.2;">${{item.name}}</strong>
                             <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;" 
                                     ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;"
-                                    style="position: absolute; top: 0; right: 0; padding: 2px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 28px; min-height: 20px; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">✕</button>
+                                    style="position: absolute; top: 0; right: 0; padding: 2px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 28px; min-height: 20px; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3); line-height: 1;">✕</button>
                             ${{item.rarity ? `<span style="color: ${{rarityColor}}; font-size: 0.7em; font-weight: bold;">${{item.rarity}}</span>` : ''}}
                             ${{item.type === 'magic' ? '<span style="color: #9C27B0;">✨</span>' : ''}}
                         </div>
