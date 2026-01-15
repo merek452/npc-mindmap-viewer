@@ -2011,22 +2011,29 @@ class NPCRelationshipMapper:
             let panTimeout = null;
             let transformUpdateScheduled = false;
             
-            // Performance debugging (set to true to enable)
-            // To enable: Open browser console and type: window.DEBUG_PERFORMANCE = true
+            // Performance debugging - enable from console: window.DEBUG_PERFORMANCE = true
             let DEBUG_PERFORMANCE = false;
-            // Allow enabling from console
-            window.DEBUG_PERFORMANCE = false;
-            Object.defineProperty(window, 'DEBUG_PERFORMANCE', {{
-                get: function() {{ return DEBUG_PERFORMANCE; }},
-                set: function(val) {{ 
-                    DEBUG_PERFORMANCE = val;
-                    console.log('Performance debugging', val ? 'ENABLED' : 'DISABLED');
-                }}
-            }});
             let frameCount = 0;
             let lastFpsTime = Date.now();
             let transformUpdateCount = 0;
             let lastTransformTime = Date.now();
+            
+            // Make DEBUG_PERFORMANCE accessible and toggleable from console
+            Object.defineProperty(window, 'DEBUG_PERFORMANCE', {{
+                get: function() {{ return DEBUG_PERFORMANCE; }},
+                set: function(val) {{ 
+                    DEBUG_PERFORMANCE = val;
+                    console.log('🔍 Performance debugging', val ? 'ENABLED' : 'DISABLED');
+                    console.log('   - Transform update tracking: ON');
+                    console.log('   - FPS tracking: ON');
+                    console.log('   - Render time tracking: ON');
+                }},
+                configurable: true,
+                enumerable: true
+            }});
+            
+            // Helper function to check debug mode (always use this instead of direct variable)
+            function isDebugMode() {{ return DEBUG_PERFORMANCE || window.DEBUG_PERFORMANCE; }}
             
             // Undo/Redo history
             let historyStack = [];
@@ -2050,21 +2057,21 @@ class NPCRelationshipMapper:
             function loadSvgMap() {{
                 if (svgLoaded) return;
                 
-                const loadStart = DEBUG_PERFORMANCE ? performance.now() : 0;
+                const loadStart = isDebugMode() ? performance.now() : 0;
                 const svgContent = PLACEHOLDER_SVG_CONTENT;
                 if (svgContent && svgContent.trim() !== '') {{
                     try {{
-                        if (DEBUG_PERFORMANCE) {{
-                            console.log('Loading SVG, size:', (svgContent.length / 1024).toFixed(2), 'KB');
+                        if (isDebugMode()) {{
+                            console.log('📊 Loading SVG, size:', (svgContent.length / 1024).toFixed(2), 'KB');
                         }}
                         
                         // Use innerHTML for large SVGs (DOMParser can be slower)
                         mapSvgContainer.innerHTML = svgContent;
                         svgLoaded = true;
                         
-                        if (DEBUG_PERFORMANCE) {{
+                        if (isDebugMode()) {{
                             const loadTime = performance.now() - loadStart;
-                            console.log(`SVG loaded in ${{loadTime.toFixed(2)}}ms`);
+                            console.log(`✅ SVG loaded in ${{loadTime.toFixed(2)}}ms`);
                         }}
                         
                         // Force initial render
@@ -2112,11 +2119,11 @@ class NPCRelationshipMapper:
                 if (!mapSvgContainer) return;
                 
                 // Performance debugging
-                if (DEBUG_PERFORMANCE) {{
+                if (isDebugMode()) {{
                     transformUpdateCount++;
                     const now = Date.now();
                     if (now - lastTransformTime > 1000) {{
-                        console.log(`Transform updates: ${{transformUpdateCount}}/sec`);
+                        console.log(`🔄 Transform updates: ${{transformUpdateCount}}/sec`);
                         transformUpdateCount = 0;
                         lastTransformTime = now;
                     }}
@@ -2131,17 +2138,17 @@ class NPCRelationshipMapper:
                 if (transformUpdateScheduled) return;
                 
                 transformUpdateScheduled = true;
-                const startTime = DEBUG_PERFORMANCE ? performance.now() : 0;
+                const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {{
                     // Use translate3d for GPU acceleration - cache transform string
                     const transformStr = `translate3d(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px), 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
                     mapSvgContainer.style.transform = transformStr;
                     
-                    if (DEBUG_PERFORMANCE) {{
+                    if (isDebugMode()) {{
                         const transformTime = performance.now() - startTime;
                         if (transformTime > 5) {{
-                            console.warn(`Slow transform update: ${{transformTime.toFixed(2)}}ms`);
+                            console.warn(`⚠️ Slow transform update: ${{transformTime.toFixed(2)}}ms`);
                         }}
                     }}
                     
@@ -2152,11 +2159,11 @@ class NPCRelationshipMapper:
                     transformUpdateScheduled = false;
                     
                     // FPS tracking
-                    if (DEBUG_PERFORMANCE) {{
+                    if (isDebugMode()) {{
                         frameCount++;
                         const now = Date.now();
                         if (now - lastFpsTime > 1000) {{
-                            console.log(`FPS: ${{frameCount}}`);
+                            console.log(`🎯 FPS: ${{frameCount}}`);
                             frameCount = 0;
                             lastFpsTime = now;
                         }}
@@ -2168,13 +2175,13 @@ class NPCRelationshipMapper:
                     if (svgLoaded && !isZooming && !isPanning && (now - lastRenderTime > RENDER_THROTTLE)) {{
                         if (renderRafId) cancelAnimationFrame(renderRafId);
                         renderRafId = requestAnimationFrame(function() {{
-                            const renderStart = DEBUG_PERFORMANCE ? performance.now() : 0;
+                            const renderStart = isDebugMode() ? performance.now() : 0;
                             renderMarkers();
                             renderAnnotations();
-                            if (DEBUG_PERFORMANCE) {{
+                            if (isDebugMode()) {{
                                 const renderTime = performance.now() - renderStart;
                                 if (renderTime > 10) {{
-                                    console.warn(`Slow marker render: ${{renderTime.toFixed(2)}}ms`);
+                                    console.warn(`⚠️ Slow marker render: ${{renderTime.toFixed(2)}}ms`);
                                 }}
                             }}
                             lastRenderTime = now;
@@ -2584,13 +2591,13 @@ class NPCRelationshipMapper:
             // Render markers on overlay with clustering
             function renderMarkers() {{
                 if (!mapOverlay) return;
-                const renderStart = DEBUG_PERFORMANCE ? performance.now() : 0;
+                const renderStart = isDebugMode() ? performance.now() : 0;
                 // Remove all marker-related elements including cluster text
                 const existingMarkers = mapOverlay.querySelectorAll('.map-marker, .map-marker-label, .map-cluster, .map-cluster-text');
-                const removeStart = DEBUG_PERFORMANCE ? performance.now() : 0;
+                const removeStart = isDebugMode() ? performance.now() : 0;
                 existingMarkers.forEach(m => m.remove());
-                if (DEBUG_PERFORMANCE && existingMarkers.length > 0) {{
-                    console.log(`Removed ${{existingMarkers.length}} markers in ${{(performance.now() - removeStart).toFixed(2)}}ms`);
+                if (isDebugMode() && existingMarkers.length > 0) {{
+                    console.log(`🗑️ Removed ${{existingMarkers.length}} markers in ${{(performance.now() - removeStart).toFixed(2)}}ms`);
                 }}
                 // Also remove any text elements that might be cluster numbers
                 const allTexts = mapOverlay.querySelectorAll('text');
@@ -2784,9 +2791,9 @@ class NPCRelationshipMapper:
                     mapOverlay.appendChild(deleteBtn);
                 }});
                 
-                if (DEBUG_PERFORMANCE) {{
+                if (isDebugMode()) {{
                     const renderTime = performance.now() - renderStart;
-                    console.log(`Rendered annotations in ${{renderTime.toFixed(2)}}ms`);
+                    console.log(`✏️ Rendered annotations in ${{renderTime.toFixed(2)}}ms`);
                 }}
             }}
             
