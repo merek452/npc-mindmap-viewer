@@ -2187,15 +2187,15 @@ class NPCRelationshipMapper:
                 const startTime = isDebugMode() ? performance.now() : 0;
                 
                 requestAnimationFrame(function() {{
-                    // Optimize: Use separate translate and scale for better performance
-                    // Avoid calc() which is expensive - calculate values directly
-                    const centerX = -50; // -50% in pixels will be handled by transform-origin
-                    const centerY = -50;
+                    // Optimize: Calculate transform without calc() - much faster
+                    // The container is at 50% 50%, so we translate from center
+                    // Use translate3d for GPU acceleration but avoid calc()
                     const translateX = mapX;
                     const translateY = mapY;
                     
-                    // Use simpler transform format - browser optimizes this better
-                    mapSvgContainer.style.transform = `translate(${{translateX}}px, ${{translateY}}px) scale(${{mapScale}})`;
+                    // Use translate3d with scale3d for GPU acceleration
+                    // Avoid calc() - browser handles the 50% offset via transform-origin
+                    mapSvgContainer.style.transform = `translate3d(${{translateX}}px, ${{translateY}}px, 0) scale3d(${{mapScale}}, ${{mapScale}}, 1)`;
                     mapSvgContainer.style.transformOrigin = 'center center';
                     
                     if (isDebugMode()) {{
