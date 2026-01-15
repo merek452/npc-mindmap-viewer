@@ -5008,41 +5008,48 @@
             
             // resetMapView is already defined and exposed above
             
-            // Mouse wheel zoom
+            // Mouse wheel zoom with debouncing
+            let wheelTimeout = null;
             mapContainer.addEventListener('wheel', function(e) {
                 e.preventDefault();
-                const rect = mapContainer.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
                 
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                const newScale = Math.max(0.5, Math.min(20, mapScale * delta)); // Increased max zoom to 2000%
+                // Debounce rapid wheel events for better performance
+                if (wheelTimeout) clearTimeout(wheelTimeout);
                 
-                // Zoom towards mouse position
-                const scaleChange = newScale / mapScale;
-                const containerCenterX = rect.width / 2;
-                const containerCenterY = rect.height / 2;
-                
-                mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
-                mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
-                
-                mapScale = newScale;
-                
-                // Mark as zooming and defer marker rendering
-                isZooming = true;
-                if (zoomTimeout) clearTimeout(zoomTimeout);
-                zoomTimeout = setTimeout(function() {
-                    isZooming = false;
-                    // Render markers/annotations once zoom stops
-                    if (svgLoaded) {
-                        renderMarkers();
-                        renderAnnotations();
-                        lastRenderTime = Date.now();
-                    }
-                }, 150); // Wait 150ms after last zoom event
-                
-                updateMapTransform();
-            });
+                wheelTimeout = setTimeout(function() {
+                    const rect = mapContainer.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                    const newScale = Math.max(0.5, Math.min(20, mapScale * delta)); // Increased max zoom to 2000%
+                    
+                    // Zoom towards mouse position
+                    const scaleChange = newScale / mapScale;
+                    const containerCenterX = rect.width / 2;
+                    const containerCenterY = rect.height / 2;
+                    
+                    mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
+                    mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
+                    
+                    mapScale = newScale;
+                    
+                    // Mark as zooming and defer marker rendering
+                    isZooming = true;
+                    if (zoomTimeout) clearTimeout(zoomTimeout);
+                    zoomTimeout = setTimeout(function() {
+                        isZooming = false;
+                        // Render markers/annotations once zoom stops
+                        if (svgLoaded) {
+                            renderMarkers();
+                            renderAnnotations();
+                            lastRenderTime = Date.now();
+                        }
+                    }, 200); // Wait 200ms after last zoom event
+                    
+                    updateMapTransform();
+                }, 16); // ~60fps throttling (16ms)
+            }, { passive: false });
             
             // Mouse drag to pan or add marker/annotation
             mapContainer.addEventListener('mousedown', function(e) {
