@@ -2005,6 +2005,8 @@ class NPCRelationshipMapper:
             let renderRafId = null;
             let lastRenderTime = 0;
             const RENDER_THROTTLE = 100; // Only render markers/annotations every 100ms
+            let isZooming = false;
+            let zoomTimeout = null;
             
             // Undo/Redo history
             let historyStack = [];
@@ -2090,9 +2092,10 @@ class NPCRelationshipMapper:
                     if (zoomLevelDisplay) {{
                         zoomLevelDisplay.textContent = `Zoom: ${{Math.round(mapScale * 100)}}%`;
                     }}
-                    // Throttle marker/annotation rendering for performance
+                    // Skip marker/annotation rendering during active zoom for better performance
+                    // SVG scales perfectly without needing to re-render markers
                     const now = Date.now();
-                    if (svgLoaded && (now - lastRenderTime > RENDER_THROTTLE || !isDragging)) {{
+                    if (svgLoaded && !isZooming && (now - lastRenderTime > RENDER_THROTTLE || !isDragging)) {{
                         if (renderRafId) cancelAnimationFrame(renderRafId);
                         renderRafId = requestAnimationFrame(function() {{
                             renderMarkers();
@@ -2130,6 +2133,20 @@ class NPCRelationshipMapper:
                 mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
                 
                 mapScale = newScale;
+                
+                // Mark as zooming and defer marker rendering
+                isZooming = true;
+                if (zoomTimeout) clearTimeout(zoomTimeout);
+                zoomTimeout = setTimeout(function() {{
+                    isZooming = false;
+                    // Render markers/annotations once zoom stops
+                    if (svgLoaded) {{
+                        renderMarkers();
+                        renderAnnotations();
+                        lastRenderTime = Date.now();
+                    }}
+                }}, 150); // Wait 150ms after last zoom event
+                
                 updateMapTransform();
             }});
             
