@@ -264,6 +264,9 @@ class NPCRelationshipMapper:
     <title>NPC Relationship Mind Map - Genia Campaign</title>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         * {{
             margin: 0;
@@ -1625,6 +1628,193 @@ class NPCRelationshipMapper:
         </div>
         
         <script>
+        // Firebase Configuration and Initialization
+        const FIREBASE_CONFIG = {{
+            apiKey: "AIzaSyA-S3yjlJmzvszYw9cl_39TRMvvUrrUeas",
+            authDomain: "age-of-reckoning.firebaseapp.com",
+            databaseURL: "https://age-of-reckoning-default-rtdb.firebaseio.com",
+            projectId: "age-of-reckoning",
+            storageBucket: "age-of-reckoning.firebasestorage.app",
+            messagingSenderId: "878498760748",
+            appId: "1:878498760748:web:890cecb9d05643d068a989"
+        }};
+        
+        // Campaign ID - change this to a unique ID for your campaign
+        const CAMPAIGN_ID = "genia";
+        
+        // Optional: Access code for simple password protection
+        const CAMPAIGN_ACCESS_CODE = "";
+        
+        // Firebase initialization
+        let firebaseInitialized = false;
+        let database = null;
+        
+        function initFirebase() {{
+            if (firebaseInitialized) return;
+            
+            // Check if Firebase config is set
+            if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {{
+                console.log("Firebase not configured - using localStorage only");
+                return;
+            }}
+            
+            try {{
+                firebase.initializeApp(FIREBASE_CONFIG);
+                database = firebase.database();
+                firebaseInitialized = true;
+                console.log("Firebase initialized successfully");
+                
+                // Set up real-time listeners
+                setupRealtimeSync();
+            }} catch(e) {{
+                console.error("Failed to initialize Firebase:", e);
+                console.log("Falling back to localStorage");
+            }}
+        }}
+        
+        // Firebase data sync functions
+        function saveToFirebase(path, data) {{
+            if (!database) {{
+                // Fallback to localStorage
+                try {{
+                    localStorage.setItem(path, JSON.stringify(data));
+                }} catch(e) {{
+                    console.error("Failed to save to localStorage:", e);
+                }}
+                return;
+            }}
+            
+            try {{
+                const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{path}}`);
+                ref.set(data).then(function() {{
+                    console.log("Data saved to Firebase:", path);
+                }}).catch(function(error) {{
+                    console.error("Error saving to Firebase:", error);
+                    // Fallback to localStorage
+                    try {{
+                        localStorage.setItem(path, JSON.stringify(data));
+                    }} catch(e) {{
+                        console.error("Failed to save to localStorage:", e);
+                    }}
+                }});
+            }} catch(e) {{
+                console.error("Error in saveToFirebase:", e);
+            }}
+        }}
+        
+        function loadFromFirebase(path, callback) {{
+            if (!database) {{
+                // Fallback to localStorage
+                try {{
+                    const saved = localStorage.getItem(path);
+                    if (saved) {{
+                        callback(JSON.parse(saved));
+                    }} else {{
+                        callback(null);
+                    }}
+                }} catch(e) {{
+                    console.error("Failed to load from localStorage:", e);
+                    callback(null);
+                }}
+                return;
+            }}
+            
+            try {{
+                const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{path}}`);
+                ref.once('value').then(function(snapshot) {{
+                    const data = snapshot.val();
+                    callback(data);
+                }}).catch(function(error) {{
+                    console.error("Error loading from Firebase:", error);
+                    // Fallback to localStorage
+                    try {{
+                        const saved = localStorage.getItem(path);
+                        if (saved) {{
+                            callback(JSON.parse(saved));
+                        }} else {{
+                            callback(null);
+                        }}
+                    }} catch(e) {{
+                        console.error("Failed to load from localStorage:", e);
+                        callback(null);
+                    }}
+                }});
+            }} catch(e) {{
+                console.error("Error in loadFromFirebase:", e);
+                callback(null);
+            }}
+        }}
+        
+        // Set up real-time sync listeners
+        function setupRealtimeSync() {{
+            if (!database) return;
+            
+            // Sync inventory data
+            const inventoryRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/inventory_data`);
+            inventoryRef.on('value', function(snapshot) {{
+                const data = snapshot.val();
+                if (data && typeof inventoryData !== 'undefined') {{
+                    // Only update if data changed (avoid infinite loops)
+                    const currentDataStr = JSON.stringify(inventoryData);
+                    const newDataStr = JSON.stringify(data);
+                    if (currentDataStr !== newDataStr) {{
+                        inventoryData = data;
+                        if (typeof renderPlayers === 'function') {{
+                            renderPlayers();
+                            renderBagOfHolding();
+                            updateBagWeight();
+                        }}
+                    }}
+                }}
+            }});
+            
+            // Sync map markers
+            const markersRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapMarkers`);
+            markersRef.on('value', function(snapshot) {{
+                const data = snapshot.val();
+                if (data && Array.isArray(data) && typeof markers !== 'undefined') {{
+                    const currentDataStr = JSON.stringify(markers);
+                    const newDataStr = JSON.stringify(data);
+                    if (currentDataStr !== newDataStr) {{
+                        markers = data;
+                        if (typeof renderMarkers === 'function') {{
+                            renderMarkers();
+                            if (typeof updateLocationList === 'function') {{
+                                updateLocationList();
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+            
+            // Sync map annotations
+            const annotationsRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapAnnotations`);
+            annotationsRef.on('value', function(snapshot) {{
+                const data = snapshot.val();
+                if (data && Array.isArray(data) && typeof annotations !== 'undefined') {{
+                    const currentDataStr = JSON.stringify(annotations);
+                    const newDataStr = JSON.stringify(data);
+                    if (currentDataStr !== newDataStr) {{
+                        annotations = data;
+                        if (typeof renderAnnotations === 'function') {{
+                            renderAnnotations();
+                        }}
+                    }}
+                }}
+            }});
+        }}
+        
+        // Initialize Firebase when page loads
+        if (typeof firebase !== 'undefined') {{
+            initFirebase();
+        }} else {{
+            window.addEventListener('load', function() {{
+                if (typeof firebase !== 'undefined') {{
+                    initFirebase();
+                }}
+            }});
+        }}
+        
         // Map zoom and pan functionality
         (function() {{
             let mapScale = 1;
@@ -2049,41 +2239,39 @@ class NPCRelationshipMapper:
                 }}
             }});
             
-            // Load markers and annotations from localStorage
+            // Load markers and annotations from Firebase (with localStorage fallback)
             function loadMapData() {{
-                try {{
-                    const saved = localStorage.getItem('mapMarkers');
-                    if (saved) markers = JSON.parse(saved);
-                    const savedAnnot = localStorage.getItem('mapAnnotations');
-                    if (savedAnnot) annotations = JSON.parse(savedAnnot);
-                    // Initialize history with initial state (empty or loaded)
-                    const initialState = {{
-                        markers: JSON.parse(JSON.stringify(markers)),
-                        annotations: JSON.parse(JSON.stringify(annotations))
-                    }};
-                    historyStack = [initialState];
-                    historyIndex = 0; // Start at 0 so we can undo to the initial state
-                    updateUndoRedoButtons();
-                    renderMarkers();
-                    renderAnnotations();
-                    updateLocationList();
-                }} catch(e) {{
-                    console.error('Failed to load map data:', e);
-                }}
+                loadFromFirebase('mapMarkers', function(data) {{
+                    if (data && Array.isArray(data)) {{
+                        markers = data;
+                    }}
+                    loadFromFirebase('mapAnnotations', function(annotData) {{
+                        if (annotData && Array.isArray(annotData)) {{
+                            annotations = annotData;
+                        }}
+                        // Initialize history with initial state (empty or loaded)
+                        const initialState = {{
+                            markers: JSON.parse(JSON.stringify(markers)),
+                            annotations: JSON.parse(JSON.stringify(annotations))
+                        }};
+                        historyStack = [initialState];
+                        historyIndex = 0; // Start at 0 so we can undo to the initial state
+                        updateUndoRedoButtons();
+                        renderMarkers();
+                        renderAnnotations();
+                        updateLocationList();
+                    }});
+                }});
             }}
             
             // Mini-map functions
             
-            // Save markers and annotations to localStorage
+            // Save markers and annotations to Firebase (with localStorage fallback)
             function saveMapData() {{
-                try {{
-                    localStorage.setItem('mapMarkers', JSON.stringify(markers));
-                    localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
-                    // Save to history
-                    saveToHistory();
-                }} catch(e) {{
-                    console.error('Failed to save map data:', e);
-                }}
+                saveToFirebase('mapMarkers', markers);
+                saveToFirebase('mapAnnotations', annotations);
+                // Save to history
+                saveToHistory();
             }}
             
             // Undo/Redo functions
@@ -2115,13 +2303,8 @@ class NPCRelationshipMapper:
                     renderAnnotations();
                     updateLocationList();
                     updateUndoRedoButtons();
-                    // Save to localStorage
-                    try {{
-                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
-                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
-                    }} catch(e) {{
-                        console.error('Failed to save:', e);
-                    }}
+                    // Save to Firebase
+                    saveMapData();
                 }} else if (historyIndex === 0 && historyStack.length > 1) {{
                     // Allow undoing the first change back to initial state
                     historyIndex = 0;
@@ -2132,13 +2315,8 @@ class NPCRelationshipMapper:
                     renderAnnotations();
                     updateLocationList();
                     updateUndoRedoButtons();
-                    // Save to localStorage
-                    try {{
-                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
-                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
-                    }} catch(e) {{
-                        console.error('Failed to save:', e);
-                    }}
+                    // Save to Firebase
+                    saveMapData();
                 }}
             }}
             
@@ -2152,13 +2330,8 @@ class NPCRelationshipMapper:
                     renderAnnotations();
                     updateLocationList();
                     updateUndoRedoButtons();
-                    // Save to localStorage
-                    try {{
-                        localStorage.setItem('mapMarkers', JSON.stringify(markers));
-                        localStorage.setItem('mapAnnotations', JSON.stringify(annotations));
-                    }} catch(e) {{
-                        console.error('Failed to save:', e);
-                    }}
+                    // Save to Firebase
+                    saveMapData();
                 }}
             }}
             
@@ -5160,42 +5333,31 @@ class NPCRelationshipMapper:
         }
         
         function loadInventoryData() {
-            try {
-                if (typeof localStorage !== 'undefined') {
-                    const saved = localStorage.getItem('inventory_data');
-                    if (saved) {
-                        inventoryData = JSON.parse(saved);
-                    }
+            loadFromFirebase('inventory_data', function(data) {
+                if (data) {
+                    inventoryData = data;
                 }
-            } catch(e) {
-                console.error('Failed to load inventory data:', e);
-            }
-            
-            // Initialize default players if none exist
-            if (inventoryData.players.length === 0) {
-                const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
-                inventoryData.players = defaultPlayers.map(name => ({
-                    name: name,
-                    gold: 0,
-                    items: []
-                }));
-            }
-            
-            // Set party gold
-            const partyGoldEl = getEl('partyGold');
-            if (partyGoldEl) {
-                partyGoldEl.value = inventoryData.partyGold || 0;
-            }
+                
+                // Initialize default players if none exist
+                if (inventoryData.players.length === 0) {
+                    const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
+                    inventoryData.players = defaultPlayers.map(name => ({
+                        name: name,
+                        gold: 0,
+                        items: []
+                    }));
+                }
+                
+                // Set party gold
+                const partyGoldEl = getEl('partyGold');
+                if (partyGoldEl) {
+                    partyGoldEl.value = inventoryData.partyGold || 0;
+                }
+            });
         }
         
         function saveInventoryData() {
-            try {
-                if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('inventory_data', JSON.stringify(inventoryData));
-                }
-            } catch(e) {
-                console.error('Failed to save inventory data:', e);
-            }
+            saveToFirebase('inventory_data', inventoryData);
         }
         
         // Multi-select state
