@@ -2403,7 +2403,16 @@ class NPCRelationshipMapper:
                                         
                                         // Show canvas, hide container
                                         mapCanvas.style.display = 'block';
-                                        mapSvgContainer.style.display = 'none';
+                                        mapCanvas.style.visibility = 'visible';
+                                        mapCanvas.style.opacity = '1';
+                                        mapCanvas.style.position = 'absolute';
+                                        mapCanvas.style.top = '50%';
+                                        mapCanvas.style.left = '50%';
+                                        mapCanvas.style.transform = 'translate(-50%, -50%)';
+                                        mapCanvas.style.transformOrigin = 'center center';
+                                        if (mapSvgContainer) {{
+                                            mapSvgContainer.style.display = 'none';
+                                        }}
                                         isCanvasMode = true;
                                         svgLoaded = true;
                                         
@@ -2412,6 +2421,7 @@ class NPCRelationshipMapper:
                                         baseMapHeight = baseHeight;
                                         
                                         console.log('   - ✅ Converted to high-res canvas at', scaleFactor + 'x resolution');
+                                        console.log('   - Canvas display:', mapCanvas.style.display, 'visibility:', mapCanvas.style.visibility);
                                         
                                         // Wait for layout, then auto-fit
                                         setTimeout(fitMapToViewport, 300);
