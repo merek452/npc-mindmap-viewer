@@ -2423,10 +2423,15 @@ class NPCRelationshipMapper:
                     }} else if (mapSvgContainer) {{
                         // SVG mode - transform the container
                         // Container is positioned at 50%/50% (top/left), so we need to center it
-                        // Get container dimensions
-                        const containerRect = mapSvgContainer.getBoundingClientRect();
-                        const containerWidth = containerRect.width || 0;
-                        const containerHeight = containerRect.height || 0;
+                        // Use base map dimensions (unscaled) for transform calculation
+                        let containerWidth = baseMapWidth;
+                        let containerHeight = baseMapHeight;
+                        if (containerWidth === 0 || containerHeight === 0) {{
+                            // Fallback: get from bounding rect and divide by scale
+                            const containerRect = mapSvgContainer.getBoundingClientRect();
+                            containerWidth = (containerRect.width || 0) / mapScale;
+                            containerHeight = (containerRect.height || 0) / mapScale;
+                        }}
                         
                         // Calculate center offset: -50% of container size + pan offset
                         // This centers the container and then applies pan
@@ -2520,28 +2525,24 @@ class NPCRelationshipMapper:
                 
                 // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
                 // Transform: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
-                // With transform-origin: center center, the scale happens around the element's center
                 // 
                 // For a world point (wx, wy), the screen position is:
-                // screenX = viewportCenterX + translateX + (wx - mapWidth/2) * scale + mapWidth/2
-                //        = viewportCenterX + (-mapWidth/2 + mapX) + (wx - mapWidth/2) * scale + mapWidth/2
-                //        = viewportCenterX + mapX + (wx - mapWidth/2) * scale + mapWidth/2
-                //        = viewportCenterX + mapX + wx * scale - mapWidth/2 * scale + mapWidth/2
-                //        = viewportCenterX + mapX + wx * scale + mapWidth/2 * (1 - scale)
+                // screenX = viewportCenterX + (-mapWidth/2 + mapX) + wx * scale
+                //        = viewportCenterX - mapWidth/2 + mapX + wx * scale
                 //
                 // For the mouse at (mouseX, mouseY):
-                // mouseX = viewportCenterX + mapX + worldX * mapScale + mapWidth/2 * (1 - mapScale)
-                // So: worldX = (mouseX - viewportCenterX - mapX - mapWidth/2 * (1 - mapScale)) / mapScale
-                const worldX = (mouseX - viewportCenterX - mapX - (mapWidth / 2) * (1 - mapScale)) / mapScale;
-                const worldY = (mouseY - viewportCenterY - mapY - (mapHeight / 2) * (1 - mapScale)) / mapScale;
+                // mouseX = viewportCenterX - mapWidth/2 + mapX + worldX * mapScale
+                // So: worldX = (mouseX - viewportCenterX + mapWidth/2 - mapX) / mapScale
+                const worldX = (mouseX - viewportCenterX + mapWidth / 2 - mapX) / mapScale;
+                const worldY = (mouseY - viewportCenterY + mapHeight / 2 - mapY) / mapScale;
                 
                 // After zoom, we want the same world point under the mouse:
-                // mouseX = viewportCenterX + newMapX + worldX * newScale + mapWidth/2 * (1 - newScale)
-                // So: newMapX = mouseX - viewportCenterX - worldX * newScale - mapWidth/2 * (1 - newScale)
+                // mouseX = viewportCenterX - mapWidth/2 + newMapX + worldX * newScale
+                // So: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
                 const oldMapX = mapX;
                 const oldMapY = mapY;
-                mapX = mouseX - viewportCenterX - worldX * newScale - (mapWidth / 2) * (1 - newScale);
-                mapY = mouseY - viewportCenterY - worldY * newScale - (mapHeight / 2) * (1 - newScale);
+                mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
+                mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
                 
                 // DEBUG: Log zoom calculation details with expanded values
                 if (isDebugMode()) {{
@@ -2556,9 +2557,12 @@ class NPCRelationshipMapper:
                     console.log('   Pan delta:', (mapX - oldMapX).toFixed(2), (mapY - oldMapY).toFixed(2));
                     console.log('   Calculation breakdown:');
                     console.log('     term1 (mouseX - viewportCenterX):', (mouseX - viewportCenterX).toFixed(2));
-                    console.log('     term2 (mapWidth/2):', (mapWidth / 2).toFixed(2));
-                    console.log('     term3 (worldX * newScale):', (worldX * newScale).toFixed(2));
+                    console.log('     term2 (+ mapWidth/2):', (mapWidth / 2).toFixed(2));
+                    console.log('     term3 (- worldX * newScale):', (-worldX * newScale).toFixed(2));
                     console.log('     result (mapX):', mapX.toFixed(2));
+                    console.log('   Verification:');
+                    const verifyScreenX = viewportCenterX - mapWidth / 2 + mapX + worldX * newScale;
+                    console.log('     Expected screenX:', verifyScreenX.toFixed(2), 'Actual mouseX:', mouseX.toFixed(2), 'Diff:', (verifyScreenX - mouseX).toFixed(2));
                 }}
                 
                 mapScale = newScale;
