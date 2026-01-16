@@ -2401,22 +2401,21 @@ class NPCRelationshipMapper:
                                         ctx.scale(scaleFactor, scaleFactor);
                                         ctx.drawImage(img, 0, 0);
                                         
-                                        // Show canvas - keep container visible but hide its content
+                                        // Show canvas - keep container visible (canvas is inside it)
                                         mapCanvas.style.display = 'block';
                                         mapCanvas.style.visibility = 'visible';
                                         mapCanvas.style.opacity = '1';
-                                        mapCanvas.style.position = 'absolute';
-                                        mapCanvas.style.top = '50%';
-                                        mapCanvas.style.left = '50%';
-                                        mapCanvas.style.transform = 'translate(-50%, -50%)';
-                                        mapCanvas.style.transformOrigin = 'center center';
-                                        mapCanvas.style.zIndex = '1';
-                                        // Hide container content but keep container visible (canvas is inside it)
+                                        // Canvas positioning is already set in HTML (top: 50%, left: 50%, transform: translate(-50%, -50%))
+                                        // Just ensure it's visible
                                         if (mapSvgContainer) {{
-                                            // Clear innerHTML but keep container for canvas positioning
-                                            const existingContent = mapSvgContainer.querySelectorAll(':not(#worldMapCanvas)');
-                                            existingContent.forEach(function(el) {{
-                                                if (el.id !== 'worldMapCanvas') {{
+                                            // Keep container visible - it contains the canvas
+                                            mapSvgContainer.style.display = 'block';
+                                            mapSvgContainer.style.visibility = 'visible';
+                                            mapSvgContainer.style.opacity = '1';
+                                            // Hide any HTML content that was rendered (but keep canvas)
+                                            const htmlContent = mapSvgContainer.querySelectorAll('#page-container, .pf, img:not(#worldMapCanvas)');
+                                            htmlContent.forEach(function(el) {{
+                                                if (el.id !== 'worldMapCanvas' && el.tagName !== 'CANVAS') {{
                                                     el.style.display = 'none';
                                                 }}
                                             }});
