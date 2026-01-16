@@ -5125,15 +5125,14 @@
                                 // Render HTML content directly
                                 mapSvgContainer.innerHTML = htmlContent;
                                 
-                                // Find and fix page-container positioning - center it
+                                // Find and fix page-container positioning
                                 const pageContainer = mapSvgContainer.querySelector('#page-container');
                                 if (pageContainer) {
-                                    // Center the page-container within mapSvgContainer
-                                    pageContainer.style.position = 'absolute';
-                                    pageContainer.style.top = '50%';
-                                    pageContainer.style.left = '50%';
-                                    pageContainer.style.transform = 'translate(-50%, -50%)';
-                                    pageContainer.style.transformOrigin = 'center center';
+                                    // Remove absolute positioning that causes scrolling
+                                    pageContainer.style.position = 'relative';
+                                    pageContainer.style.top = '0';
+                                    pageContainer.style.left = '0';
+                                    pageContainer.style.overflow = 'visible';
                                 }
                                 
                                 // Make sure container is visible
@@ -5290,9 +5289,19 @@
                         mapCanvas.style.transformOrigin = 'center center';
                     } else if (mapSvgContainer) {
                         // SVG mode - transform the container
-                        // Combine centering (-50%, -50%) with pan (mapX, mapY) and scale
-                        mapSvgContainer.style.transform = `translate(calc(-50% + ${mapX}px), calc(-50% + ${mapY}px)) scale(${mapScale})`;
-                        mapSvgContainer.style.transformOrigin = 'center center';
+                        // Calculate centered position: container is at 50%/50%, so we need to offset by half its size
+                        // Get container dimensions
+                        const containerRect = mapSvgContainer.getBoundingClientRect();
+                        const containerWidth = containerRect.width || 0;
+                        const containerHeight = containerRect.height || 0;
+                        
+                        // Calculate center offset: -50% of container size + pan offset
+                        const centerX = -(containerWidth / 2) + mapX;
+                        const centerY = -(containerHeight / 2) + mapY;
+                        
+                        // Apply transform: translate to center + pan, then scale
+                        mapSvgContainer.style.transform = `translate(${centerX}px, ${centerY}px) scale(${mapScale})`;
+                        mapSvgContainer.style.transformOrigin = '0 0';
                     }
                     
                     if (isDebugMode()) {
