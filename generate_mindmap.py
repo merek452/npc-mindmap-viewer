@@ -2305,8 +2305,8 @@ class NPCRelationshipMapper:
                                     // Use the larger scale to ensure the map fills the viewport
                                     mapScale = Math.max(scaleX, scaleY);
                                     
-                                    // Ensure minimum scale of 0.3 and maximum of 3.0
-                                    mapScale = Math.max(0.3, Math.min(3.0, mapScale));
+                                    // Ensure minimum scale of 0.3 and maximum of 5.0 (increased for better zoom range)
+                                    mapScale = Math.max(0.3, Math.min(5.0, mapScale));
                                     
                                     // Center the map (mapX/Y = 0 means centered since container is already centered)
                                     mapX = 0;
