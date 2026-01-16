@@ -3760,9 +3760,6 @@ class NPCRelationshipMapper:
                 t.style.display = 'none';
             });
             
-            // Remove map-tab-active class from body
-            document.body.classList.remove('map-tab-active');
-            
             // Show selected tab button
             let tabIndex = -1;
             if (tabName === 'cards') tabIndex = 0;
