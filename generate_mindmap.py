@@ -2401,7 +2401,7 @@ class NPCRelationshipMapper:
                                         ctx.scale(scaleFactor, scaleFactor);
                                         ctx.drawImage(img, 0, 0);
                                         
-                                        // Show canvas, hide container
+                                        // Show canvas - keep container visible but hide its content
                                         mapCanvas.style.display = 'block';
                                         mapCanvas.style.visibility = 'visible';
                                         mapCanvas.style.opacity = '1';
@@ -2410,8 +2410,16 @@ class NPCRelationshipMapper:
                                         mapCanvas.style.left = '50%';
                                         mapCanvas.style.transform = 'translate(-50%, -50%)';
                                         mapCanvas.style.transformOrigin = 'center center';
+                                        mapCanvas.style.zIndex = '1';
+                                        // Hide container content but keep container visible (canvas is inside it)
                                         if (mapSvgContainer) {{
-                                            mapSvgContainer.style.display = 'none';
+                                            // Clear innerHTML but keep container for canvas positioning
+                                            const existingContent = mapSvgContainer.querySelectorAll(':not(#worldMapCanvas)');
+                                            existingContent.forEach(function(el) {{
+                                                if (el.id !== 'worldMapCanvas') {{
+                                                    el.style.display = 'none';
+                                                }}
+                                            }});
                                         }}
                                         isCanvasMode = true;
                                         svgLoaded = true;
