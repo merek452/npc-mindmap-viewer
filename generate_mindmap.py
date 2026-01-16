@@ -2499,16 +2499,26 @@ class NPCRelationshipMapper:
                 const mouseOffsetX = mouseX - containerCenterX;
                 const mouseOffsetY = mouseY - containerCenterY;
                 
-                // Calculate world position of mouse before zoom
-                // mapX/Y is the pan offset, so world position is: (mouseOffset - mapX) / scale
-                const worldX = (mouseOffsetX - mapX) / mapScale;
-                const worldY = (mouseOffsetY - mapY) / mapScale;
+                // Get the actual container dimensions for transform calculation
+                const containerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
+                const containerWidth = containerRect ? containerRect.width : 0;
+                const containerHeight = containerRect ? containerRect.height : 0;
                 
-                // Calculate new pan to keep the same world point under the mouse
-                // After zoom: mouseOffset = worldX * newScale + newMapX
-                // So: newMapX = mouseOffset - worldX * newScale
-                mapX = mouseOffsetX - worldX * newScale;
-                mapY = mouseOffsetY - worldY * newScale;
+                // The transform applies: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(scale)
+                // So the actual screen position of a world point (wx, wy) is:
+                // screenX = (-containerWidth/2 + mapX) + wx * scale
+                // 
+                // For the mouse position, we want to find the world point:
+                // mouseOffsetX = (-containerWidth/2 + mapX) + worldX * mapScale
+                // So: worldX = (mouseOffsetX + containerWidth/2 - mapX) / mapScale
+                const worldX = (mouseOffsetX + containerWidth / 2 - mapX) / mapScale;
+                const worldY = (mouseOffsetY + containerHeight / 2 - mapY) / mapScale;
+                
+                // After zoom, we want the same world point under the mouse:
+                // mouseOffsetX = (-containerWidth/2 + newMapX) + worldX * newScale
+                // So: newMapX = mouseOffsetX + containerWidth/2 - worldX * newScale
+                mapX = mouseOffsetX + containerWidth / 2 - worldX * newScale;
+                mapY = mouseOffsetY + containerHeight / 2 - worldY * newScale;
                 
                 mapScale = newScale;
                 
