@@ -5366,34 +5366,31 @@
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 const newScale = Math.max(0.5, Math.min(20, mapScale * delta));
                 
-                // Get container center
-                const containerCenterX = rect.width / 2;
-                const containerCenterY = rect.height / 2;
+                // Get viewport center (mapContainer center)
+                const viewportCenterX = rect.width / 2;
+                const viewportCenterY = rect.height / 2;
                 
-                // Calculate mouse position relative to container center
-                const mouseOffsetX = mouseX - containerCenterX;
-                const mouseOffsetY = mouseY - containerCenterY;
+                // Get the map container dimensions
+                const mapContainerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
+                const mapWidth = mapContainerRect ? mapContainerRect.width : 0;
+                const mapHeight = mapContainerRect ? mapContainerRect.height : 0;
                 
-                // Get the actual container dimensions for transform calculation
-                const containerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
-                const containerWidth = containerRect ? containerRect.width : 0;
-                const containerHeight = containerRect ? containerRect.height : 0;
-                
-                // The transform applies: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(scale)
-                // So the actual screen position of a world point (wx, wy) is:
-                // screenX = (-containerWidth/2 + mapX) + wx * scale
+                // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
+                // Then we apply: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
+                // So a world point (wx, wy) appears on screen at:
+                // screenX = viewportCenterX - mapWidth/2 + mapX + wx * scale
                 // 
-                // For the mouse position, we want to find the world point:
-                // mouseOffsetX = (-containerWidth/2 + mapX) + worldX * mapScale
-                // So: worldX = (mouseOffsetX + containerWidth/2 - mapX) / mapScale
-                const worldX = (mouseOffsetX + containerWidth / 2 - mapX) / mapScale;
-                const worldY = (mouseOffsetY + containerHeight / 2 - mapY) / mapScale;
+                // For the mouse at (mouseX, mouseY) relative to mapContainer:
+                // mouseX = viewportCenterX - mapWidth/2 + mapX + worldX * mapScale
+                // So: worldX = (mouseX - viewportCenterX + mapWidth/2 - mapX) / mapScale
+                const worldX = (mouseX - viewportCenterX + mapWidth / 2 - mapX) / mapScale;
+                const worldY = (mouseY - viewportCenterY + mapHeight / 2 - mapY) / mapScale;
                 
                 // After zoom, we want the same world point under the mouse:
-                // mouseOffsetX = (-containerWidth/2 + newMapX) + worldX * newScale
-                // So: newMapX = mouseOffsetX + containerWidth/2 - worldX * newScale
-                mapX = mouseOffsetX + containerWidth / 2 - worldX * newScale;
-                mapY = mouseOffsetY + containerHeight / 2 - worldY * newScale;
+                // mouseX = viewportCenterX - mapWidth/2 + newMapX + worldX * newScale
+                // So: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
+                mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
+                mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
                 
                 mapScale = newScale;
                 
