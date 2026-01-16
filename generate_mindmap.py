@@ -2283,10 +2283,24 @@ class NPCRelationshipMapper:
                                     if (pageContainer) {{
                                         const firstPage = pageContainer.querySelector('.pf');
                                         if (firstPage) {{
-                                            // Get the actual page dimensions
+                                            // Get the actual page dimensions - need to get natural size, not scaled
+                                            // Try to get from computed style or natural dimensions
                                             const pageRect = firstPage.getBoundingClientRect();
+                                            // If the page has been scaled, we need to divide by current scale
+                                            // But at initial load, scale should be 1, so this should be correct
                                             mapWidth = pageRect.width || 2000;
                                             mapHeight = pageRect.height || 2000;
+                                            
+                                            // Also try to get from style if available
+                                            const computedStyle = window.getComputedStyle(firstPage);
+                                            if (computedStyle.width && computedStyle.width !== 'auto') {{
+                                                const styleWidth = parseFloat(computedStyle.width);
+                                                if (styleWidth > 0) mapWidth = styleWidth;
+                                            }}
+                                            if (computedStyle.height && computedStyle.height !== 'auto') {{
+                                                const styleHeight = parseFloat(computedStyle.height);
+                                                if (styleHeight > 0) mapHeight = styleHeight;
+                                            }}
                                         }} else {{
                                             const mapRect = pageContainer.getBoundingClientRect();
                                             mapWidth = mapRect.width || 2000;
@@ -2331,11 +2345,12 @@ class NPCRelationshipMapper:
                                         console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
                                         console.log(`   - Base map size: ${{mapWidth}} x ${{mapHeight}}`);
                                         console.log(`   - Container size: ${{containerWidth}} x ${{containerHeight}}`);
+                                        console.log(`   - Scale X: ${{scaleX.toFixed(4)}}, Scale Y: ${{scaleY.toFixed(4)}}`);
                                         console.log(`   - Auto-fit scale: ${{mapScale.toFixed(2)}}`);
                                     }}
                                     
                                     updateMapTransform();
-                                }}, 150);
+                                }}, 200);
                             }}
                         }} else {{
                             // Fallback: Unknown format or no canvas support - render as-is
