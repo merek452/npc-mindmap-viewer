@@ -2519,23 +2519,29 @@ class NPCRelationshipMapper:
                 }}
                 
                 // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
-                // Then we apply: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
-                // So a world point (wx, wy) appears on screen at:
-                // screenX = viewportCenterX - mapWidth/2 + mapX + wx * scale
+                // Transform: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
+                // With transform-origin: center center, the scale happens around the element's center
                 // 
-                // For the mouse at (mouseX, mouseY) relative to mapContainer:
-                // mouseX = viewportCenterX - mapWidth/2 + mapX + worldX * mapScale
-                // So: worldX = (mouseX - viewportCenterX + mapWidth/2 - mapX) / mapScale
-                const worldX = (mouseX - viewportCenterX + mapWidth / 2 - mapX) / mapScale;
-                const worldY = (mouseY - viewportCenterY + mapHeight / 2 - mapY) / mapScale;
+                // For a world point (wx, wy), the screen position is:
+                // screenX = viewportCenterX + translateX + (wx - mapWidth/2) * scale + mapWidth/2
+                //        = viewportCenterX + (-mapWidth/2 + mapX) + (wx - mapWidth/2) * scale + mapWidth/2
+                //        = viewportCenterX + mapX + (wx - mapWidth/2) * scale + mapWidth/2
+                //        = viewportCenterX + mapX + wx * scale - mapWidth/2 * scale + mapWidth/2
+                //        = viewportCenterX + mapX + wx * scale + mapWidth/2 * (1 - scale)
+                //
+                // For the mouse at (mouseX, mouseY):
+                // mouseX = viewportCenterX + mapX + worldX * mapScale + mapWidth/2 * (1 - mapScale)
+                // So: worldX = (mouseX - viewportCenterX - mapX - mapWidth/2 * (1 - mapScale)) / mapScale
+                const worldX = (mouseX - viewportCenterX - mapX - (mapWidth / 2) * (1 - mapScale)) / mapScale;
+                const worldY = (mouseY - viewportCenterY - mapY - (mapHeight / 2) * (1 - mapScale)) / mapScale;
                 
                 // After zoom, we want the same world point under the mouse:
-                // mouseX = viewportCenterX - mapWidth/2 + newMapX + worldX * newScale
-                // So: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
+                // mouseX = viewportCenterX + newMapX + worldX * newScale + mapWidth/2 * (1 - newScale)
+                // So: newMapX = mouseX - viewportCenterX - worldX * newScale - mapWidth/2 * (1 - newScale)
                 const oldMapX = mapX;
                 const oldMapY = mapY;
-                mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
-                mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
+                mapX = mouseX - viewportCenterX - worldX * newScale - (mapWidth / 2) * (1 - newScale);
+                mapY = mouseY - viewportCenterY - worldY * newScale - (mapHeight / 2) * (1 - newScale);
                 
                 // DEBUG: Log zoom calculation details with expanded values
                 if (isDebugMode()) {{
