@@ -2484,19 +2484,31 @@ class NPCRelationshipMapper:
                 e.preventDefault();
                 
                 const rect = mapContainer.getBoundingClientRect();
+                // Mouse position relative to container
                 const mouseX = e.clientX - rect.left;
                 const mouseY = e.clientY - rect.top;
                 
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 const newScale = Math.max(0.5, Math.min(20, mapScale * delta));
                 
-                // Zoom towards mouse position
-                const scaleChange = newScale / mapScale;
+                // Get container center
                 const containerCenterX = rect.width / 2;
                 const containerCenterY = rect.height / 2;
                 
-                mapX = (mouseX - containerCenterX) - (mouseX - containerCenterX - mapX) * scaleChange;
-                mapY = (mouseY - containerCenterY) - (mouseY - containerCenterY - mapY) * scaleChange;
+                // Calculate mouse position relative to container center
+                const mouseOffsetX = mouseX - containerCenterX;
+                const mouseOffsetY = mouseY - containerCenterY;
+                
+                // Calculate world position of mouse before zoom
+                // mapX/Y is the pan offset, so world position is: (mouseOffset - mapX) / scale
+                const worldX = (mouseOffsetX - mapX) / mapScale;
+                const worldY = (mouseOffsetY - mapY) / mapScale;
+                
+                // Calculate new pan to keep the same world point under the mouse
+                // After zoom: mouseOffset = worldX * newScale + newMapX
+                // So: newMapX = mouseOffset - worldX * newScale
+                mapX = mouseOffsetX - worldX * newScale;
+                mapY = mouseOffsetY - worldY * newScale;
                 
                 mapScale = newScale;
                 
@@ -2550,8 +2562,15 @@ class NPCRelationshipMapper:
                     return;
                 }}
                 if (!isDragging) return;
-                mapX = dragStartMapX + (e.clientX - dragStartX);
-                mapY = dragStartMapY + (e.clientY - dragStartY);
+                
+                // Calculate mouse movement
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                
+                // Apply movement directly to pan offset
+                mapX = dragStartMapX + deltaX;
+                mapY = dragStartMapY + deltaY;
+                
                 // Throttle pan updates for better performance
                 if (!transformUpdateScheduled) {{
                     updateMapTransform();
@@ -2660,6 +2679,27 @@ class NPCRelationshipMapper:
                     if (distanceChange > 5) {{
                         const scaleChange = currentDistance / lastTouchDistance;
                         const newScale = Math.max(0.5, Math.min(20, mapScale * scaleChange));
+                        
+                        // Calculate touch center
+                        const rect = mapContainer.getBoundingClientRect();
+                        const touchCenterX = ((touches[0].clientX + touches[1].clientX) / 2) - rect.left;
+                        const touchCenterY = ((touches[0].clientY + touches[1].clientY) / 2) - rect.top;
+                        
+                        // Get container center
+                        const containerCenterX = rect.width / 2;
+                        const containerCenterY = rect.height / 2;
+                        
+                        // Calculate touch position relative to container center
+                        const touchOffsetX = touchCenterX - containerCenterX;
+                        const touchOffsetY = touchCenterY - containerCenterY;
+                        
+                        // Calculate world position of touch center before zoom
+                        const worldX = (touchOffsetX - mapX) / mapScale;
+                        const worldY = (touchOffsetY - mapY) / mapScale;
+                        
+                        // Calculate new pan to keep the same world point under the touch center
+                        mapX = touchOffsetX - worldX * newScale;
+                        mapY = touchOffsetY - worldY * newScale;
                         
                         // Zoom towards touch center
                         const scaleRatio = newScale / mapScale;
