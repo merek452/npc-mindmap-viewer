@@ -2295,14 +2295,15 @@ class NPCRelationshipMapper:
                                         mapHeight = mapRect.height || 2000;
                                     }}
                                     
-                                    // Calculate scale to fit map in viewport (with some padding)
-                                    const padding = 0.85; // 85% of viewport
-                                    const scaleX = (containerWidth * padding) / mapWidth;
-                                    const scaleY = (containerHeight * padding) / mapHeight;
-                                    mapScale = Math.min(scaleX, scaleY);
+                                    // Calculate scale to fill viewport - use the larger scale to fill the screen
+                                    // No padding - fill the entire container
+                                    const scaleX = containerWidth / mapWidth;
+                                    const scaleY = containerHeight / mapHeight;
+                                    // Use the larger scale to ensure the map fills the viewport
+                                    mapScale = Math.max(scaleX, scaleY);
                                     
-                                    // Ensure minimum scale of 0.5 and maximum of 2.0
-                                    mapScale = Math.max(0.5, Math.min(2.0, mapScale));
+                                    // Ensure minimum scale of 0.3 and maximum of 3.0
+                                    mapScale = Math.max(0.3, Math.min(3.0, mapScale));
                                     
                                     // Center the map (mapX/Y = 0 means centered since container is already centered)
                                     mapX = 0;
