@@ -2435,12 +2435,14 @@ class NPCRelationshipMapper:
                         
                         // Calculate center offset: -50% of container size + pan offset
                         // This centers the container and then applies pan
+                        // Use transform-origin 0 0 to make math simpler
                         const centerX = -(containerWidth / 2) + mapX;
                         const centerY = -(containerHeight / 2) + mapY;
                         
                         // Apply transform: translate to center + pan, then scale
+                        // Transform-origin 0 0 means scale happens from top-left, making calculations easier
                         mapSvgContainer.style.transform = `translate(${{centerX}}px, ${{centerY}}px) scale(${{mapScale}})`;
-                        mapSvgContainer.style.transformOrigin = 'center center';
+                        mapSvgContainer.style.transformOrigin = '0 0';
                     }}
                     
                     if (isDebugMode()) {{
