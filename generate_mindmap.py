@@ -2234,12 +2234,25 @@ class NPCRelationshipMapper:
                             // Find canvas element in the HTML
                             const canvasEl = tempDiv.querySelector('canvas');
                             if (canvasEl) {{
-                                // Copy canvas dimensions and content
-                                mapCanvas.width = canvasEl.width || 2000;
-                                mapCanvas.height = canvasEl.height || 2000;
+                                // Get device pixel ratio for high-DPI displays
+                                const dpr = window.devicePixelRatio || 1;
+                                const scaleFactor = Math.max(2, dpr); // Use at least 2x for better quality
                                 
-                                // Get the canvas context and draw the source canvas
+                                // Set canvas to high resolution (internal resolution)
+                                const baseWidth = canvasEl.width || 2000;
+                                const baseHeight = canvasEl.height || 2000;
+                                mapCanvas.width = baseWidth * scaleFactor;
+                                mapCanvas.height = baseHeight * scaleFactor;
+                                
+                                // Set display size (CSS) to original size
+                                mapCanvas.style.width = baseWidth + 'px';
+                                mapCanvas.style.height = baseHeight + 'px';
+                                
+                                // Get the canvas context and configure for high quality
                                 const ctx = mapCanvas.getContext('2d');
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'high';
+                                ctx.scale(scaleFactor, scaleFactor);
                                 
                                 // Try to copy canvas directly
                                 try {{
@@ -2261,8 +2274,20 @@ class NPCRelationshipMapper:
                                     // If direct copy fails, try image approach
                                     const img = new Image();
                                     img.onload = function() {{
-                                        mapCanvas.width = img.width || canvasEl.width || 2000;
-                                        mapCanvas.height = img.height || canvasEl.height || 2000;
+                                        // Use high resolution for image rendering
+                                        const dpr = window.devicePixelRatio || 1;
+                                        const scaleFactor = Math.max(2, dpr);
+                                        const baseWidth = img.width || canvasEl.width || 2000;
+                                        const baseHeight = img.height || canvasEl.height || 2000;
+                                        
+                                        mapCanvas.width = baseWidth * scaleFactor;
+                                        mapCanvas.height = baseHeight * scaleFactor;
+                                        mapCanvas.style.width = baseWidth + 'px';
+                                        mapCanvas.style.height = baseHeight + 'px';
+                                        
+                                        ctx.imageSmoothingEnabled = true;
+                                        ctx.imageSmoothingQuality = 'high';
+                                        ctx.scale(scaleFactor, scaleFactor);
                                         ctx.drawImage(img, 0, 0);
                                         mapCanvas.style.display = 'block';
                                         mapSvgContainer.style.display = 'none';
@@ -2323,12 +2348,29 @@ class NPCRelationshipMapper:
                                     pageContainer.style.top = '0';
                                     pageContainer.style.left = '0';
                                     pageContainer.style.overflow = 'visible';
+                                    
+                                    // Improve rendering quality for high zoom
+                                    pageContainer.style.imageRendering = 'crisp-edges';
+                                    pageContainer.style.imageRendering = '-webkit-optimize-contrast';
+                                    
+                                    // Apply high-quality rendering to all child elements
+                                    const allElements = pageContainer.querySelectorAll('*');
+                                    allElements.forEach(function(el) {{
+                                        if (el.tagName === 'IMG' || el.tagName === 'CANVAS') {{
+                                            el.style.imageRendering = 'high-quality';
+                                            el.style.imageRendering = 'crisp-edges';
+                                        }}
+                                    }});
                                 }}
                                 
                                 // Make sure container is visible
                                 mapSvgContainer.style.display = 'block';
                                 mapSvgContainer.style.visibility = 'visible';
                                 mapSvgContainer.style.opacity = '1';
+                                
+                                // Improve SVG rendering quality
+                                mapSvgContainer.style.imageRendering = 'crisp-edges';
+                                mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
                                 
                                 svgLoaded = true;
                                 
@@ -2469,6 +2511,13 @@ class NPCRelationshipMapper:
                         // Apply pan and scale on top of the centering
                         mapCanvas.style.transform = `translate(calc(-50% + ${{mapX}}px), calc(-50% + ${{mapY}}px)) scale(${{mapScale}})`;
                         mapCanvas.style.transformOrigin = 'center center';
+                        // High-quality rendering for canvas
+                        mapCanvas.style.imageRendering = 'high-quality';
+                        const ctx = mapCanvas.getContext('2d');
+                        if (ctx) {{
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                        }}
                     }} else if (mapSvgContainer) {{
                         // SVG mode - transform the container
                         // Container is positioned at 50%/50% (top/left), so we need to center it
@@ -2492,6 +2541,9 @@ class NPCRelationshipMapper:
                         // Transform-origin 0 0 means scale happens from top-left, making calculations easier
                         mapSvgContainer.style.transform = `translate(${{centerX}}px, ${{centerY}}px) scale(${{mapScale}})`;
                         mapSvgContainer.style.transformOrigin = '0 0';
+                        // High-quality rendering for SVG/HTML content
+                        mapSvgContainer.style.imageRendering = 'crisp-edges';
+                        mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
                     }}
                     
                     if (isDebugMode()) {{
