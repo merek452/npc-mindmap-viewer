@@ -1109,6 +1109,17 @@ class NPCRelationshipMapper:
             right: 0;
             bottom: 0;
             height: calc(100vh - 80px) !important;
+            width: 100% !important;
+        }}
+        
+        body.map-tab-active #mapWrapper {{
+            width: 100% !important;
+            height: 100% !important;
+        }}
+        
+        body.map-tab-active #worldMapSvgContainer {{
+            width: 100% !important;
+            height: 100% !important;
         }}
         
         /* Editor Styles */
@@ -2318,9 +2329,17 @@ class NPCRelationshipMapper:
                                 
                                 // Wait for layout, then auto-fit to fill viewport
                                 setTimeout(function() {{
+                                    if (!mapContainer) return;
                                     const containerRect = mapContainer.getBoundingClientRect();
-                                    const containerWidth = containerRect.width;
-                                    const containerHeight = containerRect.height;
+                                    const containerWidth = containerRect.width || window.innerWidth;
+                                    const containerHeight = containerRect.height || window.innerHeight;
+                                    
+                                    // Ensure container has dimensions
+                                    if (containerWidth === 0 || containerHeight === 0) {{
+                                        console.warn('Map container has no dimensions, retrying...');
+                                        setTimeout(arguments.callee, 100);
+                                        return;
+                                    }}
                                     
                                     // Get base map dimensions from first page
                                     let mapWidth = 1097.25; // Default from your debug output
