@@ -5219,9 +5219,9 @@
                                 }
                             } else {
                                 // No canvas found - this is HTML (like PDF-to-HTML conversion)
-                                // Render directly - simple and works
+                                // Try to convert to high-resolution canvas for better quality
                                 if (isDebugMode()) {
-                                    console.log('   - HTML format detected, rendering directly');
+                                    console.log('   - HTML format detected, attempting high-res canvas conversion');
                                 }
                                 
                                 // Extract body content if it's a full HTML document
@@ -5235,60 +5235,136 @@
                                     }
                                 }
                                 
-                                // Render HTML content directly
-                                mapSvgContainer.innerHTML = htmlContent;
+                                // Try to find and extract the main image
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = htmlContent;
+                                const mainImg = tempDiv.querySelector('img');
                                 
-                                console.log('🔍 HTML MAP RENDERING DEBUG:');
-                                
-                                // Find and fix page-container positioning
-                                const pageContainer = mapSvgContainer.querySelector('#page-container');
-                                if (pageContainer) {
-                                    // Remove absolute positioning that causes scrolling
-                                    pageContainer.style.position = 'relative';
-                                    pageContainer.style.top = '0';
-                                    pageContainer.style.left = '0';
-                                    pageContainer.style.overflow = 'visible';
-                                    
-                                    // Get dimensions
-                                    const pageRect = pageContainer.getBoundingClientRect();
-                                    console.log('   - Page container size:', pageRect.width, 'x', pageRect.height);
-                                    
-                                    // Improve rendering quality for high zoom
-                                    pageContainer.style.imageRendering = 'crisp-edges';
-                                    pageContainer.style.imageRendering = '-webkit-optimize-contrast';
-                                    console.log('   - Page container imageRendering:', pageContainer.style.imageRendering);
-                                    
-                                    // Apply high-quality rendering to all child elements
-                                    const allElements = pageContainer.querySelectorAll('*');
-                                    let imgCount = 0;
-                                    let canvasCount = 0;
-                                    allElements.forEach(function(el) {
-                                        if (el.tagName === 'IMG') {
-                                            imgCount++;
-                                            const imgRect = el.getBoundingClientRect();
-                                            console.log('   - IMG element', imgCount + ':', el.src.substring(0, 50) + '...', 'size:', imgRect.width, 'x', imgRect.height);
-                                            el.style.imageRendering = 'high-quality';
-                                            el.style.imageRendering = 'crisp-edges';
-                                        } else if (el.tagName === 'CANVAS') {
-                                            canvasCount++;
-                                            console.log('   - CANVAS element', canvasCount + ':', 'internal:', el.width, 'x', el.height, 'display:', el.style.width, 'x', el.style.height);
-                                            el.style.imageRendering = 'high-quality';
-                                            el.style.imageRendering = 'crisp-edges';
-                                        }
-                                    });
-                                    console.log('   - Total IMG elements:', imgCount);
-                                    console.log('   - Total CANVAS elements:', canvasCount);
+                                if (mainImg && mainImg.src && mapCanvas) {
+                                    // Found an image - convert to high-resolution canvas
+                                    const img = new Image();
+                                    img.crossOrigin = 'anonymous';
+                                    img.onload = function() {
+                                        // Get device pixel ratio for high-DPI displays
+                                        const dpr = window.devicePixelRatio || 1;
+                                        const scaleFactor = Math.max(3, dpr * 2); // Use 3x minimum, or 2x DPR for high quality
+                                        
+                                        const baseWidth = img.naturalWidth || img.width || 2000;
+                                        const baseHeight = img.naturalHeight || img.height || 2000;
+                                        const canvasWidth = baseWidth * scaleFactor;
+                                        const canvasHeight = baseHeight * scaleFactor;
+                                        
+                                        console.log('🔍 HIGH-RES CANVAS CONVERSION:');
+                                        console.log('   - Source image size:', baseWidth, 'x', baseHeight);
+                                        console.log('   - Device Pixel Ratio:', dpr);
+                                        console.log('   - Scale factor:', scaleFactor);
+                                        console.log('   - Canvas internal size:', canvasWidth, 'x', canvasHeight);
+                                        console.log('   - Canvas display size:', baseWidth, 'x', baseHeight);
+                                        
+                                        // Set canvas to high resolution
+                                        mapCanvas.width = canvasWidth;
+                                        mapCanvas.height = canvasHeight;
+                                        mapCanvas.style.width = baseWidth + 'px';
+                                        mapCanvas.style.height = baseHeight + 'px';
+                                        
+                                        // Get context and configure for high quality
+                                        const ctx = mapCanvas.getContext('2d');
+                                        ctx.imageSmoothingEnabled = true;
+                                        ctx.imageSmoothingQuality = 'high';
+                                        
+                                        // Scale context and draw image
+                                        ctx.scale(scaleFactor, scaleFactor);
+                                        ctx.drawImage(img, 0, 0);
+                                        
+                                        // Show canvas, hide container
+                                        mapCanvas.style.display = 'block';
+                                        mapSvgContainer.style.display = 'none';
+                                        isCanvasMode = true;
+                                        svgLoaded = true;
+                                        
+                                        // Store base dimensions
+                                        baseMapWidth = baseWidth;
+                                        baseMapHeight = baseHeight;
+                                        
+                                        console.log('   - ✅ Converted to high-res canvas at', scaleFactor + 'x resolution');
+                                        
+                                        // Wait for layout, then auto-fit
+                                        setTimeout(fitMapToViewport, 300);
+                                    };
+                                    img.onerror = function() {
+                                        console.warn('   - Failed to load image, falling back to HTML rendering');
+                                        // Fallback to HTML rendering
+                                        mapSvgContainer.innerHTML = htmlContent;
+                                        setupHtmlMap(htmlContent);
+                                    };
+                                    img.src = mainImg.src;
+                                } else {
+                                    // No image found or canvas not available - render HTML directly
+                                    if (isDebugMode()) {
+                                        console.log('   - No image found or canvas unavailable, rendering HTML directly');
+                                    }
+                                    mapSvgContainer.innerHTML = htmlContent;
+                                    setupHtmlMap(htmlContent);
                                 }
                                 
-                                // Make sure container is visible
-                                mapSvgContainer.style.display = 'block';
-                                mapSvgContainer.style.visibility = 'visible';
-                                mapSvgContainer.style.opacity = '1';
-                                
-                                // Improve SVG rendering quality
-                                mapSvgContainer.style.imageRendering = 'crisp-edges';
-                                mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
-                                console.log('   - Map container imageRendering:', mapSvgContainer.style.imageRendering);
+                                function setupHtmlMap(htmlContent) {
+                                    console.log('🔍 HTML MAP RENDERING DEBUG:');
+                                    
+                                    // Find and fix page-container positioning
+                                    const pageContainer = mapSvgContainer.querySelector('#page-container');
+                                    if (pageContainer) {
+                                        // Remove absolute positioning that causes scrolling
+                                        pageContainer.style.position = 'relative';
+                                        pageContainer.style.top = '0';
+                                        pageContainer.style.left = '0';
+                                        pageContainer.style.overflow = 'visible';
+                                        
+                                        // Get dimensions
+                                        const pageRect = pageContainer.getBoundingClientRect();
+                                        console.log('   - Page container size:', pageRect.width, 'x', pageRect.height);
+                                        
+                                        // Improve rendering quality for high zoom
+                                        pageContainer.style.imageRendering = 'crisp-edges';
+                                        pageContainer.style.imageRendering = '-webkit-optimize-contrast';
+                                        console.log('   - Page container imageRendering:', pageContainer.style.imageRendering);
+                                        
+                                        // Apply high-quality rendering to all child elements
+                                        const allElements = pageContainer.querySelectorAll('*');
+                                        let imgCount = 0;
+                                        let canvasCount = 0;
+                                        allElements.forEach(function(el) {
+                                            if (el.tagName === 'IMG') {
+                                                imgCount++;
+                                                const imgRect = el.getBoundingClientRect();
+                                                console.log('   - IMG element', imgCount + ':', el.src.substring(0, 50) + '...', 'size:', imgRect.width, 'x', imgRect.height);
+                                                el.style.imageRendering = 'high-quality';
+                                                el.style.imageRendering = 'crisp-edges';
+                                            } else if (el.tagName === 'CANVAS') {
+                                                canvasCount++;
+                                                console.log('   - CANVAS element', canvasCount + ':', 'internal:', el.width, 'x', el.height, 'display:', el.style.width, 'x', el.style.height);
+                                                el.style.imageRendering = 'high-quality';
+                                                el.style.imageRendering = 'crisp-edges';
+                                            }
+                                        });
+                                        console.log('   - Total IMG elements:', imgCount);
+                                        console.log('   - Total CANVAS elements:', canvasCount);
+                                    }
+                                    
+                                    // Make sure container is visible
+                                    mapSvgContainer.style.display = 'block';
+                                    mapSvgContainer.style.visibility = 'visible';
+                                    mapSvgContainer.style.opacity = '1';
+                                    
+                                    // Improve SVG rendering quality
+                                    mapSvgContainer.style.imageRendering = 'crisp-edges';
+                                    mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
+                                    console.log('   - Map container imageRendering:', mapSvgContainer.style.imageRendering);
+                                    
+                                    svgLoaded = true;
+                                    
+                                    // Wait for layout, then auto-fit
+                                    setTimeout(fitMapToViewport, 300);
+                                }
                                 
                                 svgLoaded = true;
                                 
