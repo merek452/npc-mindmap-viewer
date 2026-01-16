@@ -5382,16 +5382,25 @@
                                         return;
                                     }
                                     
-                                    // Get base map dimensions from first page
-                                    let mapWidth = 1097.25; // Default from your debug output
-                                    let mapHeight = 474.00;
+                                    // Get base map dimensions
+                                    let mapWidth = baseMapWidth || 1097.25;
+                                    let mapHeight = baseMapHeight || 474.00;
                                     
-                                    if (pageContainer) {
-                                        const firstPage = pageContainer.querySelector('.pf');
-                                        if (firstPage) {
-                                            const pageRect = firstPage.getBoundingClientRect();
-                                            mapWidth = pageRect.width || mapWidth;
-                                            mapHeight = pageRect.height || mapHeight;
+                                    // If in canvas mode, use stored dimensions
+                                    if (isCanvasMode && mapCanvas) {
+                                        // Already set in canvas conversion
+                                        mapWidth = baseMapWidth;
+                                        mapHeight = baseMapHeight;
+                                    } else {
+                                        // HTML mode - try to get from page container
+                                        const pageContainer = mapSvgContainer ? mapSvgContainer.querySelector('#page-container') : null;
+                                        if (pageContainer) {
+                                            const firstPage = pageContainer.querySelector('.pf');
+                                            if (firstPage) {
+                                                const pageRect = firstPage.getBoundingClientRect();
+                                                mapWidth = pageRect.width || mapWidth;
+                                                mapHeight = pageRect.height || mapHeight;
+                                            }
                                         }
                                     }
                                     
