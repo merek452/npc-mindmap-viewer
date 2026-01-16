@@ -3122,9 +3122,28 @@ class NPCRelationshipMapper:
                 const containerY = screenY - rect.top;
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                const coordX = (containerX - centerX - mapX) / mapScale;
-                const coordY = (containerY - centerY - mapY) / mapScale;
+                // World coordinates: account for transform-origin 0,0 and the centering transform
+                // Transform is: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
+                // So: containerX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
+                // Therefore: worldX = (containerX - centerX + containerWidth/2 - mapX) / mapScale
+                const containerWidth = baseMapWidth || rect.width / mapScale;
+                const containerHeight = baseMapHeight || rect.height / mapScale;
+                const coordX = (containerX - centerX + containerWidth / 2 - mapX) / mapScale;
+                const coordY = (containerY - centerY + containerHeight / 2 - mapY) / mapScale;
                 return {{ x: coordX, y: coordY }};
+            }}
+            
+            // Get screen coordinates from map (world) coordinates
+            function mapToScreen(worldX, worldY) {{
+                const rect = mapContainer.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const containerWidth = baseMapWidth || rect.width / mapScale;
+                const containerHeight = baseMapHeight || rect.height / mapScale;
+                // Reverse of screenToMap: screenX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
+                const screenX = centerX - containerWidth / 2 + mapX + worldX * mapScale;
+                const screenY = centerY - containerHeight / 2 + mapY + worldY * mapScale;
+                return {{ x: screenX, y: screenY }};
             }}
             
             // Render markers on overlay with clustering
@@ -3160,8 +3179,9 @@ class NPCRelationshipMapper:
                 if (clusterThreshold < Infinity) {{
                     // Group markers into clusters
                     markers.forEach(function(marker) {{
-                        const screenX = centerX + marker.x * mapScale + mapX;
-                        const screenY = centerY + marker.y * mapScale + mapY;
+                        const screenPos = mapToScreen(marker.x, marker.y);
+                        const screenX = screenPos.x;
+                        const screenY = screenPos.y;
                         if (screenX < -100 || screenX > rect.width + 100 || screenY < -100 || screenY > rect.height + 100) return;
                         
                         let addedToCluster = false;
@@ -3201,9 +3221,14 @@ class NPCRelationshipMapper:
                             circle.onclick = function(e) {{
                                 e.stopPropagation();
                                 // Zoom in to show individual markers
+                                const marker = cluster.markers[0];
+                                const screenPos = mapToScreen(marker.x, marker.y);
                                 mapScale = Math.min(3, mapScale * 1.5);
-                                mapX = rect.width / 2 - (cluster.markers[0].x * mapScale);
-                                mapY = rect.height / 2 - (cluster.markers[0].y * mapScale);
+                                // Center on the marker
+                                const containerWidth = baseMapWidth || rect.width / mapScale;
+                                const containerHeight = baseMapHeight || rect.height / mapScale;
+                                mapX = rect.width / 2 - containerWidth / 2 - marker.x * mapScale;
+                                mapY = rect.height / 2 - containerHeight / 2 - marker.y * mapScale;
                                 updateMapTransform();
                             }};
                             mapOverlay.appendChild(circle);
@@ -3227,8 +3252,9 @@ class NPCRelationshipMapper:
                 
                 // Render individual markers
                 unclustered.forEach(function(marker) {{
-                    const screenX = centerX + marker.x * mapScale + mapX;
-                    const screenY = centerY + marker.y * mapScale + mapY;
+                    const screenPos = mapToScreen(marker.x, marker.y);
+                    const screenX = screenPos.x;
+                    const screenY = screenPos.y;
                     if (screenX < -50 || screenX > rect.width + 50 || screenY < -50 || screenY > rect.height + 50) return;
                     
                     const category = markerCategories[marker.category] || markerCategories['other'];
@@ -3282,9 +3308,8 @@ class NPCRelationshipMapper:
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     let pathData = 'M ';
                     annotation.points.forEach(function(point, idx) {{
-                        const screenX = centerX + point.x * mapScale + mapX;
-                        const screenY = centerY + point.y * mapScale + mapY;
-                        pathData += (idx === 0 ? '' : ' L ') + screenX + ',' + screenY;
+                        const screenPos = mapToScreen(point.x, point.y);
+                        pathData += (idx === 0 ? '' : ' L ') + screenPos.x + ',' + screenPos.y;
                     }});
                     path.setAttribute('d', pathData);
                     path.setAttribute('fill', 'none');
