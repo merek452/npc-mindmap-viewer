@@ -5576,17 +5576,12 @@
                         mapX = touchOffsetX - worldX * newScale;
                         mapY = touchOffsetY - worldY * newScale;
                         
-                        // Zoom towards touch center
-                        const scaleRatio = newScale / mapScale;
-                        const rect = mapContainer.getBoundingClientRect();
-                        const containerCenterX = rect.width / 2;
-                        const containerCenterY = rect.height / 2;
-                        
-                        mapX = lastTouchCenterX - containerCenterX - (lastTouchCenterX - containerCenterX - mapX) * scaleRatio;
-                        mapY = lastTouchCenterY - containerCenterY - (lastTouchCenterY - containerCenterY - mapY) * scaleRatio;
-                        
                         mapScale = newScale;
                         lastTouchDistance = currentDistance;
+                        
+                        // Update last touch center for two-finger pan
+                        lastTouchCenterX = touchCenterX;
+                        lastTouchCenterY = touchCenterY;
                         
                         // Mark as zooming and defer marker rendering
                         isZooming = true;
