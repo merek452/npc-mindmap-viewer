@@ -2405,20 +2405,11 @@ class NPCRelationshipMapper:
                                         mapCanvas.style.display = 'block';
                                         mapCanvas.style.visibility = 'visible';
                                         mapCanvas.style.opacity = '1';
-                                        // Canvas positioning is already set in HTML (top: 50%, left: 50%, transform: translate(-50%, -50%))
-                                        // Just ensure it's visible
+                                        // Don't hide container - it contains the canvas and needs to stay visible
+                                        // Just ensure container is visible
                                         if (mapSvgContainer) {{
-                                            // Keep container visible - it contains the canvas
                                             mapSvgContainer.style.display = 'block';
                                             mapSvgContainer.style.visibility = 'visible';
-                                            mapSvgContainer.style.opacity = '1';
-                                            // Hide any HTML content that was rendered (but keep canvas)
-                                            const htmlContent = mapSvgContainer.querySelectorAll('#page-container, .pf, img:not(#worldMapCanvas)');
-                                            htmlContent.forEach(function(el) {{
-                                                if (el.id !== 'worldMapCanvas' && el.tagName !== 'CANVAS') {{
-                                                    el.style.display = 'none';
-                                                }}
-                                            }});
                                         }}
                                         isCanvasMode = true;
                                         svgLoaded = true;
@@ -2428,7 +2419,6 @@ class NPCRelationshipMapper:
                                         baseMapHeight = baseHeight;
                                         
                                         console.log('   - ✅ Converted to high-res canvas at', scaleFactor + 'x resolution');
-                                        console.log('   - Canvas display:', mapCanvas.style.display, 'visibility:', mapCanvas.style.visibility);
                                         
                                         // Wait for layout, then auto-fit
                                         setTimeout(fitMapToViewport, 300);
@@ -2524,25 +2514,16 @@ class NPCRelationshipMapper:
                                         return;
                                     }}
                                     
-                                    // Get base map dimensions
-                                    let mapWidth = baseMapWidth || 1097.25;
-                                    let mapHeight = baseMapHeight || 474.00;
+                                    // Get base map dimensions from first page
+                                    let mapWidth = 1097.25; // Default from your debug output
+                                    let mapHeight = 474.00;
                                     
-                                    // If in canvas mode, use stored dimensions
-                                    if (isCanvasMode && mapCanvas) {{
-                                        // Already set in canvas conversion
-                                        mapWidth = baseMapWidth;
-                                        mapHeight = baseMapHeight;
-                                    }} else {{
-                                        // HTML mode - try to get from page container
-                                        const pageContainer = mapSvgContainer ? mapSvgContainer.querySelector('#page-container') : null;
-                                        if (pageContainer) {{
-                                            const firstPage = pageContainer.querySelector('.pf');
-                                            if (firstPage) {{
-                                                const pageRect = firstPage.getBoundingClientRect();
-                                                mapWidth = pageRect.width || mapWidth;
-                                                mapHeight = pageRect.height || mapHeight;
-                                            }}
+                                    if (pageContainer) {{
+                                        const firstPage = pageContainer.querySelector('.pf');
+                                        if (firstPage) {{
+                                            const pageRect = firstPage.getBoundingClientRect();
+                                            mapWidth = pageRect.width || mapWidth;
+                                            mapHeight = pageRect.height || mapHeight;
                                         }}
                                     }}
                                     
@@ -3224,27 +3205,15 @@ class NPCRelationshipMapper:
                 const containerY = screenY - rect.top;
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                const containerWidth = baseMapWidth || (rect.width / mapScale);
-                const containerHeight = baseMapHeight || (rect.height / mapScale);
-                
-                if (isCanvasMode) {{
-                    // Canvas mode: transform is translate(calc(-50% + mapX), calc(-50% + mapY)) scale(mapScale)
-                    // Transform origin is center center, so world (0,0) is at canvas center
-                    // But we store markers with (0,0) at top-left, so convert from center-relative
-                    // containerX = centerX + mapX + (worldX - containerWidth/2) * mapScale
-                    // Therefore: worldX = (containerX - centerX - mapX) / mapScale + containerWidth/2
-                    const coordX = (containerX - centerX - mapX) / mapScale + containerWidth / 2;
-                    const coordY = (containerY - centerY - mapY) / mapScale + containerHeight / 2;
-                    return {{ x: coordX, y: coordY }};
-                }} else {{
-                    // SVG/HTML mode: transform is translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
-                    // Transform origin is 0,0, so world (0,0) is at top-left
-                    // containerX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
-                    // Therefore: worldX = (containerX - centerX + containerWidth/2 - mapX) / mapScale
-                    const coordX = (containerX - centerX + containerWidth / 2 - mapX) / mapScale;
-                    const coordY = (containerY - centerY + containerHeight / 2 - mapY) / mapScale;
-                    return {{ x: coordX, y: coordY }};
-                }}
+                // World coordinates: account for transform-origin 0,0 and the centering transform
+                // Transform is: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
+                // So: containerX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
+                // Therefore: worldX = (containerX - centerX + containerWidth/2 - mapX) / mapScale
+                const containerWidth = baseMapWidth || rect.width / mapScale;
+                const containerHeight = baseMapHeight || rect.height / mapScale;
+                const coordX = (containerX - centerX + containerWidth / 2 - mapX) / mapScale;
+                const coordY = (containerY - centerY + containerHeight / 2 - mapY) / mapScale;
+                return {{ x: coordX, y: coordY }};
             }}
             
             // Get screen coordinates from map (world) coordinates
@@ -3252,25 +3221,12 @@ class NPCRelationshipMapper:
                 const rect = mapContainer.getBoundingClientRect();
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                const containerWidth = baseMapWidth || (rect.width / mapScale);
-                const containerHeight = baseMapHeight || (rect.height / mapScale);
-                
-                if (isCanvasMode) {{
-                    // Canvas mode: transform is translate(calc(-50% + mapX), calc(-50% + mapY)) scale(mapScale)
-                    // Transform origin is center center, so world (0,0) is at canvas center
-                    // But markers are stored with (0,0) at top-left, so convert to center-relative
-                    const centerRelativeX = worldX - containerWidth / 2;
-                    const centerRelativeY = worldY - containerHeight / 2;
-                    const screenX = centerX + mapX + centerRelativeX * mapScale;
-                    const screenY = centerY + mapY + centerRelativeY * mapScale;
-                    return {{ x: screenX, y: screenY }};
-                }} else {{
-                    // SVG/HTML mode: transform is translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
-                    // Transform origin is 0,0, so world (0,0) is at top-left
-                    const screenX = centerX - containerWidth / 2 + mapX + worldX * mapScale;
-                    const screenY = centerY - containerHeight / 2 + mapY + worldY * mapScale;
-                    return {{ x: screenX, y: screenY }};
-                }}
+                const containerWidth = baseMapWidth || rect.width / mapScale;
+                const containerHeight = baseMapHeight || rect.height / mapScale;
+                // Reverse of screenToMap: screenX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
+                const screenX = centerX - containerWidth / 2 + mapX + worldX * mapScale;
+                const screenY = centerY - containerHeight / 2 + mapY + worldY * mapScale;
+                return {{ x: screenX, y: screenY }};
             }}
             
             // Render markers on overlay with clustering
