@@ -1059,10 +1059,17 @@ class NPCRelationshipMapper:
         
         .tab-content {{
             display: none;
+            padding: 0 !important;
+            margin: 0 !important;
         }}
         
         .tab-content.active {{
             display: block !important;
+        }}
+        
+        #mapTab {{
+            padding: 0 !important;
+            margin: 0 !important;
         }}
         
         /* Editor Styles */
@@ -1596,10 +1603,10 @@ class NPCRelationshipMapper:
             <div id="mindmapContainer"></div>
         </div>
         
-        <div id="mapTab" class="tab-content" style="padding: 0; margin: 0;">
-            <div style="padding: 10px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,215,0,0.3);">
-                <h2 style="color: #FFD700; margin: 0 0 10px 0;">🗺️ Genia World Map</h2>
-                <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; border: 2px solid rgba(255,255,255,0.2); display: flex; gap: 15px; flex-wrap: wrap;">
+        <div id="mapTab" class="tab-content" style="padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column;">
+            <div style="padding: 8px 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,215,0,0.3); flex-shrink: 0;">
+                <h2 style="color: #FFD700; margin: 0 0 8px 0; font-size: 1.2em;">🗺️ Genia World Map</h2>
+                <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 10px; border: 2px solid rgba(255,255,255,0.2); display: flex; gap: 10px; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 300px;">
                         <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <button id="mapResetBtn" onclick="resetMapView()" style="padding: 8px 16px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🔄 Reset View</button>
@@ -1610,7 +1617,7 @@ class NPCRelationshipMapper:
                             <button id="redoBtn" onclick="redoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Redo">↷ Redo</button>
                             <span id="mapZoomLevel" style="color: #aaa; font-size: 0.9em;">Zoom: 100%</span>
                         </div>
-                        <div id="mapContainer" style="width: 100%; height: calc(100vh - 120px); overflow: hidden; background: rgba(0,0,0,0.2); position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
+                        <div id="mapContainer" style="width: 100%; flex: 1; overflow: hidden; background: rgba(0,0,0,0.2); position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
                             <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; contain: strict; isolation: isolate;">
                                 <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d; min-width: 100px; min-height: 100px;">
                                     <canvas id="worldMapCanvas" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; pointer-events: none;"></canvas>
