@@ -2500,6 +2500,18 @@ class NPCRelationshipMapper:
                 const mapWidth = mapContainerRect ? mapContainerRect.width : 0;
                 const mapHeight = mapContainerRect ? mapContainerRect.height : 0;
                 
+                // DEBUG: Log zoom calculation details
+                if (isDebugMode()) {{
+                    console.log('🔍 ZOOM DEBUG:', {{
+                        mouse: {{ x: mouseX, y: mouseY }},
+                        viewportCenter: {{ x: viewportCenterX, y: viewportCenterY }},
+                        mapContainer: {{ width: mapWidth, height: mapHeight }},
+                        beforeZoom: {{ mapX: mapX, mapY: mapY, scale: mapScale }},
+                        newScale: newScale,
+                        scaleChange: newScale / mapScale
+                    }});
+                }}
+                
                 // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
                 // Then we apply: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
                 // So a world point (wx, wy) appears on screen at:
@@ -2511,11 +2523,33 @@ class NPCRelationshipMapper:
                 const worldX = (mouseX - viewportCenterX + mapWidth / 2 - mapX) / mapScale;
                 const worldY = (mouseY - viewportCenterY + mapHeight / 2 - mapY) / mapScale;
                 
+                // DEBUG: Log world coordinates
+                if (isDebugMode()) {{
+                    console.log('   World coords:', {{ worldX: worldX, worldY: worldY }});
+                }}
+                
                 // After zoom, we want the same world point under the mouse:
                 // mouseX = viewportCenterX - mapWidth/2 + newMapX + worldX * newScale
                 // So: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
+                const oldMapX = mapX;
+                const oldMapY = mapY;
                 mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
                 mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
+                
+                // DEBUG: Log new pan values
+                if (isDebugMode()) {{
+                    console.log('   After zoom:', {{
+                        oldPan: {{ x: oldMapX, y: oldMapY }},
+                        newPan: {{ x: mapX, y: mapY }},
+                        panDelta: {{ x: mapX - oldMapX, y: mapY - oldMapY }},
+                        calculation: {{
+                            term1: mouseX - viewportCenterX,
+                            term2: mapWidth / 2,
+                            term3: worldX * newScale,
+                            result: mapX
+                        }}
+                    }});
+                }}
                 
                 mapScale = newScale;
                 
