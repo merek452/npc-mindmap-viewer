@@ -1114,20 +1114,23 @@ class NPCRelationshipMapper:
         }}
         
         body.map-tab-active #mapContainer {{
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             height: 100vh !important;
-            width: 100% !important;
-            z-index: 0;
+            width: 100vw !important;
+            z-index: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }}
         
         body.map-tab-active #mapTab > div:first-child {{
-            z-index: 1;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            z-index: 10 !important;
+            background: rgba(0,0,0,0.85) !important;
+            backdrop-filter: blur(10px) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
         }}
         
         body.map-tab-active #mapWrapper {{
