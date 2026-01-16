@@ -2546,26 +2546,10 @@ class NPCRelationshipMapper:
                 mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
                 mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
                 
-                // DEBUG: Log zoom calculation details with expanded values
-                if (isDebugMode()) {{
-                    console.log('🔍 ZOOM DEBUG:');
-                    console.log('   Mouse:', mouseX.toFixed(2), mouseY.toFixed(2));
-                    console.log('   Viewport center:', viewportCenterX.toFixed(2), viewportCenterY.toFixed(2));
-                    console.log('   Map container size:', mapWidth.toFixed(2), 'x', mapHeight.toFixed(2));
-                    console.log('   Before zoom - Pan:', oldMapX.toFixed(2), oldMapY.toFixed(2), 'Scale:', mapScale.toFixed(4));
-                    console.log('   New scale:', newScale.toFixed(4));
-                    console.log('   World coords:', worldX.toFixed(2), worldY.toFixed(2));
-                    console.log('   After zoom - Pan:', mapX.toFixed(2), mapY.toFixed(2));
-                    console.log('   Pan delta:', (mapX - oldMapX).toFixed(2), (mapY - oldMapY).toFixed(2));
-                    console.log('   Calculation breakdown:');
-                    console.log('     term1 (mouseX - viewportCenterX):', (mouseX - viewportCenterX).toFixed(2));
-                    console.log('     term2 (+ mapWidth/2):', (mapWidth / 2).toFixed(2));
-                    console.log('     term3 (- worldX * newScale):', (-worldX * newScale).toFixed(2));
-                    console.log('     result (mapX):', mapX.toFixed(2));
-                    console.log('   Verification:');
-                    const verifyScreenX = viewportCenterX - mapWidth / 2 + mapX + worldX * newScale;
-                    console.log('     Expected screenX:', verifyScreenX.toFixed(2), 'Actual mouseX:', mouseX.toFixed(2), 'Diff:', (verifyScreenX - mouseX).toFixed(2));
-                }}
+                // Debug logging (disabled by default - set DEBUG_PERFORMANCE to true to enable)
+                // if (isDebugMode()) {{
+                //     console.log('🔍 ZOOM:', 'Mouse:', mouseX.toFixed(0), mouseY.toFixed(0), 'Scale:', newScale.toFixed(2), 'Pan:', mapX.toFixed(0), mapY.toFixed(0));
+                // }}
                 
                 mapScale = newScale;
                 
