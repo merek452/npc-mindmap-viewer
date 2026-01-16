@@ -5145,67 +5145,39 @@
                                 
                                 svgLoaded = true;
                                 
-                                // Wait for layout, then auto-fit and center the map
+                                // Wait for layout, then auto-fit to fill viewport
                                 setTimeout(function() {
                                     const containerRect = mapContainer.getBoundingClientRect();
                                     const containerWidth = containerRect.width;
                                     const containerHeight = containerRect.height;
                                     
-                                    // Get map dimensions from the first page element (.pf) which has the actual size
-                                    let mapWidth = 2000;
-                                    let mapHeight = 2000;
+                                    // Get base map dimensions from first page
+                                    let mapWidth = 1097.25; // Default from your debug output
+                                    let mapHeight = 474.00;
                                     
                                     if (pageContainer) {
                                         const firstPage = pageContainer.querySelector('.pf');
                                         if (firstPage) {
-                                            // Get the actual page dimensions - need to get natural size, not scaled
-                                            // Try to get from computed style or natural dimensions
                                             const pageRect = firstPage.getBoundingClientRect();
-                                            // If the page has been scaled, we need to divide by current scale
-                                            // But at initial load, scale should be 1, so this should be correct
-                                            mapWidth = pageRect.width || 2000;
-                                            mapHeight = pageRect.height || 2000;
-                                            
-                                            // Also try to get from style if available
-                                            const computedStyle = window.getComputedStyle(firstPage);
-                                            if (computedStyle.width && computedStyle.width !== 'auto') {
-                                                const styleWidth = parseFloat(computedStyle.width);
-                                                if (styleWidth > 0) mapWidth = styleWidth;
-                                            }
-                                            if (computedStyle.height && computedStyle.height !== 'auto') {
-                                                const styleHeight = parseFloat(computedStyle.height);
-                                                if (styleHeight > 0) mapHeight = styleHeight;
-                                            }
-                                        } else {
-                                            const mapRect = pageContainer.getBoundingClientRect();
-                                            mapWidth = mapRect.width || 2000;
-                                            mapHeight = mapRect.height || 2000;
+                                            mapWidth = pageRect.width || mapWidth;
+                                            mapHeight = pageRect.height || mapHeight;
                                         }
-                                    } else {
-                                        const mapRect = mapSvgContainer.getBoundingClientRect();
-                                        mapWidth = mapRect.width || 2000;
-                                        mapHeight = mapRect.height || 2000;
                                     }
                                     
-                                    // Calculate scale to fill viewport - use the larger scale to fill the screen
-                                    // No padding - fill the entire container
+                                    // Simple: use larger scale to fill viewport completely
                                     const scaleX = containerWidth / mapWidth;
                                     const scaleY = containerHeight / mapHeight;
-                                    // Use the larger scale to ensure the map fills the viewport
                                     mapScale = Math.max(scaleX, scaleY);
                                     
-                                    // Ensure minimum scale of 0.3 and maximum of 5.0 (increased for better zoom range)
-                                    mapScale = Math.max(0.3, Math.min(5.0, mapScale));
-                                    
-                                    // Center the map (mapX/Y = 0 means centered since container is already centered)
+                                    // Center the map
                                     mapX = 0;
                                     mapY = 0;
                                     
-                                    // Store base map dimensions for zoom calculations
+                                    // Store base dimensions
                                     baseMapWidth = mapWidth;
                                     baseMapHeight = mapHeight;
                                     
-                                    // Update bounds for panning (based on scaled map size)
+                                    // Update bounds
                                     const scaledWidth = mapWidth * mapScale;
                                     const scaledHeight = mapHeight * mapScale;
                                     mapBounds = {
@@ -5214,15 +5186,6 @@
                                         minY: -(scaledHeight / 2),
                                         maxY: scaledHeight / 2
                                     };
-                                    
-                                    if (isDebugMode()) {
-                                        const loadTime = performance.now() - loadStart;
-                                        console.log(`✅ HTML map loaded in ${loadTime.toFixed(2)}ms`);
-                                        console.log(`   - Base map size: ${mapWidth} x ${mapHeight}`);
-                                        console.log(`   - Container size: ${containerWidth} x ${containerHeight}`);
-                                        console.log(`   - Scale X: ${scaleX.toFixed(4)}, Scale Y: ${scaleY.toFixed(4)}`);
-                                        console.log(`   - Auto-fit scale: ${mapScale.toFixed(2)}`);
-                                    }
                                     
                                     updateMapTransform();
                                 }, 200);
