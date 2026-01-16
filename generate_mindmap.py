@@ -2328,7 +2328,7 @@ class NPCRelationshipMapper:
                                 svgLoaded = true;
                                 
                                 // Wait for layout, then auto-fit to fill viewport
-                                setTimeout(function() {{
+                                function fitMapToViewport() {{
                                     if (!mapContainer) return;
                                     const containerRect = mapContainer.getBoundingClientRect();
                                     const containerWidth = containerRect.width || window.innerWidth;
@@ -2337,7 +2337,7 @@ class NPCRelationshipMapper:
                                     // Ensure container has dimensions
                                     if (containerWidth === 0 || containerHeight === 0) {{
                                         console.warn('Map container has no dimensions, retrying...');
-                                        setTimeout(arguments.callee, 100);
+                                        setTimeout(fitMapToViewport, 100);
                                         return;
                                     }}
                                     
@@ -2378,7 +2378,8 @@ class NPCRelationshipMapper:
                                     }};
                                     
                                     updateMapTransform();
-                                }}, 200);
+                                }}
+                                setTimeout(fitMapToViewport, 300);
                             }}
                         }} else {{
                             // Fallback: Unknown format or no canvas support - render as-is
