@@ -1910,6 +1910,9 @@ class NPCRelationshipMapper:
             let mapScale = 1;
             let mapX = 0;
             let mapY = 0;
+            // Store base map dimensions (unscaled) for zoom calculations
+            let baseMapWidth = 0;
+            let baseMapHeight = 0;
             let isDragging = false;
             let dragStartX = 0;
             let dragStartY = 0;
@@ -2309,6 +2312,10 @@ class NPCRelationshipMapper:
                                     mapX = 0;
                                     mapY = 0;
                                     
+                                    // Store base map dimensions for zoom calculations
+                                    baseMapWidth = mapWidth;
+                                    baseMapHeight = mapHeight;
+                                    
                                     // Update bounds for panning (based on scaled map size)
                                     const scaledWidth = mapWidth * mapScale;
                                     const scaledHeight = mapHeight * mapScale;
@@ -2322,7 +2329,7 @@ class NPCRelationshipMapper:
                                     if (isDebugMode()) {{
                                         const loadTime = performance.now() - loadStart;
                                         console.log(`✅ HTML map loaded in ${{loadTime.toFixed(2)}}ms`);
-                                        console.log(`   - Map size: ${{mapWidth}} x ${{mapHeight}}`);
+                                        console.log(`   - Base map size: ${{mapWidth}} x ${{mapHeight}}`);
                                         console.log(`   - Container size: ${{containerWidth}} x ${{containerHeight}}`);
                                         console.log(`   - Auto-fit scale: ${{mapScale.toFixed(2)}}`);
                                     }}
@@ -2495,10 +2502,21 @@ class NPCRelationshipMapper:
                 const viewportCenterX = rect.width / 2;
                 const viewportCenterY = rect.height / 2;
                 
-                // Get the map container dimensions
-                const mapContainerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
-                const mapWidth = mapContainerRect ? mapContainerRect.width : 0;
-                const mapHeight = mapContainerRect ? mapContainerRect.height : 0;
+                // Use base map dimensions (unscaled) for calculations
+                // If not set yet, try to get them from the container
+                let mapWidth = baseMapWidth;
+                let mapHeight = baseMapHeight;
+                if (mapWidth === 0 || mapHeight === 0) {{
+                    const mapContainerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
+                    if (mapContainerRect) {{
+                        // Get unscaled dimensions by dividing by current scale
+                        mapWidth = mapContainerRect.width / mapScale;
+                        mapHeight = mapContainerRect.height / mapScale;
+                        // Store for future use
+                        baseMapWidth = mapWidth;
+                        baseMapHeight = mapHeight;
+                    }}
+                }}
                 
                 // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
                 // Then we apply: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(scale)
