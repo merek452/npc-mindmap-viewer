@@ -1612,7 +1612,7 @@ class NPCRelationshipMapper:
                         </div>
                         <div id="mapContainer" style="width: 100%; height: 80vh; min-height: 600px; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 8px; position: relative; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; contain: strict; isolation: isolate;">
                             <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden; contain: strict; isolation: isolate;">
-                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d; min-width: 100px; min-height: 100px;">
+                                <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: contents; contain: layout style paint; transform-style: preserve-3d; min-width: 100px; min-height: 100px;">
                                     <canvas id="worldMapCanvas" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; pointer-events: none;"></canvas>
                                 </div>
                                 <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
@@ -2414,19 +2414,20 @@ class NPCRelationshipMapper:
                         mapCanvas.style.transformOrigin = 'center center';
                     }} else if (mapSvgContainer) {{
                         // SVG mode - transform the container
-                        // Calculate centered position: container is at 50%/50%, so we need to offset by half its size
+                        // Container is positioned at 50%/50% (top/left), so we need to center it
                         // Get container dimensions
                         const containerRect = mapSvgContainer.getBoundingClientRect();
                         const containerWidth = containerRect.width || 0;
                         const containerHeight = containerRect.height || 0;
                         
                         // Calculate center offset: -50% of container size + pan offset
+                        // This centers the container and then applies pan
                         const centerX = -(containerWidth / 2) + mapX;
                         const centerY = -(containerHeight / 2) + mapY;
                         
                         // Apply transform: translate to center + pan, then scale
                         mapSvgContainer.style.transform = `translate(${{centerX}}px, ${{centerY}}px) scale(${{mapScale}})`;
-                        mapSvgContainer.style.transformOrigin = '0 0';
+                        mapSvgContainer.style.transformOrigin = 'center center';
                     }}
                     
                     if (isDebugMode()) {{
