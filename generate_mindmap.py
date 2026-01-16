@@ -2241,8 +2241,18 @@ class NPCRelationshipMapper:
                                 // Set canvas to high resolution (internal resolution)
                                 const baseWidth = canvasEl.width || 2000;
                                 const baseHeight = canvasEl.height || 2000;
-                                mapCanvas.width = baseWidth * scaleFactor;
-                                mapCanvas.height = baseHeight * scaleFactor;
+                                const canvasWidth = baseWidth * scaleFactor;
+                                const canvasHeight = baseHeight * scaleFactor;
+                                
+                                console.log('🔍 CANVAS RESOLUTION DEBUG:');
+                                console.log('   - Device Pixel Ratio:', dpr);
+                                console.log('   - Scale Factor:', scaleFactor);
+                                console.log('   - Source canvas size:', baseWidth, 'x', baseHeight);
+                                console.log('   - Target canvas internal size:', canvasWidth, 'x', canvasHeight);
+                                console.log('   - Target canvas display size:', baseWidth, 'x', baseHeight);
+                                
+                                mapCanvas.width = canvasWidth;
+                                mapCanvas.height = canvasHeight;
                                 
                                 // Set display size (CSS) to original size
                                 mapCanvas.style.width = baseWidth + 'px';
@@ -2254,9 +2264,13 @@ class NPCRelationshipMapper:
                                 ctx.imageSmoothingQuality = 'high';
                                 ctx.scale(scaleFactor, scaleFactor);
                                 
+                                console.log('   - Image smoothing enabled:', ctx.imageSmoothingEnabled);
+                                console.log('   - Image smoothing quality:', ctx.imageSmoothingQuality);
+                                
                                 // Try to copy canvas directly
                                 try {{
                                     ctx.drawImage(canvasEl, 0, 0);
+                                    console.log('   - ✅ Canvas copied successfully at', scaleFactor + 'x resolution');
                                     
                                     // Show canvas, hide container
                                     mapCanvas.style.display = 'block';
@@ -2279,9 +2293,17 @@ class NPCRelationshipMapper:
                                         const scaleFactor = Math.max(2, dpr);
                                         const baseWidth = img.width || canvasEl.width || 2000;
                                         const baseHeight = img.height || canvasEl.height || 2000;
+                                        const canvasWidth = baseWidth * scaleFactor;
+                                        const canvasHeight = baseHeight * scaleFactor;
                                         
-                                        mapCanvas.width = baseWidth * scaleFactor;
-                                        mapCanvas.height = baseHeight * scaleFactor;
+                                        console.log('🔍 IMAGE RENDERING DEBUG:');
+                                        console.log('   - Image size:', img.width, 'x', img.height);
+                                        console.log('   - Scale factor:', scaleFactor);
+                                        console.log('   - Canvas internal size:', canvasWidth, 'x', canvasHeight);
+                                        console.log('   - Canvas display size:', baseWidth, 'x', baseHeight);
+                                        
+                                        mapCanvas.width = canvasWidth;
+                                        mapCanvas.height = canvasHeight;
                                         mapCanvas.style.width = baseWidth + 'px';
                                         mapCanvas.style.height = baseHeight + 'px';
                                         
@@ -2289,6 +2311,7 @@ class NPCRelationshipMapper:
                                         ctx.imageSmoothingQuality = 'high';
                                         ctx.scale(scaleFactor, scaleFactor);
                                         ctx.drawImage(img, 0, 0);
+                                        console.log('   - ✅ Image rendered at', scaleFactor + 'x resolution');
                                         mapCanvas.style.display = 'block';
                                         mapSvgContainer.style.display = 'none';
                                         isCanvasMode = true;
@@ -2340,6 +2363,8 @@ class NPCRelationshipMapper:
                                 // Render HTML content directly
                                 mapSvgContainer.innerHTML = htmlContent;
                                 
+                                console.log('🔍 HTML MAP RENDERING DEBUG:');
+                                
                                 // Find and fix page-container positioning
                                 const pageContainer = mapSvgContainer.querySelector('#page-container');
                                 if (pageContainer) {{
@@ -2349,18 +2374,35 @@ class NPCRelationshipMapper:
                                     pageContainer.style.left = '0';
                                     pageContainer.style.overflow = 'visible';
                                     
+                                    // Get dimensions
+                                    const pageRect = pageContainer.getBoundingClientRect();
+                                    console.log('   - Page container size:', pageRect.width, 'x', pageRect.height);
+                                    
                                     // Improve rendering quality for high zoom
                                     pageContainer.style.imageRendering = 'crisp-edges';
                                     pageContainer.style.imageRendering = '-webkit-optimize-contrast';
+                                    console.log('   - Page container imageRendering:', pageContainer.style.imageRendering);
                                     
                                     // Apply high-quality rendering to all child elements
                                     const allElements = pageContainer.querySelectorAll('*');
+                                    let imgCount = 0;
+                                    let canvasCount = 0;
                                     allElements.forEach(function(el) {{
-                                        if (el.tagName === 'IMG' || el.tagName === 'CANVAS') {{
+                                        if (el.tagName === 'IMG') {{
+                                            imgCount++;
+                                            const imgRect = el.getBoundingClientRect();
+                                            console.log('   - IMG element', imgCount + ':', el.src.substring(0, 50) + '...', 'size:', imgRect.width, 'x', imgRect.height);
+                                            el.style.imageRendering = 'high-quality';
+                                            el.style.imageRendering = 'crisp-edges';
+                                        }} else if (el.tagName === 'CANVAS') {{
+                                            canvasCount++;
+                                            console.log('   - CANVAS element', canvasCount + ':', 'internal:', el.width, 'x', el.height, 'display:', el.style.width, 'x', el.style.height);
                                             el.style.imageRendering = 'high-quality';
                                             el.style.imageRendering = 'crisp-edges';
                                         }}
                                     }});
+                                    console.log('   - Total IMG elements:', imgCount);
+                                    console.log('   - Total CANVAS elements:', canvasCount);
                                 }}
                                 
                                 // Make sure container is visible
@@ -2371,6 +2413,7 @@ class NPCRelationshipMapper:
                                 // Improve SVG rendering quality
                                 mapSvgContainer.style.imageRendering = 'crisp-edges';
                                 mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
+                                console.log('   - Map container imageRendering:', mapSvgContainer.style.imageRendering);
                                 
                                 svgLoaded = true;
                                 
@@ -2518,6 +2561,17 @@ class NPCRelationshipMapper:
                             ctx.imageSmoothingEnabled = true;
                             ctx.imageSmoothingQuality = 'high';
                         }}
+                        
+                        // Debug zoom level
+                        if (isDebugMode() && mapScale > 2) {{
+                            const canvasRect = mapCanvas.getBoundingClientRect();
+                            console.log('🔍 ZOOM DEBUG (Canvas):');
+                            console.log('   - Zoom level:', (mapScale * 100).toFixed(1) + '%');
+                            console.log('   - Canvas internal size:', mapCanvas.width, 'x', mapCanvas.height);
+                            console.log('   - Canvas display size:', canvasRect.width, 'x', canvasRect.height);
+                            console.log('   - Effective resolution:', (mapCanvas.width / canvasRect.width).toFixed(2) + 'x');
+                            console.log('   - Image smoothing:', ctx.imageSmoothingEnabled, ctx.imageSmoothingQuality);
+                        }}
                     }} else if (mapSvgContainer) {{
                         // SVG mode - transform the container
                         // Container is positioned at 50%/50% (top/left), so we need to center it
@@ -2544,6 +2598,28 @@ class NPCRelationshipMapper:
                         // High-quality rendering for SVG/HTML content
                         mapSvgContainer.style.imageRendering = 'crisp-edges';
                         mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
+                        
+                        // Debug zoom level
+                        if (isDebugMode() && mapScale > 2) {{
+                            const containerRect = mapSvgContainer.getBoundingClientRect();
+                            console.log('🔍 ZOOM DEBUG (SVG/HTML):');
+                            console.log('   - Zoom level:', (mapScale * 100).toFixed(1) + '%');
+                            console.log('   - Base map size:', baseMapWidth, 'x', baseMapHeight);
+                            console.log('   - Display size:', containerRect.width, 'x', containerRect.height);
+                            console.log('   - Image rendering:', mapSvgContainer.style.imageRendering);
+                            
+                            // Check child elements
+                            const pageContainer = mapSvgContainer.querySelector('#page-container');
+                            if (pageContainer) {{
+                                const pageRect = pageContainer.getBoundingClientRect();
+                                console.log('   - Page container display size:', pageRect.width, 'x', pageRect.height);
+                                const imgs = pageContainer.querySelectorAll('img');
+                                imgs.forEach(function(img, i) {{
+                                    const imgRect = img.getBoundingClientRect();
+                                    console.log('   - IMG', i + ':', imgRect.width, 'x', imgRect.height, 'src:', img.src.substring(0, 40));
+                                }});
+                            }}
+                        }}
                     }}
                     
                     if (isDebugMode()) {{
