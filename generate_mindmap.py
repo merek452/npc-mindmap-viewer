@@ -223,17 +223,17 @@ class NPCRelationshipMapper:
         svg_map_content = ""
         map_file_path = None
         
-        # Try HTML/Canvas version first (better performance)
-        html_map_path = Path(__file__).parent / "Images" / "Gienia-World-Map.html"
-        if html_map_path.exists():
-            map_file_path = html_map_path
-            print(f"Found HTML/Canvas map: {html_map_path.name}")
+        # Prioritize SVG for maximum detail (will convert to canvas)
+        svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
+        if svg_map_path.exists():
+            map_file_path = svg_map_path
+            print(f"Found SVG map: {svg_map_path.name} (will convert to high-res canvas)")
         else:
-            # Fallback to SVG
-            svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
-            if svg_map_path.exists():
-                map_file_path = svg_map_path
-                print(f"Found SVG map: {svg_map_path.name}")
+            # Fallback to HTML/Canvas version
+            html_map_path = Path(__file__).parent / "Images" / "Gienia-World-Map.html"
+            if html_map_path.exists():
+                map_file_path = html_map_path
+                print(f"Found HTML/Canvas map: {html_map_path.name}")
         
         if map_file_path and map_file_path.exists():
             try:
@@ -1067,34 +1067,45 @@ class NPCRelationshipMapper:
             display: block !important;
         }}
         
-        #mapTab {{
-            display: flex;
-            flex-direction: column;
-            gap: 0;
+            overflow-y: auto;
         }}
         
-        #mapTab .map-controls-panel {{
+        /* World Map Tab (New) Styles */
+        /* IMPORTANT: keep tab hidden unless it has `.active` (tab-content is display:none by default) */
+        #worldMapTab {{
+            flex-direction: column;
+            gap: 0;
+            min-height: 60vh;
+        }}
+        
+        #worldMapTab.active {{
+            display: flex !important;
+        }}
+        
+        .worldmap-controls-panel {{
             background: rgba(0,0,0,0.3);
             padding: 15px 20px;
             border-bottom: 1px solid rgba(255,215,0,0.3);
         }}
         
-        #mapTab .map-main-area {{
+        .worldmap-main-area {{
             display: flex;
-            flex: 1;
+            flex-direction: row;
             gap: 15px;
-            padding: 15px 20px;
-            min-height: 600px;
+            flex: 1;
+            padding: 15px;
+            min-height: 0;
         }}
         
-        #mapTab .map-content {{
+        .worldmap-content {{
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
+            min-width: 0;
         }}
         
-        #mapTab #mapContainer {{
+        #worldMapContainer {{
             flex: 1;
             min-height: 500px;
             overflow: hidden;
@@ -1107,15 +1118,21 @@ class NPCRelationshipMapper:
             user-select: none;
         }}
         
-        #mapTab .map-tooltip {{
+        #worldMapContainer #worldMapWrapper {{
+            flex: 1;
+            min-height: 400px;
+            width: 100%;
+            overflow: hidden;
             background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.9em;
-            color: #aaa;
+            border-radius: 8px;
+            position: relative;
+            cursor: grab;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }}
         
-        #mapTab #mapSidebar {{
+        #worldMapSidebar {{
             width: 280px;
             min-width: 280px;
             background: rgba(0,0,0,0.2);
@@ -1123,6 +1140,14 @@ class NPCRelationshipMapper:
             padding: 15px;
             max-height: calc(100vh - 200px);
             overflow-y: auto;
+        }}
+        
+        .worldmap-tooltip {{
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #aaa;
         }}
         
         /* Editor Styles */
@@ -1405,7 +1430,7 @@ class NPCRelationshipMapper:
         <div class="tabs">
             <button class="tab active" onclick="switchTab('cards')">📋 Card View</button>
             <button class="tab" onclick="switchTab('mindmap')">🗺️ Visual Mind Map</button>
-            <button class="tab" onclick="switchTab('map')">🗺️ World Map</button>
+            <button class="tab" onclick="switchTab('worldMap')">🌍 World Map</button>
             <button class="tab" onclick="switchTab('editor')">✏️ Visual Editor</button>
             <button class="tab" onclick="switchTab('inventory')">🎒 Inventory Tracker</button>
         </div>
@@ -1426,7 +1451,7 @@ class NPCRelationshipMapper:
             let tabIndex = -1;
             if (tabName === 'cards') tabIndex = 0;
             else if (tabName === 'mindmap') tabIndex = 1;
-            else if (tabName === 'map') tabIndex = 2;
+            else if (tabName === 'worldMap') tabIndex = 2;
             else if (tabName === 'editor') tabIndex = 3;
             else if (tabName === 'inventory') tabIndex = 4;
             
@@ -1446,8 +1471,9 @@ class NPCRelationshipMapper:
                     initCardView();
                 }} else if (tabName === 'mindmap' && typeof initMindMap === 'function') {{
                     initMindMap();
-                }} else if (tabName === 'map') {{
-                    // Map tab - no initialization needed, just display the SVG
+                }} else if (tabName === 'worldMap' && typeof WorldMapModule !== 'undefined' && typeof WorldMapModule.init === 'function') {{
+                    // Initialize World Map Module
+                    WorldMapModule.init();
                 }} else if (tabName === 'editor' && typeof initEditor === 'function') {{
                     initEditor();
                 }} else if (tabName === 'inventory' && typeof initInventory === 'function') {{
@@ -1656,57 +1682,54 @@ class NPCRelationshipMapper:
             <div id="mindmapContainer"></div>
         </div>
         
-        <div id="mapTab" class="tab-content">
-            <div class="map-controls-panel">
-                <h2 style="color: #FFD700; margin: 0 0 15px 0;">🗺️ Genia World Map</h2>
+        <div id="worldMapTab" class="tab-content">
+            <div class="worldmap-controls-panel">
+                <h2 style="color: #FFD700; margin: 0 0 15px 0;">🌍 Genia World Map</h2>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <button id="mapResetBtn" onclick="resetMapView()" style="padding: 8px 16px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🔄 Reset View</button>
-                    <button id="toggleLabelsBtn" onclick="toggleMapLabels()" style="padding: 8px 16px; background: rgba(76,175,80,0.3); border: 2px solid #4CAF50; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🏷️ Labels: ON</button>
-                    <button id="addMarkerBtn" onclick="toggleMarkerMode()" style="padding: 8px 16px; background: rgba(33,150,243,0.3); border: 2px solid #2196F3; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">📍 Add Marker</button>
-                    <button id="drawAnnotationBtn" onclick="toggleAnnotationMode()" style="padding: 8px 16px; background: rgba(156,39,176,0.3); border: 2px solid #9C27B0; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✏️ Draw</button>
-                    <button id="undoBtn" onclick="undoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Undo">↶ Undo</button>
-                    <button id="redoBtn" onclick="redoMapAction()" style="padding: 8px 16px; background: rgba(158,158,158,0.3); border: 2px solid #9E9E9E; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;" title="Redo">↷ Redo</button>
-                    <span id="mapZoomLevel" style="color: #aaa; font-size: 0.9em; margin-left: auto;">Zoom: 100%</span>
+                    <button id="worldMapResetBtn" style="padding: 8px 16px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🔄 Reset View</button>
+                    <button id="worldMapPanModeBtn" style="padding: 8px 16px; background: rgba(76,175,80,0.6); border: 2px solid #4CAF50; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✋ Pan</button>
+                    <button id="worldMapMarkerModeBtn" style="padding: 8px 16px; background: rgba(33,150,243,0.3); border: 2px solid #2196F3; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">📍 Add Marker</button>
+                    <button id="worldMapDrawModeBtn" style="padding: 8px 16px; background: rgba(156,39,176,0.3); border: 2px solid #9C27B0; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✏️ Draw</button>
+                    <span id="worldMapZoomLevel" style="color: #aaa; font-size: 0.9em; margin-left: auto;">Zoom: 100%</span>
                 </div>
             </div>
             
-            <div class="map-main-area">
-                <div class="map-content">
-                    <div id="mapContainer">
-                        <div id="mapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
-                            <div id="worldMapSvgContainer" style="position: absolute; top: 50%; left: 50%; transform-origin: center center; user-select: none; -webkit-user-select: none; pointer-events: none; will-change: transform; min-width: 100px; min-height: 100px;">
-                                <canvas id="worldMapCanvas" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; pointer-events: none;"></canvas>
-                            </div>
-                            <svg id="mapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></svg>
-                            <div id="mapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="worldmap-main-area">
+                <div class="worldmap-content">
+                    <div id="worldMapContainer">
+                        <div id="worldMapWrapper" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
+                            <canvas id="worldMapCanvas" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; pointer-events: none;"></canvas>
+                            <svg id="worldMapOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;">
+                                <g style="pointer-events: all;"></g>
+                            </svg>
+                            <div id="worldMapError" style="display: none; text-align: center; padding: 40px; color: #ccc; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                 <p style="font-size: 1.2em; margin-bottom: 10px;">⚠️ Map not found</p>
                                 <p>Please ensure "Gienia World Map.svg" is in the Images folder.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="map-tooltip">
-                        <p style="margin: 5px 0;">💡 <strong>Controls:</strong> Mouse wheel to zoom | Click and drag to pan | Double-click to reset | Pinch to zoom on mobile</p>
+                    <div class="worldmap-tooltip">
+                        <p style="margin: 5px 0;">💡 <strong>Controls:</strong> Mouse wheel to zoom (at cursor) | Click and drag to pan | Double-click to reset | Pinch to zoom on mobile</p>
                     </div>
                 </div>
-                <div id="mapSidebar">
-                        <h3 style="color: #FFD700; margin-top: 0; margin-bottom: 15px; font-size: 1.1em;">📍 Locations</h3>
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">🔍 Search:</label>
-                            <input type="text" id="markerSearchInput" oninput="filterMarkersByCategory()" placeholder="Search locations..." style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;">
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Filter by Category:</label>
-                            <select id="markerCategoryFilter" onchange="filterMarkersByCategory()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em;">
-                                <option value="all">All Categories</option>
-                                <option value="city">Cities</option>
-                                <option value="dungeon">Dungeons</option>
-                                <option value="landmark">Landmarks</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div id="locationList" style="display: flex; flex-direction: column; gap: 8px;">
-                            <p style="color: #666; font-size: 0.85em; font-style: italic;">No locations added yet. Click "Add Marker" to place markers on the map.</p>
-                        </div>
+                <div id="worldMapSidebar">
+                    <h3 style="color: #FFD700; margin-top: 0; margin-bottom: 15px; font-size: 1.1em;">📍 Locations</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">🔍 Search:</label>
+                        <input type="text" id="worldMapMarkerSearchInput" placeholder="Search locations..." style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Filter by Category:</label>
+                        <select id="worldMapMarkerCategoryFilter" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: #fff; font-size: 0.9em;">
+                            <option value="all">All Categories</option>
+                            <option value="city">Cities</option>
+                            <option value="dungeon">Dungeons</option>
+                            <option value="landmark">Landmarks</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div id="worldMapLocationList" style="display: flex; flex-direction: column; gap: 8px;">
+                        <p style="color: #666; font-size: 0.85em; font-style: italic;">No locations added yet. Click "Add Marker" to place markers on the map.</p>
                     </div>
                 </div>
             </div>
@@ -1729,6 +1752,51 @@ class NPCRelationshipMapper:
         
         // Optional: Access code for simple password protection
         const CAMPAIGN_ACCESS_CODE = "";
+        
+        // Map content placeholder (will be replaced with actual map content)
+        // If it's a base64 string (atob("...")), evaluate it immediately
+        // Store in a scoped variable to prevent it from being accessed globally or rendered accidentally
+        (function() {{
+            let PLACEHOLDER_SVG_CONTENT = PLACEHOLDER_SVG_CONTENT_VALUE;
+            if (typeof PLACEHOLDER_SVG_CONTENT === 'string' && PLACEHOLDER_SVG_CONTENT.trim().startsWith('atob(')) {{
+                try {{
+                    PLACEHOLDER_SVG_CONTENT = eval(PLACEHOLDER_SVG_CONTENT);
+                }} catch(e) {{
+                    console.error('Failed to decode map content:', e);
+                    PLACEHOLDER_SVG_CONTENT = '';
+                }}
+            }}
+            // Make it available only to WorldMapModule (scoped to prevent accidental access)
+            // Use a unique property name to avoid conflicts and prevent enumeration
+            Object.defineProperty(window, '__WORLD_MAP_SVG_CONTENT__', {{
+                value: PLACEHOLDER_SVG_CONTENT,
+                writable: false,
+                enumerable: false,
+                configurable: false
+            }});
+            
+            // Clean up the original variable to prevent accidental access
+            PLACEHOLDER_SVG_CONTENT = null;
+            // Also delete the placeholder value to prevent it from appearing anywhere
+            // Use a try-catch to safely clean up
+            try {{
+                if (typeof PLACEHOLDER_SVG_CONTENT_VALUE !== 'undefined') {{
+                    // Set to empty string instead of deleting to prevent any rendering
+                    window.PLACEHOLDER_SVG_CONTENT_VALUE = '';
+                }}
+            }} catch(e) {{
+                // Ignore if can't modify
+            }}
+        }})();
+        
+        // Ensure PLACEHOLDER_SVG_CONTENT_VALUE is not accessible after initialization
+        if (typeof PLACEHOLDER_SVG_CONTENT_VALUE !== 'undefined') {{
+            try {{
+                delete window.PLACEHOLDER_SVG_CONTENT_VALUE;
+            }} catch(e) {{
+                // Ignore
+            }}
+        }}
         
         // Firebase initialization
         let firebaseInitialized = false;
@@ -1938,6 +2006,7 @@ class NPCRelationshipMapper:
                     }}
                 }}
             }});
+            
         }}
         
         // Initialize Firebase when page loads
@@ -1967,7 +2036,11 @@ class NPCRelationshipMapper:
             waitForFirebase();
         }}
         
-        // Map zoom and pan functionality
+        // OLD MAP TAB CODE - COMPLETELY DISABLED
+        // This entire IIFE is disabled because all map functionality has been moved to WorldMapModule
+        // The old mapTab is deprecated - use worldMapTab instead
+        // Wrapped in if(false) to prevent execution
+        if (false) {{ // Force this block to never execute
         (function() {{
             let mapScale = 1;
             let mapX = 0;
@@ -2194,7 +2267,8 @@ class NPCRelationshipMapper:
                 if (svgLoaded) return;
                 
                 const loadStart = isDebugMode() ? performance.now() : 0;
-                const mapContent = PLACEHOLDER_SVG_CONTENT;
+                // Get map content from scoped variable (old map tab uses this)
+                const mapContent = window.__WORLD_MAP_SVG_CONTENT__ || '';
                 if (mapContent && mapContent.trim() !== '') {{
                     try {{
                         // Check if it's HTML format (contains <html>, <!DOCTYPE, or <body>)
@@ -2365,136 +2439,42 @@ class NPCRelationshipMapper:
                                 tempDiv.innerHTML = htmlContent;
                                 const mainImg = tempDiv.querySelector('img');
                                 
-                                if (mainImg && mainImg.src && mapCanvas) {{
-                                    // Found an image - convert to high-resolution canvas
-                                    const img = new Image();
-                                    img.crossOrigin = 'anonymous';
-                                    img.onload = function() {{
-                                        // Get device pixel ratio for high-DPI displays
-                                        const dpr = window.devicePixelRatio || 1;
-                                        const scaleFactor = Math.max(3, dpr * 2); // Use 3x minimum, or 2x DPR for high quality
-                                        
-                                        const baseWidth = img.naturalWidth || img.width || 2000;
-                                        const baseHeight = img.naturalHeight || img.height || 2000;
-                                        const canvasWidth = baseWidth * scaleFactor;
-                                        const canvasHeight = baseHeight * scaleFactor;
-                                        
-                                        console.log('🔍 HIGH-RES CANVAS CONVERSION:');
-                                        console.log('   - Source image size:', baseWidth, 'x', baseHeight);
-                                        console.log('   - Device Pixel Ratio:', dpr);
-                                        console.log('   - Scale factor:', scaleFactor);
-                                        console.log('   - Canvas internal size:', canvasWidth, 'x', canvasHeight);
-                                        console.log('   - Canvas display size:', baseWidth, 'x', baseHeight);
-                                        
-                                        // Set canvas to high resolution
-                                        mapCanvas.width = canvasWidth;
-                                        mapCanvas.height = canvasHeight;
-                                        mapCanvas.style.width = baseWidth + 'px';
-                                        mapCanvas.style.height = baseHeight + 'px';
-                                        
-                                        // Get context and configure for high quality
-                                        const ctx = mapCanvas.getContext('2d');
-                                        ctx.imageSmoothingEnabled = true;
-                                        ctx.imageSmoothingQuality = 'high';
-                                        
-                                        // Scale context and draw image
-                                        ctx.scale(scaleFactor, scaleFactor);
-                                        ctx.drawImage(img, 0, 0);
-                                        
-                                        // Show canvas - keep container visible (canvas is inside it)
-                                        mapCanvas.style.display = 'block';
-                                        mapCanvas.style.visibility = 'visible';
-                                        mapCanvas.style.opacity = '1';
-                                        // Don't hide container - it contains the canvas and needs to stay visible
-                                        // Just ensure container is visible
-                                        if (mapSvgContainer) {{
-                                            mapSvgContainer.style.display = 'block';
-                                            mapSvgContainer.style.visibility = 'visible';
-                                        }}
-                                        isCanvasMode = true;
-                                        svgLoaded = true;
-                                        
-                                        // Store base dimensions
-                                        baseMapWidth = baseWidth;
-                                        baseMapHeight = baseHeight;
-                                        
-                                        console.log('   - ✅ Converted to high-res canvas at', scaleFactor + 'x resolution');
-                                        
-                                        // Wait for layout, then auto-fit
-                                        setTimeout(fitMapToViewport, 300);
-                                    }};
-                                    img.onerror = function() {{
-                                        console.warn('   - Failed to load image, falling back to HTML rendering');
-                                        // Fallback to HTML rendering
-                                        mapSvgContainer.innerHTML = htmlContent;
-                                        setupHtmlMap(htmlContent);
-                                    }};
-                                    img.src = mainImg.src;
-                                }} else {{
-                                    // No image found or canvas not available - render HTML directly
-                                    if (isDebugMode()) {{
-                                        console.log('   - No image found or canvas unavailable, rendering HTML directly');
-                                    }}
-                                    mapSvgContainer.innerHTML = htmlContent;
-                                    setupHtmlMap(htmlContent);
+                                // Render HTML directly - keep SVG benefits
+                                if (isDebugMode()) {{
+                                    console.log('   - HTML format detected, rendering directly (keeping SVG benefits)');
                                 }}
+                                mapSvgContainer.innerHTML = htmlContent;
+                                setupHtmlMap(htmlContent);
                                 
                                 function setupHtmlMap(htmlContent) {{
-                                    console.log('🔍 HTML MAP RENDERING DEBUG:');
-                                    
                                     // Find and fix page-container positioning
                                     const pageContainer = mapSvgContainer.querySelector('#page-container');
                                     if (pageContainer) {{
-                                        // Remove absolute positioning that causes scrolling
                                         pageContainer.style.position = 'relative';
                                         pageContainer.style.top = '0';
                                         pageContainer.style.left = '0';
                                         pageContainer.style.overflow = 'visible';
                                         
-                                        // Get dimensions
-                                        const pageRect = pageContainer.getBoundingClientRect();
-                                        console.log('   - Page container size:', pageRect.width, 'x', pageRect.height);
-                                        
-                                        // Improve rendering quality for high zoom
-                                        pageContainer.style.imageRendering = 'crisp-edges';
+                                        // Improve rendering quality - use auto for better scaling
+                                        pageContainer.style.imageRendering = 'auto';
                                         pageContainer.style.imageRendering = '-webkit-optimize-contrast';
-                                        console.log('   - Page container imageRendering:', pageContainer.style.imageRendering);
                                         
-                                        // Apply high-quality rendering to all child elements
-                                        const allElements = pageContainer.querySelectorAll('*');
-                                        let imgCount = 0;
-                                        let canvasCount = 0;
-                                        allElements.forEach(function(el) {{
-                                            if (el.tagName === 'IMG') {{
-                                                imgCount++;
-                                                const imgRect = el.getBoundingClientRect();
-                                                console.log('   - IMG element', imgCount + ':', el.src.substring(0, 50) + '...', 'size:', imgRect.width, 'x', imgRect.height);
-                                                el.style.imageRendering = 'high-quality';
-                                                el.style.imageRendering = 'crisp-edges';
-                                            }} else if (el.tagName === 'CANVAS') {{
-                                                canvasCount++;
-                                                console.log('   - CANVAS element', canvasCount + ':', 'internal:', el.width, 'x', el.height, 'display:', el.style.width, 'x', el.style.height);
-                                                el.style.imageRendering = 'high-quality';
-                                                el.style.imageRendering = 'crisp-edges';
-                                            }}
+                                        // Apply to all images for better quality at zoom
+                                        const allImgs = pageContainer.querySelectorAll('img');
+                                        allImgs.forEach(function(img) {{
+                                            img.style.imageRendering = 'auto';
+                                            img.style.imageRendering = '-webkit-optimize-contrast';
                                         }});
-                                        console.log('   - Total IMG elements:', imgCount);
-                                        console.log('   - Total CANVAS elements:', canvasCount);
                                     }}
                                     
-                                    // Make sure container is visible
                                     mapSvgContainer.style.display = 'block';
                                     mapSvgContainer.style.visibility = 'visible';
                                     mapSvgContainer.style.opacity = '1';
-                                    
-                                    // Improve SVG rendering quality
-                                    mapSvgContainer.style.imageRendering = 'crisp-edges';
-                                    mapSvgContainer.style.imageRendering = '-webkit-optimize-contrast';
-                                    console.log('   - Map container imageRendering:', mapSvgContainer.style.imageRendering);
+                                    mapSvgContainer.style.imageRendering = 'auto';
                                     
                                     svgLoaded = true;
                                     
-                                    // Wait for layout, then auto-fit
+                                    // Wait for layout, then auto-fit and get base dimensions
                                     setTimeout(fitMapToViewport, 300);
                                 }}
                                 
@@ -2536,9 +2516,11 @@ class NPCRelationshipMapper:
                                     mapX = 0;
                                     mapY = 0;
                                     
-                                    // Store base dimensions
+                                    // Store base dimensions - CRITICAL for coordinate calculations
                                     baseMapWidth = mapWidth;
                                     baseMapHeight = mapHeight;
+                                    
+                                    console.log('🔍 BASE DIMENSIONS SET:', baseMapWidth, 'x', baseMapHeight);
                                     
                                     // Update bounds
                                     const scaledWidth = mapWidth * mapScale;
@@ -2668,14 +2650,11 @@ class NPCRelationshipMapper:
                             containerHeight = (containerRect.height || 0) / mapScale;
                         }}
                         
-                        // Calculate center offset: -50% of container size + pan offset
-                        // This centers the container and then applies pan
-                        // Use transform-origin 0 0 to make math simpler
+                        // Transform: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
+                        // Transform-origin: 0 0 (top-left)
+                        // This means world (0,0) is at: viewportCenter + (-containerWidth/2 + mapX, -containerHeight/2 + mapY)
                         const centerX = -(containerWidth / 2) + mapX;
                         const centerY = -(containerHeight / 2) + mapY;
-                        
-                        // Apply transform: translate to center + pan, then scale
-                        // Transform-origin 0 0 means scale happens from top-left, making calculations easier
                         mapSvgContainer.style.transform = `translate(${{centerX}}px, ${{centerY}}px) scale(${{mapScale}})`;
                         mapSvgContainer.style.transformOrigin = '0 0';
                         // High-quality rendering for SVG/HTML content
@@ -2770,19 +2749,15 @@ class NPCRelationshipMapper:
                 const viewportCenterY = rect.height / 2;
                 
                 // Use base map dimensions (unscaled) for calculations
-                // If not set yet, try to get them from the container
                 let mapWidth = baseMapWidth;
                 let mapHeight = baseMapHeight;
                 if (mapWidth === 0 || mapHeight === 0) {{
-                    const mapContainerRect = mapSvgContainer ? mapSvgContainer.getBoundingClientRect() : null;
-                    if (mapContainerRect) {{
-                        // Get unscaled dimensions by dividing by current scale
-                        mapWidth = mapContainerRect.width / mapScale;
-                        mapHeight = mapContainerRect.height / mapScale;
-                        // Store for future use
-                        baseMapWidth = mapWidth;
-                        baseMapHeight = mapHeight;
-                    }}
+                    // Fallback: use defaults if not set yet
+                    mapWidth = 1097.25;
+                    mapHeight = 474.00;
+                    baseMapWidth = mapWidth;
+                    baseMapHeight = mapHeight;
+                    console.warn('⚠️ Using default base dimensions:', mapWidth, 'x', mapHeight);
                 }}
                 
                 // The mapSvgContainer is positioned at 50%/50% of mapContainer (viewport center)
@@ -2792,17 +2767,16 @@ class NPCRelationshipMapper:
                 // screenX = viewportCenterX + (-mapWidth/2 + mapX) + wx * scale
                 //        = viewportCenterX - mapWidth/2 + mapX + wx * scale
                 //
-                // For the mouse at (mouseX, mouseY):
-                // mouseX = viewportCenterX - mapWidth/2 + mapX + worldX * mapScale
-                // So: worldX = (mouseX - viewportCenterX + mapWidth/2 - mapX) / mapScale
+                // Calculate world coordinates under mouse
+                // Transform: translate(-mapWidth/2 + mapX, -mapHeight/2 + mapY) scale(mapScale)
+                // Screen: mouseX = viewportCenterX - mapWidth/2 + mapX + worldX * mapScale
+                // Therefore: worldX = (mouseX - viewportCenterX + mapWidth/2 - mapX) / mapScale
                 const worldX = (mouseX - viewportCenterX + mapWidth / 2 - mapX) / mapScale;
                 const worldY = (mouseY - viewportCenterY + mapHeight / 2 - mapY) / mapScale;
                 
-                // After zoom, we want the same world point under the mouse:
+                // After zoom, keep same world point under mouse
                 // mouseX = viewportCenterX - mapWidth/2 + newMapX + worldX * newScale
-                // So: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
-                const oldMapX = mapX;
-                const oldMapY = mapY;
+                // Therefore: newMapX = mouseX - viewportCenterX + mapWidth/2 - worldX * newScale
                 mapX = mouseX - viewportCenterX + mapWidth / 2 - worldX * newScale;
                 mapY = mouseY - viewportCenterY + mapHeight / 2 - worldY * newScale;
                 
@@ -3221,9 +3195,10 @@ class NPCRelationshipMapper:
                 const rect = mapContainer.getBoundingClientRect();
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                const containerWidth = baseMapWidth || rect.width / mapScale;
-                const containerHeight = baseMapHeight || rect.height / mapScale;
-                // Reverse of screenToMap: screenX = centerX + (-containerWidth/2 + mapX) + worldX * mapScale
+                // Use stored base dimensions (not calculated from rect which is scaled)
+                const containerWidth = baseMapWidth || 1097.25;
+                const containerHeight = baseMapHeight || 474.00;
+                // Transform: translate(-containerWidth/2 + mapX, -containerHeight/2 + mapY) scale(mapScale)
                 const screenX = centerX - containerWidth / 2 + mapX + worldX * mapScale;
                 const screenY = centerY - containerHeight / 2 + mapY + worldY * mapScale;
                 return {{ x: screenX, y: screenY }};
@@ -3710,6 +3685,1762 @@ class NPCRelationshipMapper:
             window.showMarkerInfo = showMarkerInfo;
             window.editMarker = editMarker;
         }})();
+        }} // End of disabled old map code block
+        
+        // ============================================================================
+        // World Map Module - Modular Implementation (following architecture document)
+        // ============================================================================
+        // Organized into: Core, Features, Data, UI modules (all in one file for HTML embedding)
+        // ============================================================================
+        
+        const WorldMapModule = (function() {{
+            'use strict';
+            
+            console.log('🔧 [WorldMapModule] Module definition loaded at', new Date().toISOString());
+            console.log('🔧 [WorldMapModule] DEBUG: This log should appear immediately when page loads');
+            
+            // ========================================================================
+            // CORE MODULES
+            // ========================================================================
+            
+            // MapState - Single source of truth for all state
+            const MapState = (function() {{
+                let state = {{
+                    viewport: {{
+                        panX: 0,
+                        panY: 0,
+                        zoom: 1,
+                        minZoom: 0.5,
+                        maxZoom: 20,
+                        bounds: {{ minX: -2000, maxX: 2000, minY: -1000, maxY: 1000 }}
+                    }},
+                    mapSource: {{
+                        type: 'svg',
+                        url: '',
+                        baseWidth: 0,
+                        baseHeight: 0,
+                        worldBounds: {{ minX: 0, maxX: 0, minY: 0, maxY: 0 }}
+                    }},
+                    rendering: {{
+                        mode: 'canvas',
+                        resolution: 1,
+                        targetResolution: 1,
+                        isRendering: false,
+                        lastRenderTime: 0
+                    }},
+                    interaction: {{
+                        mode: 'pan',
+                        isPanning: false,
+                        isZooming: false,
+                        isDrawing: false,
+                        cursor: 'grab'
+                    }},
+                    markers: [],
+                    annotations: [],
+                    layers: [],
+                    measurements: []
+                }};
+                
+                return {{
+                    get: function() {{ return JSON.parse(JSON.stringify(state)); }},
+                    set: function(updates) {{
+                        state = Object.assign({{}}, state, updates);
+                        return state;
+                    }},
+                    update: function(path, value) {{
+                        const keys = path.split('.');
+                        let obj = state;
+                        for (let i = 0; i < keys.length - 1; i++) {{
+                            if (!obj[keys[i]]) obj[keys[i]] = {{}};
+                            obj = obj[keys[i]];
+                        }}
+                        obj[keys[keys.length - 1]] = value;
+                        return state;
+                    }},
+                    getValue: function(path) {{
+                        const keys = path.split('.');
+                        let obj = state;
+                        for (const key of keys) {{
+                            if (obj === null || obj === undefined) return undefined;
+                            obj = obj[key];
+                        }}
+                        return obj;
+                    }}
+                }};
+            }})();
+            
+            // MapCoordinateSystem - World ↔ Screen conversions
+            const MapCoordinateSystem = (function() {{
+                function screenToWorld(screenX, screenY) {{
+                    // Get the wrapper (where the canvas is actually positioned)
+                    const wrapper = document.getElementById('worldMapWrapper');
+                    if (!wrapper) return {{ x: 0, y: 0 }};
+                    
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    const wrapperX = screenX - wrapperRect.left;
+                    const wrapperY = screenY - wrapperRect.top;
+                    const wrapperCenterX = wrapperRect.width / 2;
+                    const wrapperCenterY = wrapperRect.height / 2;
+                    
+                    const baseWidth = MapState.getValue('mapSource.baseWidth') || 1097.25;
+                    const baseHeight = MapState.getValue('mapSource.baseHeight') || 474.00;
+                    const panX = MapState.getValue('viewport.panX');
+                    const panY = MapState.getValue('viewport.panY');
+                    const zoom = MapState.getValue('viewport.zoom');
+                    const renderingMode = MapState.getValue('rendering.mode') || 'canvas';
+                    
+                    // Debug logging for coordinate conversion
+                    const isDebugging = MapState.getValue('interaction.isDrawing') || MapState.getValue('interaction.mode') === 'annotation';
+                    if (isDebugging) {{
+                        console.log('🌍 [CoordinateSystem] screenToWorld input:', {{
+                            screenX: screenX,
+                            screenY: screenY,
+                            wrapperRect: {{ left: wrapperRect.left, top: wrapperRect.top, width: wrapperRect.width, height: wrapperRect.height }},
+                            wrapperX: wrapperX,
+                            wrapperY: wrapperY,
+                            wrapperCenterX: wrapperCenterX,
+                            wrapperCenterY: wrapperCenterY
+                        }});
+                    }}
+                    
+                    // For canvas mode: canvas is centered at 50%/50% of wrapper with translate(-50%, -50%) + pan + scale
+                    // Transform: translate(calc(-50% + panX), calc(-50% + panY)) scale(zoom)
+                    // 
+                    // The canvas center (in world coordinates) is at (baseWidth/2, baseHeight/2)
+                    // The canvas center (in wrapper coordinates) is at (wrapperCenterX, wrapperCenterY)
+                    // After transform, a world point (worldX, worldY) appears at:
+                    //   screenX (wrapper-relative) = wrapperCenterX + panX + (worldX - baseWidth/2) * zoom
+                    //   screenY (wrapper-relative) = wrapperCenterY + panY + (worldY - baseHeight/2) * zoom
+                    //
+                    // Therefore, to convert screen to world:
+                    //   worldX = (wrapperX - wrapperCenterX - panX) / zoom + baseWidth / 2
+                    //   worldY = (wrapperY - wrapperCenterY - panY) / zoom + baseHeight / 2
+                    const offsetX = wrapperX - wrapperCenterX;
+                    const offsetY = wrapperY - wrapperCenterY;
+                    
+                    const worldX = (offsetX - panX) / zoom + baseWidth / 2;
+                    const worldY = (offsetY - panY) / zoom + baseHeight / 2;
+                    
+                    if (isDebugging) {{
+                        console.log('🌍 [CoordinateSystem] screenToWorld output:', {{
+                            offsetX: offsetX,
+                            offsetY: offsetY,
+                            baseWidth: baseWidth,
+                            baseHeight: baseHeight,
+                            panX: panX,
+                            panY: panY,
+                            zoom: zoom,
+                            worldX: worldX,
+                            worldY: worldY
+                        }});
+                    }}
+                    
+                    return {{ x: worldX, y: worldY }};
+                }}
+                
+                function worldToScreen(worldX, worldY) {{
+                    // Get the wrapper (where the canvas is actually positioned)
+                    const wrapper = document.getElementById('worldMapWrapper');
+                    if (!wrapper) return {{ x: 0, y: 0 }};
+                    
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    const wrapperCenterX = wrapperRect.width / 2;
+                    const wrapperCenterY = wrapperRect.height / 2;
+                    
+                    const baseWidth = MapState.getValue('mapSource.baseWidth') || 1097.25;
+                    const baseHeight = MapState.getValue('mapSource.baseHeight') || 474.00;
+                    const panX = MapState.getValue('viewport.panX');
+                    const panY = MapState.getValue('viewport.panY');
+                    const zoom = MapState.getValue('viewport.zoom');
+                    
+                    // For canvas mode: canvas is centered at 50%/50% of wrapper with translate(-50%, -50%) + pan + scale
+                    // Transform: translate(calc(-50% + panX), calc(-50% + panY)) scale(zoom)
+                    //
+                    // A world point (worldX, worldY) appears at wrapper-relative position:
+                    //   screenX (wrapper-relative) = wrapperCenterX + panX + (worldX - baseWidth/2) * zoom
+                    //   screenY (wrapper-relative) = wrapperCenterY + panY + (worldY - baseHeight/2) * zoom
+                    const screenX = wrapperCenterX + panX + (worldX - baseWidth / 2) * zoom;
+                    const screenY = wrapperCenterY + panY + (worldY - baseHeight / 2) * zoom;
+                    
+                    return {{ x: screenX, y: screenY }};
+                }}
+                
+                return {{
+                    screenToWorld: screenToWorld,
+                    worldToScreen: worldToScreen
+                }};
+            }})();
+            
+            // MapRenderer - Handles all rendering logic
+            const MapRenderer = (function() {{
+                let canvas = null;
+                let container = null;
+                let wrapper = null;
+                let overlay = null;
+                let svgContainer = null;
+                let isCanvasMode = false;
+                let svgLoaded = false;
+                
+                function initialize() {{
+                    canvas = document.getElementById('worldMapCanvas');
+                    container = document.getElementById('worldMapContainer');
+                    wrapper = document.getElementById('worldMapWrapper');
+                    overlay = document.getElementById('worldMapOverlay');
+                    
+                    // Ensure all elements are only in worldMapTab
+                    const worldMapTab = document.getElementById('worldMapTab');
+                    if (worldMapTab) {{
+                        // Remove any duplicate elements outside worldMapTab
+                        const allCanvases = document.querySelectorAll('#worldMapCanvas');
+                        allCanvases.forEach(function(canv) {{
+                            if (!worldMapTab.contains(canv)) {{
+                                console.warn('🌍 [MapRenderer] Removing duplicate worldMapCanvas outside worldMapTab');
+                                canv.remove();
+                            }}
+                        }});
+                        
+                        const allContainers = document.querySelectorAll('#worldMapSvgContainer');
+                        allContainers.forEach(function(cont) {{
+                            if (!worldMapTab.contains(cont)) {{
+                                console.warn('🌍 [MapRenderer] Removing duplicate worldMapSvgContainer outside worldMapTab');
+                                cont.remove();
+                            }}
+                        }});
+                    }}
+                    
+                    // Ensure canvas is in the correct wrapper (worldMapWrapper, not mapWrapper)
+                    if (canvas && wrapper && canvas.parentElement !== wrapper) {{
+                        // Canvas might be in wrong container, move it
+                        if (canvas.parentElement) {{
+                            canvas.parentElement.removeChild(canvas);
+                        }}
+                        wrapper.appendChild(canvas);
+                    }}
+                    
+                    // Make sure canvas is initially hidden
+                    if (canvas) {{
+                        canvas.style.display = 'none';
+                    }}
+                }}
+                
+                function loadMap(mapContent) {{
+                    if (svgLoaded) return;
+                    
+                    console.log('🌍 [MapRenderer] Loading map...');
+                    console.log('🌍 [MapRenderer] Map content type:', typeof mapContent);
+                    console.log('🌍 [MapRenderer] Map content length:', mapContent ? mapContent.length : 0);
+                    console.log('🌍 [MapRenderer] Map content preview:', mapContent ? mapContent.substring(0, 200) : 'null');
+                    
+                    if (!mapContent || mapContent.trim() === '') {{
+                        console.warn('🌍 [MapRenderer] No map content found');
+                        const error = document.getElementById('worldMapError');
+                        if (error) error.style.display = 'block';
+                        return;
+                    }}
+                    
+                    // Decode base64 if needed (PLACEHOLDER_SVG_CONTENT contains atob("..."))
+                    if (typeof mapContent === 'string' && mapContent.trim().startsWith('atob(')) {{
+                        try {{
+                            // Extract base64 string from atob("base64string")
+                            const base64Match = mapContent.match(/atob\\(\\"([^\\"]+)\\"\\)/);
+                            if (base64Match && base64Match[1]) {{
+                                mapContent = atob(base64Match[1]);
+                                console.log('🌍 [MapRenderer] Decoded base64 content, new length:', mapContent.length);
+                            }} else {{
+                                console.warn('🌍 [MapRenderer] Could not extract base64 from:', mapContent.substring(0, 100));
+                            }}
+                        }} catch(e) {{
+                            console.error('🌍 [MapRenderer] Failed to decode base64:', e);
+                        }}
+                    }}
+                    
+                    try {{
+                        // Check if it's SVG content
+                        const isSvg = mapContent.trim().startsWith('<svg') || mapContent.includes('<svg');
+                        const isHtmlFormat = mapContent.includes('<canvas') || 
+                                            mapContent.includes('<html') || 
+                                            mapContent.includes('<!DOCTYPE') ||
+                                            mapContent.includes('<body');
+                        
+                        // Prioritize SVG to canvas conversion for maximum detail
+                        if (isSvg && canvas) {{
+                            loadSvgToCanvas(mapContent);
+                        }} else if (isHtmlFormat && canvas) {{
+                            loadCanvasMap(mapContent);
+                        }} else {{
+                            loadSvgMap(mapContent);
+                        }}
+                    }} catch(e) {{
+                        console.error('🌍 [MapRenderer] Failed to load map:', e);
+                        const error = document.getElementById('worldMapError');
+                        if (error) error.style.display = 'block';
+                    }}
+                }}
+                
+                function loadSvgToCanvas(svgContent) {{
+                    if (!canvas) {{
+                        console.warn('🌍 [MapRenderer] Canvas not available, falling back to SVG');
+                        loadSvgMap(svgContent);
+                        return;
+                    }}
+                    
+                    console.log('🌍 [MapRenderer] Converting SVG to canvas for maximum detail...');
+                    
+                    // Create an Image from SVG
+                    const svgBlob = new Blob([svgContent], {{ type: 'image/svg+xml;charset=utf-8' }});
+                    const url = URL.createObjectURL(svgBlob);
+                    const img = new Image();
+                    
+                    img.onload = function() {{
+                        // Use high resolution for maximum detail
+                        const dpr = window.devicePixelRatio || 1;
+                        const scaleFactor = Math.max(3, dpr * 2); // Higher scale for better quality
+                        
+                        // Get SVG dimensions
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = svgContent;
+                        const svgEl = tempDiv.querySelector('svg');
+                        let baseWidth = img.width || 2000;
+                        let baseHeight = img.height || 2000;
+                        
+                        if (svgEl) {{
+                            const svgWidth = parseFloat(svgEl.getAttribute('width')) || svgEl.viewBox.baseVal.width || baseWidth;
+                            const svgHeight = parseFloat(svgEl.getAttribute('height')) || svgEl.viewBox.baseVal.height || baseHeight;
+                            baseWidth = svgWidth;
+                            baseHeight = svgHeight;
+                        }}
+                        
+                        // Set canvas to high resolution
+                        const canvasWidth = baseWidth * scaleFactor;
+                        const canvasHeight = baseHeight * scaleFactor;
+                        
+                        canvas.width = canvasWidth;
+                        canvas.height = canvasHeight;
+                        canvas.style.width = baseWidth + 'px';
+                        canvas.style.height = baseHeight + 'px';
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // Draw SVG image at high resolution
+                        ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+                        
+                        // Clean up
+                        URL.revokeObjectURL(url);
+                        
+                        // Make canvas visible and properly positioned
+                        // Canvas should be in worldMapWrapper, not mapWrapper
+                        // Also ensure it's only in worldMapTab
+                        const worldMapTab = document.getElementById('worldMapTab');
+                        if (worldMapTab && !worldMapTab.contains(canvas)) {{
+                            // Canvas is outside worldMapTab, move it
+                            if (canvas.parentElement) {{
+                                canvas.parentElement.removeChild(canvas);
+                            }}
+                            if (wrapper) {{
+                                wrapper.insertBefore(canvas, wrapper.firstChild);
+                            }}
+                        }} else if (canvas.parentElement !== wrapper) {{
+                            // Move canvas to correct wrapper if needed
+                            if (canvas.parentElement) {{
+                                canvas.parentElement.removeChild(canvas);
+                            }}
+                            if (wrapper) {{
+                                wrapper.insertBefore(canvas, wrapper.firstChild);
+                            }}
+                        }}
+                        
+                        // Remove any duplicate canvases outside worldMapTab
+                        const allCanvases = document.querySelectorAll('#worldMapCanvas');
+                        allCanvases.forEach(function(canv) {{
+                            if (worldMapTab && !worldMapTab.contains(canv)) {{
+                                console.warn('🌍 [MapRenderer] Removing duplicate worldMapCanvas outside worldMapTab');
+                                canv.remove();
+                            }}
+                        }});
+                        
+                        canvas.style.display = 'block';
+                        canvas.style.visibility = 'visible';
+                        canvas.style.opacity = '1';
+                        canvas.style.position = 'absolute';
+                        canvas.style.top = '50%';
+                        canvas.style.left = '50%';
+                        canvas.style.transformOrigin = 'center center';
+                        canvas.style.pointerEvents = 'none';
+                        canvas.style.zIndex = '1';
+                        
+                        if (svgContainer) {{
+                            svgContainer.style.display = 'none';
+                            svgContainer.style.visibility = 'hidden';
+                        }}
+                        
+                        console.log('🌍 [MapRenderer] Canvas positioned:', {{
+                            parent: canvas.parentElement ? canvas.parentElement.id : 'none',
+                            display: canvas.style.display,
+                            visibility: canvas.style.visibility,
+                            opacity: canvas.style.opacity,
+                            width: canvas.width,
+                            height: canvas.height,
+                            styleWidth: canvas.style.width,
+                            styleHeight: canvas.style.height
+                        }});
+                        
+                        isCanvasMode = true;
+                        svgLoaded = true;
+                        
+                        MapState.update('mapSource.baseWidth', baseWidth);
+                        MapState.update('mapSource.baseHeight', baseHeight);
+                        MapState.update('rendering.mode', 'canvas');
+                        
+                        console.log('🌍 [MapRenderer] SVG converted to canvas:', {{
+                            baseWidth: baseWidth,
+                            baseHeight: baseHeight,
+                            canvasWidth: canvasWidth,
+                            canvasHeight: canvasHeight,
+                            scaleFactor: scaleFactor,
+                            dpr: dpr,
+                            canvasDisplay: canvas.style.display,
+                            canvasVisible: canvas.style.visibility
+                        }});
+                        
+                        // Apply transform immediately
+                        updateTransform();
+                        
+                        // Also fit to viewport after a short delay
+                        setTimeout(function() {{
+                            MapRenderer.fitToViewport();
+                        }}, 100);
+                    }};
+                    
+                    img.onerror = function(e) {{
+                        console.error('🌍 [MapRenderer] Failed to load SVG as image:', e);
+                        URL.revokeObjectURL(url);
+                        // Fallback to SVG rendering
+                        loadSvgMap(svgContent);
+                    }};
+                    
+                    img.src = url;
+                }}
+                
+                function loadCanvasMap(mapContent) {{
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = mapContent;
+                    const canvasEl = tempDiv.querySelector('canvas');
+                    
+                    if (canvasEl) {{
+                        const dpr = window.devicePixelRatio || 1;
+                        const scaleFactor = Math.max(2, dpr);
+                        const baseWidth = canvasEl.width || 2000;
+                        const baseHeight = canvasEl.height || 2000;
+                        
+                        canvas.width = baseWidth * scaleFactor;
+                        canvas.height = baseHeight * scaleFactor;
+                        canvas.style.width = baseWidth + 'px';
+                        canvas.style.height = baseHeight + 'px';
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.scale(scaleFactor, scaleFactor);
+                        
+                        try {{
+                            ctx.drawImage(canvasEl, 0, 0);
+                            canvas.style.display = 'block';
+                            isCanvasMode = true;
+                            svgLoaded = true;
+                            
+                            MapState.update('mapSource.baseWidth', baseWidth);
+                            MapState.update('mapSource.baseHeight', baseHeight);
+                            MapState.update('rendering.mode', 'canvas');
+                            
+                            console.log('🌍 [MapRenderer] Canvas map loaded');
+                            return;
+                        }} catch(canvasError) {{
+                            console.error('🌍 [MapRenderer] Canvas copy failed:', canvasError);
+                        }}
+                    }}
+                    
+                    loadSvgMap(mapContent);
+                }}
+                
+                function loadSvgMap(mapContent) {{
+                    // Ensure we're only rendering in the worldMapTab
+                    const worldMapTab = document.getElementById('worldMapTab');
+                    if (!worldMapTab || worldMapTab.style.display === 'none') {{
+                        console.warn('🌍 [MapRenderer] World map tab is not visible, skipping map load');
+                        return;
+                    }}
+                    
+                    if (!wrapper) {{
+                        console.error('🌍 [MapRenderer] worldMapWrapper not found');
+                        return;
+                    }}
+                    
+                    // Verify wrapper is inside worldMapTab
+                    if (!worldMapTab.contains(wrapper)) {{
+                        console.error('🌍 [MapRenderer] worldMapWrapper is not inside worldMapTab!');
+                        return;
+                    }}
+                    
+                    // Check if container already exists - search only within worldMapTab to prevent duplicates
+                    svgContainer = worldMapTab.querySelector('#worldMapSvgContainer');
+                    if (!svgContainer) {{
+                        svgContainer = document.createElement('div');
+                        svgContainer.id = 'worldMapSvgContainer';
+                        svgContainer.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; user-select: none; pointer-events: none; will-change: transform;';
+                        // Append to wrapper - insert at the beginning so map is behind everything
+                        const firstChild = wrapper.firstChild;
+                        if (firstChild) {{
+                            wrapper.insertBefore(svgContainer, firstChild);
+                        }} else {{
+                            wrapper.appendChild(svgContainer);
+                        }}
+                    }}
+                    
+                    // Remove any duplicate containers that might exist outside worldMapTab
+                    const allContainers = document.querySelectorAll('#worldMapSvgContainer');
+                    allContainers.forEach(function(container) {{
+                        if (!worldMapTab.contains(container)) {{
+                            console.warn('🌍 [MapRenderer] Removing duplicate worldMapSvgContainer outside worldMapTab');
+                            container.remove();
+                        }}
+                    }});
+                    
+                    let htmlContent = mapContent;
+                    if (mapContent.includes('<body')) {{
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = mapContent;
+                        const bodyEl = tempDiv.querySelector('body');
+                        if (bodyEl) htmlContent = bodyEl.innerHTML;
+                    }}
+                    
+                    svgContainer.innerHTML = htmlContent;
+                    svgLoaded = true;
+                    
+                    console.log('🌍 [MapRenderer] HTML content inserted, container children:', svgContainer.children.length);
+                    
+                    // Make sure container is visible
+                    if (svgContainer) {{
+                        svgContainer.style.display = 'block';
+                        svgContainer.style.visibility = 'visible';
+                        svgContainer.style.opacity = '1';
+                        svgContainer.style.width = 'auto';
+                        svgContainer.style.height = 'auto';
+                        svgContainer.style.minWidth = '100px';
+                        svgContainer.style.minHeight = '100px';
+                    }}
+                    
+                    // For pdf2htmlEX HTML, ensure proper styling
+                    const pageContainer = svgContainer.querySelector('#page-container');
+                    if (pageContainer) {{
+                        console.log('🌍 [MapRenderer] Found page-container');
+                        pageContainer.style.position = 'relative';
+                        pageContainer.style.top = '0';
+                        pageContainer.style.left = '0';
+                        pageContainer.style.overflow = 'visible';
+                        pageContainer.style.display = 'block';
+                        pageContainer.style.visibility = 'visible';
+                        pageContainer.style.width = 'auto';
+                        pageContainer.style.height = 'auto';
+                        
+                        // Make sure all child elements are visible
+                        const allChildren = pageContainer.querySelectorAll('*');
+                        allChildren.forEach(function(el) {{
+                            if (el.style) {{
+                                if (el.style.display === 'none') el.style.display = '';
+                                if (el.style.visibility === 'hidden') el.style.visibility = 'visible';
+                            }}
+                        }});
+                    }} else {{
+                        console.warn('🌍 [MapRenderer] No page-container found, checking for other elements');
+                        console.log('🌍 [MapRenderer] Container has', svgContainer.children.length, 'direct children');
+                        if (svgContainer.children.length > 0) {{
+                            console.log('🌍 [MapRenderer] First child:', svgContainer.children[0].tagName, svgContainer.children[0].id || svgContainer.children[0].className);
+                        }}
+                    }}
+                    
+                    // Get dimensions - for HTML/pdf2htmlEX content, look for page-container
+                    let baseWidth = 1097.25;
+                    let baseHeight = 474.00;
+                    
+                    const svg = svgContainer.querySelector('svg');
+                    if (svg) {{
+                        baseWidth = parseFloat(svg.getAttribute('width')) || baseWidth;
+                        baseHeight = parseFloat(svg.getAttribute('height')) || baseHeight;
+                    }} else {{
+                        // For pdf2htmlEX HTML, find the page container
+                        const pageContainer = svgContainer.querySelector('#page-container');
+                        if (pageContainer) {{
+                            // Fix page container positioning
+                            pageContainer.style.position = 'relative';
+                            pageContainer.style.top = '0';
+                            pageContainer.style.left = '0';
+                            pageContainer.style.overflow = 'visible';
+                            
+                            const firstPage = pageContainer.querySelector('.pf');
+                            if (firstPage) {{
+                                // Wait for layout to calculate dimensions
+                                setTimeout(function() {{
+                                    const pageRect = firstPage.getBoundingClientRect();
+                                    baseWidth = pageRect.width || baseWidth;
+                                    baseHeight = pageRect.height || baseHeight;
+                                    console.log('🌍 [MapRenderer] Page dimensions:', baseWidth, 'x', baseHeight);
+                                    MapState.update('mapSource.baseWidth', baseWidth);
+                                    MapState.update('mapSource.baseHeight', baseHeight);
+                                    // Force a transform update with new dimensions
+                                    setTimeout(function() {{
+                                        updateTransform();
+                                    }}, 50);
+                                }}, 200);
+                            }} else {{
+                                // Fallback: try to get dimensions from page-container itself
+                                setTimeout(function() {{
+                                    const containerRect = pageContainer.getBoundingClientRect();
+                                    if (containerRect.width > 0 && containerRect.height > 0) {{
+                                        baseWidth = containerRect.width;
+                                        baseHeight = containerRect.height;
+                                        console.log('🌍 [MapRenderer] Container dimensions:', baseWidth, 'x', baseHeight);
+                                        MapState.update('mapSource.baseWidth', baseWidth);
+                                        MapState.update('mapSource.baseHeight', baseHeight);
+                                        updateTransform();
+                                    }}
+                                }}, 200);
+                            }}
+                        }}
+                    }}
+                    
+                    MapState.update('mapSource.baseWidth', baseWidth);
+                    MapState.update('mapSource.baseHeight', baseHeight);
+                    MapState.update('rendering.mode', 'svg');
+                    
+                    // Apply initial transform immediately (will be updated when dimensions are ready)
+                    updateTransform();
+                    
+                    console.log('🌍 [MapRenderer] SVG/HTML map loaded');
+                }}
+                
+                function updateTransform() {{
+                    if (!container) return;
+                    
+                    const panX = MapState.getValue('viewport.panX');
+                    const panY = MapState.getValue('viewport.panY');
+                    const zoom = MapState.getValue('viewport.zoom');
+                    const baseWidth = MapState.getValue('mapSource.baseWidth') || 1097.25;
+                    const baseHeight = MapState.getValue('mapSource.baseHeight') || 474.00;
+                    
+                    requestAnimationFrame(function() {{
+                        if (isCanvasMode && canvas) {{
+                            // Canvas is centered at 50%/50% with translate(-50%, -50%)
+                            // Apply pan and zoom on top of that
+                            canvas.style.transform = `translate(calc(-50% + ${{panX}}px), calc(-50% + ${{panY}}px)) scale(${{zoom}})`;
+                            canvas.style.transformOrigin = 'center center';
+                            canvas.style.display = 'block';
+                            canvas.style.visibility = 'visible';
+                            canvas.style.opacity = '1';
+                        }} else if (svgContainer) {{
+                            // For HTML content, we need to center it properly
+                            // The container is positioned at 50%/50% (top/left)
+                            // We need to translate by half the scaled dimensions to center it
+                            const scaledWidth = baseWidth * zoom;
+                            const scaledHeight = baseHeight * zoom;
+                            const offsetX = -(scaledWidth / 2) + panX;
+                            const offsetY = -(scaledHeight / 2) + panY;
+                            
+                            // Use translate(-50%, -50%) to center, then add pan offset, then scale
+                            svgContainer.style.transform = `translate(calc(-50% + ${{offsetX}}px), calc(-50% + ${{offsetY}}px)) scale(${{zoom}})`;
+                            svgContainer.style.transformOrigin = 'center center';
+                            
+                            // Debug: log transform if zoom > 0
+                            if (zoom > 0 && baseWidth > 0) {{
+                                console.log('🌍 [MapRenderer] Transform applied:', {{
+                                    zoom: zoom,
+                                    panX: panX,
+                                    panY: panY,
+                                    baseWidth: baseWidth,
+                                    baseHeight: baseHeight,
+                                    scaledWidth: scaledWidth,
+                                    scaledHeight: scaledHeight,
+                                    offsetX: offsetX,
+                                    offsetY: offsetY
+                                }});
+                            }}
+                        }}
+                        
+                        const zoomLevel = document.getElementById('worldMapZoomLevel');
+                        if (zoomLevel) {{
+                            zoomLevel.textContent = `Zoom: ${{Math.round(zoom * 100)}}%`;
+                        }}
+                    }});
+                }}
+                
+                function fitToViewport() {{
+                    if (!container) return;
+                    
+                    const containerRect = container.getBoundingClientRect();
+                    const containerWidth = containerRect.width || window.innerWidth;
+                    const containerHeight = containerRect.height || window.innerHeight;
+                    
+                    if (containerWidth === 0 || containerHeight === 0) {{
+                        setTimeout(fitToViewport, 100);
+                        return;
+                    }}
+                    
+                    let baseWidth = MapState.getValue('mapSource.baseWidth');
+                    let baseHeight = MapState.getValue('mapSource.baseHeight');
+                    
+                    if (baseWidth === 0 || baseHeight === 0) {{
+                        baseWidth = 1097.25;
+                        baseHeight = 474.00;
+                        MapState.update('mapSource.baseWidth', baseWidth);
+                        MapState.update('mapSource.baseHeight', baseHeight);
+                    }}
+                    
+                    const scaleX = containerWidth / baseWidth;
+                    const scaleY = containerHeight / baseHeight;
+                    const zoom = Math.max(scaleX, scaleY) * 0.9;
+                    
+                    MapState.update('viewport.zoom', zoom);
+                    MapState.update('viewport.panX', 0);
+                    MapState.update('viewport.panY', 0);
+                    
+                    const scaledWidth = baseWidth * zoom;
+                    const scaledHeight = baseHeight * zoom;
+                    MapState.update('viewport.bounds', {{
+                        minX: -(scaledWidth / 2),
+                        maxX: scaledWidth / 2,
+                        minY: -(scaledHeight / 2),
+                        maxY: scaledHeight / 2
+                    }});
+                    
+                    updateTransform();
+                }}
+                
+                return {{
+                    initialize: initialize,
+                    loadMap: loadMap,
+                    updateTransform: updateTransform,
+                    fitToViewport: fitToViewport,
+                    getOverlay: function() {{ return overlay; }},
+                    isLoaded: function() {{ return svgLoaded; }}
+                }};
+            }})();
+            
+            // MapController - Handles all user interactions
+            const MapController = (function() {{
+                let container = null;
+                let isDragging = false;
+                let dragStartX = 0;
+                let dragStartY = 0;
+                let dragStartPanX = 0;
+                let dragStartPanY = 0;
+                let zoomTimeout = null;
+                let panTimeout = null;
+                let transformUpdateScheduled = false;
+                
+                // Touch support
+                let touches = [];
+                let lastTouchDistance = 0;
+                let lastTouchCenterX = 0;
+                let lastTouchCenterY = 0;
+                let isPinching = false;
+                
+                function initialize() {{
+                    console.log('🖊️ [MapController] ============================================');
+                    console.log('🖊️ [MapController] initialize() CALLED at', new Date().toISOString());
+                    console.log('🖊️ [MapController] ============================================');
+                    container = document.getElementById('worldMapContainer');
+                    console.log('🖊️ [MapController] Container element:', container);
+                    console.log('🖊️ [MapController] Container found:', !!container);
+                    if (!container) {{
+                        console.error('🖊️ [MapController] ❌ ERROR: Container not found!');
+                        console.error('🖊️ [MapController] Available elements:', {
+                            worldMapTab: !!document.getElementById('worldMapTab'),
+                            worldMapContainer: !!document.getElementById('worldMapContainer'),
+                            worldMapWrapper: !!document.getElementById('worldMapWrapper'),
+                            worldMapCanvas: !!document.getElementById('worldMapCanvas')
+                        });
+                        return;
+                    }}
+                    
+                    console.log('🖊️ [MapController] ✅ Container found, setting up handlers...');
+                    setupMouseHandlers();
+                    console.log('🖊️ [MapController] ✅ Mouse handlers set up');
+                    setupTouchHandlers();
+                    console.log('🖊️ [MapController] ✅ Touch handlers set up');
+                    setupButtonHandlers();
+                    console.log('🖊️ [MapController] ✅ Button handlers set up');
+                    console.log('🖊️ [MapController] ============================================');
+                    console.log('🖊️ [MapController] initialize() COMPLETED');
+                    console.log('🖊️ [MapController] ============================================');
+                }}
+                
+                function setupMouseHandlers() {{
+                    if (!container) return;
+                    
+                    // Mouse wheel zoom
+                    container.addEventListener('wheel', function(e) {{
+                        e.preventDefault();
+                        
+                        console.log('🖊️ [MapController] Mouse wheel event detected');
+                        
+                        // Get wrapper for coordinate calculations
+                        const wrapper = document.getElementById('worldMapWrapper');
+                        if (!wrapper) return;
+                        const wrapperRect = wrapper.getBoundingClientRect();
+                        const wrapperX = e.clientX - wrapperRect.left; // Wrapper-relative X
+                        const wrapperY = e.clientY - wrapperRect.top;   // Wrapper-relative Y
+                        const wrapperCenterX = wrapperRect.width / 2;
+                        const wrapperCenterY = wrapperRect.height / 2;
+                        
+                        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                        const currentZoom = MapState.getValue('viewport.zoom');
+                        const newZoom = Math.max(0.5, Math.min(20, currentZoom * delta));
+                        
+                        console.log('🖊️ [MapController] Zoom:', { currentZoom, newZoom, wrapperX, wrapperY, clientX: e.clientX, clientY: e.clientY });
+                        
+                        // Get world coordinates under mouse using the coordinate system
+                        // screenToWorld expects screen coordinates (e.clientX, e.clientY)
+                        console.log('🖊️ [MapController] Before screenToWorld:', { clientX: e.clientX, clientY: e.clientY, wrapperX, wrapperY });
+                        const worldCoords = MapCoordinateSystem.screenToWorld(e.clientX, e.clientY);
+                        const worldX = worldCoords.x;
+                        const worldY = worldCoords.y;
+                        console.log('🖊️ [MapController] World coordinates:', { worldX, worldY });
+                        
+                        // After zoom, we want the same world point to be under the mouse
+                        // The transform is: translate(calc(-50% + panX), calc(-50% + panY)) scale(zoom)
+                        // A world point (worldX, worldY) appears at:
+                        //   screenX (wrapper-relative) = wrapperCenterX + panX + (worldX - baseWidth/2) * zoom
+                        // 
+                        // After zoom, we want:
+                        //   wrapperX = wrapperCenterX + newPanX + (worldX - baseWidth/2) * newZoom
+                        // Therefore:
+                        //   newPanX = wrapperX - wrapperCenterX - (worldX - baseWidth/2) * newZoom
+                        const baseWidth = MapState.getValue('mapSource.baseWidth') || 1097.25;
+                        const baseHeight = MapState.getValue('mapSource.baseHeight') || 474.00;
+                        
+                        const currentPanX = MapState.getValue('viewport.panX');
+                        const currentPanY = MapState.getValue('viewport.panY');
+                        
+                        console.log('🖊️ [MapController] Zoom calculation inputs:', {{
+                            wrapperCenter: {{ x: wrapperCenterX, y: wrapperCenterY }},
+                            wrapperMouse: {{ x: wrapperX, y: wrapperY }},
+                            baseSize: {{ width: baseWidth, height: baseHeight }},
+                            currentPan: {{ x: currentPanX, y: currentPanY }},
+                            worldCoords: {{ x: worldX, y: worldY }},
+                            currentZoom,
+                            newZoom
+                        }});
+                        
+                        const newPanX = wrapperX - wrapperCenterX - (worldX - baseWidth / 2) * newZoom;
+                        const newPanY = wrapperY - wrapperCenterY - (worldY - baseHeight / 2) * newZoom;
+                        
+                        console.log('🖊️ [MapController] New pan calculated:', {{ newPanX, newPanY }});
+                        console.log('🖊️ [MapController] Updating state:', {{ zoom: newZoom, panX: newPanX, panY: newPanY }});
+                        MapState.update('viewport.zoom', newZoom);
+                        MapState.update('viewport.panX', newPanX);
+                        MapState.update('viewport.panY', newPanY);
+                        MapState.update('interaction.isZooming', true);
+                        
+                        console.log('🖊️ [MapController] State after update:', {
+                            zoom: MapState.getValue('viewport.zoom'),
+                            panX: MapState.getValue('viewport.panX'),
+                            panY: MapState.getValue('viewport.panY')
+                        });
+                        
+                        if (zoomTimeout) clearTimeout(zoomTimeout);
+                        zoomTimeout = setTimeout(function() {{
+                            MapState.update('interaction.isZooming', false);
+                            MarkerSystem.render();
+                            AnnotationSystem.render();
+                        }}, 200);
+                        
+                        console.log('🖊️ [MapController] Calling MapRenderer.updateTransform()');
+                        MapRenderer.updateTransform();
+                        console.log('🖊️ [MapController] MapRenderer.updateTransform() completed');
+                        console.log('🖊️ [MapController] MapRenderer.updateTransform() completed');
+                    }}, {{ passive: false }});
+                    
+                    // Mouse drag
+                    container.addEventListener('mousedown', function(e) {{
+                        if (e.button !== 0) return;
+                        
+                        console.log('🖊️ [MapController] Mouse down event:', { clientX: e.clientX, clientY: e.clientY });
+                        
+                        const mode = MapState.getValue('interaction.mode');
+                        const isDrawing = MapState.getValue('interaction.isDrawing');
+                        
+                        console.log('🖊️ [MapController] Current mode:', mode, 'isDrawing:', isDrawing);
+                        
+                        if (mode === 'marker') {{
+                            // screenToWorld expects viewport coordinates (e.clientX, e.clientY)
+                            MarkerSystem.addAt(e.clientX, e.clientY);
+                            return;
+                        }}
+                        if (mode === 'annotation') {{
+                            console.log('🖊️ [MapController] Mouse down in annotation mode, calling AnnotationSystem.start');
+                            AnnotationSystem.start(e.clientX, e.clientY);
+                            return;
+                        }}
+                        
+                        MapState.update('interaction.isPanning', true);
+                        if (panTimeout) clearTimeout(panTimeout);
+                        e.stopPropagation();
+                        
+                        isDragging = true;
+                        dragStartX = e.clientX;
+                        dragStartY = e.clientY;
+                        dragStartPanX = MapState.getValue('viewport.panX');
+                        dragStartPanY = MapState.getValue('viewport.panY');
+                        container.style.cursor = 'grabbing';
+                    }});
+                    
+                    document.addEventListener('mousemove', function(e) {{
+                        const isDrawing = MapState.getValue('interaction.isDrawing');
+                        if (isDrawing && MapState.getValue('interaction.mode') === 'annotation') {{
+                            AnnotationSystem.addPoint(e.clientX, e.clientY);
+                            return;
+                        }}
+                        if (!isDragging) return;
+                        
+                        const deltaX = e.clientX - dragStartX;
+                        const deltaY = e.clientY - dragStartY;
+                        
+                        MapState.update('viewport.panX', dragStartPanX + deltaX);
+                        MapState.update('viewport.panY', dragStartPanY + deltaY);
+                        
+                        if (!transformUpdateScheduled) {{
+                            transformUpdateScheduled = true;
+                            requestAnimationFrame(function() {{
+                                MapRenderer.updateTransform();
+                                transformUpdateScheduled = false;
+                            }});
+                        }}
+                    }});
+                    
+                    document.addEventListener('mouseup', function() {{
+                        const isDrawing = MapState.getValue('interaction.isDrawing');
+                        if (isDrawing && MapState.getValue('interaction.mode') === 'annotation') {{
+                            AnnotationSystem.finish();
+                        }}
+                        if (isDragging) {{
+                            isDragging = false;
+                            const mode = MapState.getValue('interaction.mode');
+                            container.style.cursor = (mode === 'marker' || mode === 'annotation') ? 'crosshair' : 'grab';
+                        }}
+                        
+                        if (MapState.getValue('interaction.isPanning')) {{
+                            MapState.update('interaction.isPanning', false);
+                            if (panTimeout) clearTimeout(panTimeout);
+                            panTimeout = setTimeout(function() {{
+                                MarkerSystem.render();
+                                AnnotationSystem.render();
+                            }}, 150);
+                        }}
+                    }});
+                    
+                    // Double-click reset
+                    container.addEventListener('dblclick', function(e) {{
+                        e.preventDefault();
+                        MapRenderer.fitToViewport();
+                    }});
+                }}
+                
+                function setupTouchHandlers() {{
+                    if (!container) return;
+                    
+                    function getTouchDistance(t1, t2) {{
+                        const dx = t1.clientX - t2.clientX;
+                        const dy = t1.clientY - t2.clientY;
+                        return Math.sqrt(dx * dx + dy * dy);
+                    }}
+                    
+                    function getTouchCenter(t1, t2) {{
+                        return {{
+                            x: (t1.clientX + t2.clientX) / 2,
+                            y: (t1.clientY + t2.clientY) / 2
+                        }};
+                    }}
+                    
+                    container.addEventListener('touchstart', function(e) {{
+                        e.preventDefault();
+                        touches = Array.from(e.touches);
+                        
+                        const mode = MapState.getValue('interaction.mode');
+                        if (touches.length === 1) {{
+                            if (mode === 'marker') {{
+                                MarkerSystem.addAt(touches[0].clientX, touches[0].clientY);
+                                return;
+                            }}
+                            if (mode === 'annotation') {{
+                                AnnotationSystem.start(touches[0].clientX, touches[0].clientY);
+                                return;
+                            }}
+                            
+                            isDragging = true;
+                            dragStartX = touches[0].clientX;
+                            dragStartY = touches[0].clientY;
+                            dragStartPanX = MapState.getValue('viewport.panX');
+                            dragStartPanY = MapState.getValue('viewport.panY');
+                        }} else if (touches.length === 2) {{
+                            isPinching = true;
+                            lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+                            const center = getTouchCenter(touches[0], touches[1]);
+                            const rect = container.getBoundingClientRect();
+                            lastTouchCenterX = center.x - rect.left;
+                            lastTouchCenterY = center.y - rect.top;
+                        }}
+                    }}, {{ passive: false }});
+                    
+                    container.addEventListener('touchmove', function(e) {{
+                        e.preventDefault();
+                        touches = Array.from(e.touches);
+                        
+                        if (touches.length === 1 && isDragging && !isPinching) {{
+                            const deltaX = touches[0].clientX - dragStartX;
+                            const deltaY = touches[0].clientY - dragStartY;
+                            MapState.update('viewport.panX', dragStartPanX + deltaX);
+                            MapState.update('viewport.panY', dragStartPanY + deltaY);
+                            MapRenderer.updateTransform();
+                        }} else if (touches.length === 2 && isPinching) {{
+                            const currentDistance = getTouchDistance(touches[0], touches[1]);
+                            const distanceChange = Math.abs(currentDistance - lastTouchDistance);
+                            
+                            if (distanceChange > 5) {{
+                                const scaleChange = currentDistance / lastTouchDistance;
+                                const currentZoom = MapState.getValue('viewport.zoom');
+                                const newZoom = Math.max(0.5, Math.min(20, currentZoom * scaleChange));
+                                
+                                const rect = container.getBoundingClientRect();
+                                const center = getTouchCenter(touches[0], touches[1]);
+                                const touchCenterX = center.x - rect.left;
+                                const touchCenterY = center.y - rect.top;
+                                
+                                const viewportCenterX = rect.width / 2;
+                                const viewportCenterY = rect.height / 2;
+                                const baseWidth = MapState.getValue('mapSource.baseWidth') || 1097.25;
+                                const baseHeight = MapState.getValue('mapSource.baseHeight') || 474.00;
+                                const panX = MapState.getValue('viewport.panX');
+                                const panY = MapState.getValue('viewport.panY');
+                                
+                                const touchOffsetX = touchCenterX - viewportCenterX;
+                                const touchOffsetY = touchCenterY - viewportCenterY;
+                                
+                                // Convert touch position to world coordinates (same as mouse zoom)
+                                const worldX = (touchOffsetX + baseWidth / 2 - panX) / currentZoom;
+                                const worldY = (touchOffsetY + baseHeight / 2 - panY) / currentZoom;
+                                
+                                // Calculate new pan to keep same world point under touch center
+                                const newPanX = touchOffsetX + baseWidth / 2 - worldX * newZoom;
+                                const newPanY = touchOffsetY + baseHeight / 2 - worldY * newZoom;
+                                
+                                MapState.update('viewport.zoom', newZoom);
+                                MapState.update('viewport.panX', newPanX);
+                                MapState.update('viewport.panY', newPanY);
+                                MapState.update('interaction.isZooming', true);
+                                
+                                if (zoomTimeout) clearTimeout(zoomTimeout);
+                                zoomTimeout = setTimeout(function() {{
+                                    MapState.update('interaction.isZooming', false);
+                                    MarkerSystem.render();
+                                    AnnotationSystem.render();
+                                }}, 150);
+                                
+                                lastTouchDistance = currentDistance;
+                                MapRenderer.updateTransform();
+                            }}
+                        }}
+                    }}, {{ passive: false }});
+                    
+                    container.addEventListener('touchend', function(e) {{
+                        touches = Array.from(e.touches);
+                        if (touches.length === 0) {{
+                            isDragging = false;
+                            isPinching = false;
+                            const isDrawing = MapState.getValue('interaction.isDrawing');
+                            if (isDrawing && MapState.getValue('interaction.mode') === 'annotation') {{
+                                AnnotationSystem.finish();
+                            }}
+                            if (MapState.getValue('interaction.isZooming')) {{
+                                MapState.update('interaction.isZooming', false);
+                                if (zoomTimeout) clearTimeout(zoomTimeout);
+                                MarkerSystem.render();
+                                AnnotationSystem.render();
+                            }}
+                        }}
+                    }});
+                }}
+                
+                function setupButtonHandlers() {{
+                    const resetBtn = document.getElementById('worldMapResetBtn');
+                    if (resetBtn) {{
+                        resetBtn.onclick = function() {{
+                            MapRenderer.fitToViewport();
+                        }};
+                    }}
+                    
+                    const panBtn = document.getElementById('worldMapPanModeBtn');
+                    const markerBtn = document.getElementById('worldMapMarkerModeBtn');
+                    const drawBtn = document.getElementById('worldMapDrawModeBtn');
+                    
+                    console.log('🖊️ [MapController] Initializing controls:', {
+                        panBtn: !!panBtn,
+                        markerBtn: !!markerBtn,
+                        drawBtn: !!drawBtn,
+                        container: !!container
+                    });
+                    
+                    if (panBtn) {{
+                        panBtn.onclick = function() {{
+                            MapState.update('interaction.mode', 'pan');
+                            ControlPanel.updateModeButtons();
+                            if (container) container.style.cursor = 'grab';
+                        }};
+                    }}
+                    
+                    if (markerBtn) {{
+                        markerBtn.onclick = function() {{
+                            const currentMode = MapState.getValue('interaction.mode');
+                            MapState.update('interaction.mode', currentMode === 'marker' ? 'pan' : 'marker');
+                            ControlPanel.updateModeButtons();
+                            if (container) container.style.cursor = MapState.getValue('interaction.mode') === 'marker' ? 'crosshair' : 'grab';
+                        }};
+                    }}
+                    
+                    if (drawBtn) {{
+                        console.log('🖊️ [MapController] Setting up draw button handler, button element:', drawBtn);
+                        drawBtn.onclick = function(e) {{
+                            console.log('🖊️ [MapController] ============================================');
+                            console.log('🖊️ [MapController] DRAW BUTTON CLICKED!');
+                            console.log('🖊️ [MapController] Event:', e);
+                            const currentMode = MapState.getValue('interaction.mode');
+                            const newMode = currentMode === 'annotation' ? 'pan' : 'annotation';
+                            console.log('🖊️ [MapController] Draw button clicked, switching mode from', currentMode, 'to', newMode);
+                            MapState.update('interaction.mode', newMode);
+                            console.log('🖊️ [MapController] Mode updated, new mode:', MapState.getValue('interaction.mode'));
+                            ControlPanel.updateModeButtons();
+                            if (container) {{
+                                container.style.cursor = newMode === 'annotation' ? 'crosshair' : 'grab';
+                                console.log('🖊️ [MapController] Cursor set to:', container.style.cursor);
+                            }}
+                            if (newMode !== 'annotation' && MapState.getValue('interaction.isDrawing')) {{
+                                AnnotationSystem.finish();
+                            }}
+                            console.log('🖊️ [MapController] ============================================');
+                        }};
+                        console.log('🖊️ [MapController] Draw button handler attached');
+                    }} else {{
+                        console.error('🖊️ [MapController] Draw button NOT FOUND!');
+                    }}
+                }}
+                
+                return {{
+                    initialize: initialize
+                }};
+            }})();
+            
+            // ========================================================================
+            // FEATURE MODULES
+            // ========================================================================
+            
+            // MarkerSystem - Markers/POIs
+            const MarkerSystem = (function() {{
+                const markerCategories = {{
+                    'city': {{ name: 'City', color: '#4CAF50', icon: '🏙️' }},
+                    'dungeon': {{ name: 'Dungeon', color: '#F44336', icon: '🏰' }},
+                    'landmark': {{ name: 'Landmark', color: '#FF9800', icon: '🗿' }},
+                    'other': {{ name: 'Other', color: '#9E9E9E', icon: '📍' }}
+                }};
+                
+                function addAt(screenX, screenY) {{
+                    const coords = MapCoordinateSystem.screenToWorld(screenX, screenY);
+                    showDialog(coords, function(name, category, notes, color) {{
+                        const marker = {{
+                            id: Date.now(),
+                            name: name,
+                            category: category,
+                            notes: notes || '',
+                            color: color,
+                            x: coords.x,
+                            y: coords.y
+                        }};
+                        const markers = MapState.getValue('markers');
+                        markers.push(marker);
+                        MapState.update('markers', markers);
+                        MapDataManager.save();
+                        render();
+                        Sidebar.updateLocationList();
+                    }});
+                }}
+                
+                function showDialog(mapCoords, callback, existingMarker) {{
+                    const existingDialogs = document.querySelectorAll('[id^="worldMapMarkerDialog"]');
+                    existingDialogs.forEach(d => d.remove());
+                    
+                    const category = existingMarker ? (markerCategories[existingMarker.category] || markerCategories['other']) : markerCategories['other'];
+                    const currentColor = existingMarker && existingMarker.color ? existingMarker.color : category.color;
+                    const presetColors = ['#4CAF50', '#F44336', '#FF9800', '#2196F3', '#9C27B0', '#FFD700', '#00BCD4', '#FF5722', '#9E9E9E', '#795548'];
+                    
+                    const dialog = document.createElement('div');
+                    dialog.id = 'worldMapMarkerDialog';
+                    dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid #FFD700; border-radius: 10px; padding: 20px; z-index: 10000; min-width: 300px; color: #fff;';
+                    dialog.innerHTML = `
+                        <h3 style="color: #FFD700; margin-top: 0;">${{existingMarker ? 'Edit Marker' : 'Add Marker'}}</h3>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Name:</label>
+                            <input type="text" id="worldMapMarkerNameInput" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;" placeholder="Location name" value="${{existingMarker ? (existingMarker.name || '').replace(/"/g, '&quot;') : ''}}">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Category:</label>
+                            <select id="worldMapMarkerCategoryInput" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; box-sizing: border-box;">
+                                <option value="city" ${{existingMarker && existingMarker.category === 'city' ? 'selected' : ''}}>🏙️ City</option>
+                                <option value="dungeon" ${{existingMarker && existingMarker.category === 'dungeon' ? 'selected' : ''}}>🏰 Dungeon</option>
+                                <option value="landmark" ${{existingMarker && existingMarker.category === 'landmark' ? 'selected' : ''}}>🗿 Landmark</option>
+                                <option value="other" ${{existingMarker && existingMarker.category === 'other' ? 'selected' : (!existingMarker ? 'selected' : '')}}>📍 Other</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Color:</label>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                                ${{presetColors.map(c => `<div onclick="window.selectWorldMapMarkerColor('${{c}}')" style="width: 30px; height: 30px; background: ${{c}}; border: 2px solid ${{c === currentColor ? '#fff' : 'transparent'}}; border-radius: 50%; cursor: pointer;"></div>`).join('')}}
+                            </div>
+                            <input type="color" id="worldMapMarkerColorInput" value="${{currentColor}}" onchange="window.selectWorldMapMarkerColor(this.value)" style="width: 100%; height: 40px; padding: 0; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #aaa; margin-bottom: 5px;">Notes:</label>
+                            <textarea id="worldMapMarkerNotesInput" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-size: 0.9em; min-height: 60px; resize: vertical; box-sizing: border-box;" placeholder="Additional notes...">${{existingMarker ? (existingMarker.notes || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}}</textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="document.getElementById('worldMapMarkerDialog').remove(); delete window.confirmWorldMapMarkerDialog; delete window.selectWorldMapMarkerColor;" style="padding: 8px 16px; background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 4px; color: #fff; cursor: pointer;">Cancel</button>
+                            <button onclick="window.confirmWorldMapMarkerDialog()" style="padding: 8px 16px; background: rgba(76,175,80,0.3); border: 1px solid #4CAF50; border-radius: 4px; color: #fff; cursor: pointer;">${{existingMarker ? 'Save' : 'Add'}}</button>
+                        </div>
+                    `;
+                    document.body.appendChild(dialog);
+                    document.getElementById('worldMapMarkerNameInput').focus();
+                    
+                    let selectedColor = currentColor;
+                    window.selectWorldMapMarkerColor = function(color) {{
+                        selectedColor = color;
+                        document.getElementById('worldMapMarkerColorInput').value = color;
+                        const presetDivs = dialog.querySelectorAll('div[onclick^="selectWorldMapMarkerColor"]');
+                        presetDivs.forEach(div => {{
+                            const divColor = div.style.background;
+                            div.style.border = divColor === color ? '2px solid #fff' : '2px solid transparent';
+                        }});
+                    }};
+                    
+                    window.confirmWorldMapMarkerDialog = function() {{
+                        const name = document.getElementById('worldMapMarkerNameInput').value.trim();
+                        if (!name) {{
+                            alert('Please enter a name');
+                            return;
+                        }}
+                        const category = document.getElementById('worldMapMarkerCategoryInput').value;
+                        const notes = document.getElementById('worldMapMarkerNotesInput').value.trim();
+                        const color = selectedColor;
+                        const dialogEl = document.getElementById('worldMapMarkerDialog');
+                        if (dialogEl) dialogEl.remove();
+                        delete window.confirmWorldMapMarkerDialog;
+                        delete window.selectWorldMapMarkerColor;
+                        callback(name, category, notes, color);
+                    }};
+                }}
+                
+                function render() {{
+                    const overlay = MapRenderer.getOverlay();
+                    if (!overlay) return;
+                    
+                    const existingMarkers = overlay.querySelectorAll('.world-map-marker, .world-map-marker-label');
+                    existingMarkers.forEach(m => m.remove());
+                    
+                    const wrapper = document.getElementById('worldMapWrapper');
+                    if (!wrapper) return;
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    
+                    const markers = MapState.getValue('markers');
+                    const labelsVisible = true; // Could be in state
+                    
+                    markers.forEach(function(marker) {{
+                        const screenPos = MapCoordinateSystem.worldToScreen(marker.x, marker.y);
+                        // worldToScreen returns coordinates relative to wrapper top-left (0,0)
+                        // Overlay SVG is positioned to match the wrapper, so use coordinates directly
+                        const overlayX = screenPos.x;
+                        const overlayY = screenPos.y;
+                        if (overlayX < -50 || overlayX > wrapperRect.width + 50 || overlayY < -50 || overlayY > wrapperRect.height + 50) return;
+                        
+                        const category = markerCategories[marker.category] || markerCategories['other'];
+                        const markerColor = marker.color || category.color;
+                        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        circle.setAttribute('cx', overlayX);
+                        circle.setAttribute('cy', overlayY);
+                        circle.setAttribute('r', 8);
+                        circle.setAttribute('fill', markerColor);
+                        circle.setAttribute('stroke', '#fff');
+                        circle.setAttribute('stroke-width', 2);
+                        circle.setAttribute('class', 'world-map-marker');
+                        circle.setAttribute('data-marker-id', marker.id);
+                        circle.style.cursor = 'pointer';
+                        circle.style.pointerEvents = 'all';
+                        circle.onclick = function(e) {{
+                            e.stopPropagation();
+                            showInfo(marker);
+                        }};
+                        overlay.appendChild(circle);
+                        
+                        if (marker.name && labelsVisible) {{
+                            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                            text.setAttribute('x', overlayX);
+                            text.setAttribute('y', overlayY - 15);
+                            text.setAttribute('fill', '#fff');
+                            text.setAttribute('font-size', '12px');
+                            text.setAttribute('text-anchor', 'middle');
+                            text.setAttribute('class', 'world-map-marker-label');
+                            text.style.pointerEvents = 'none';
+                            text.textContent = marker.name;
+                            overlay.appendChild(text);
+                        }}
+                    }});
+                }}
+                
+                function showInfo(marker) {{
+                    const existingDialogs = document.querySelectorAll('[id^="worldMapMarkerInfoDialog"]');
+                    existingDialogs.forEach(d => d.remove());
+                    
+                    const category = markerCategories[marker.category] || markerCategories['other'];
+                    const dialog = document.createElement('div');
+                    dialog.id = 'worldMapMarkerInfoDialog';
+                    dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid ' + category.color + '; border-radius: 10px; padding: 20px; z-index: 10000; min-width: 300px; max-width: 500px; color: #fff;';
+                    const notesHtml = marker.notes ? `<div style="margin-bottom: 10px;"><strong style="color: #aaa;">Notes:</strong><div style="color: #fff; margin-top: 5px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; white-space: pre-wrap;">${{marker.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}}</div></div>` : '';
+                    dialog.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="color: ${{category.color}}; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.5em;">${{category.icon}}</span>
+                                ${{marker.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')}}
+                            </h3>
+                            <button onclick="document.getElementById('worldMapMarkerInfoDialog').remove()" style="background: transparent; border: none; color: #fff; font-size: 1.5em; cursor: pointer; padding: 0; width: 30px; height: 30px; line-height: 1;">×</button>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #aaa;">Category:</strong> <span style="color: ${{category.color}};">${{category.name}}</span>
+                        </div>
+                        ${{notesHtml}}
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                            <button onclick="WorldMapModule.editMarkerById(${{marker.id}}); document.getElementById('worldMapMarkerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(255,152,0,0.3); border: 1px solid #FF9800; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Edit">✏️</button>
+                            <button onclick="WorldMapModule.deleteMarkerById(${{marker.id}}); document.getElementById('worldMapMarkerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Delete">🗑️</button>
+                            <button onclick="WorldMapModule.zoomToMarkerById(${{marker.id}}); document.getElementById('worldMapMarkerInfoDialog').remove();" style="padding: 6px 10px; background: rgba(33,150,243,0.3); border: 1px solid #2196F3; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Zoom To">🔍</button>
+                            <button onclick="document.getElementById('worldMapMarkerInfoDialog').remove()" style="padding: 6px 10px; background: rgba(158,158,158,0.3); border: 1px solid #9E9E9E; border-radius: 4px; color: #fff; cursor: pointer; font-size: 1.2em;" title="Close">✕</button>
+                        </div>
+                    `;
+                    document.body.appendChild(dialog);
+                }}
+                
+                function editById(id) {{
+                    const markers = MapState.getValue('markers');
+                    const marker = markers.find(m => m.id === id);
+                    if (marker) {{
+                        showDialog(null, function(name, category, notes, color) {{
+                            marker.name = name;
+                            marker.category = category;
+                            marker.notes = notes || '';
+                            marker.color = color;
+                            MapState.update('markers', markers);
+                            MapDataManager.save();
+                            render();
+                            Sidebar.updateLocationList();
+                        }}, marker);
+                    }}
+                }}
+                
+                function deleteById(id) {{
+                    if (confirm('Delete this marker?')) {{
+                        const markers = MapState.getValue('markers');
+                        const filtered = markers.filter(m => m.id !== id);
+                        MapState.update('markers', filtered);
+                        MapDataManager.save();
+                        render();
+                        Sidebar.updateLocationList();
+                    }}
+                }}
+                
+                function zoomToById(id) {{
+                    const markers = MapState.getValue('markers');
+                    const marker = markers.find(m => m.id === id);
+                    if (marker) {{
+                        const container = document.getElementById('worldMapContainer');
+                        if (!container) return;
+                        const rect = container.getBoundingClientRect();
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        const zoom = Math.max(2, MapState.getValue('viewport.zoom'));
+                        MapState.update('viewport.zoom', zoom);
+                        MapState.update('viewport.panX', centerX - (marker.x * zoom));
+                        MapState.update('viewport.panY', centerY - (marker.y * zoom));
+                        MapRenderer.updateTransform();
+                    }}
+                }}
+                
+                return {{
+                    addAt: addAt,
+                    render: render,
+                    editById: editById,
+                    deleteById: deleteById,
+                    zoomToById: zoomToById,
+                    getCategories: function() {{ return markerCategories; }}
+                }};
+            }})();
+            
+            // AnnotationSystem - Drawing/paths
+            const AnnotationSystem = (function() {{
+                let currentPath = null;
+                
+                function start(screenX, screenY) {{
+                    console.log('🖊️ [Annotation] start() called with:', screenX, screenY);
+                    console.log('🖊️ [Annotation] Current mode:', MapState.getValue('interaction.mode'));
+                    
+                    if (MapState.getValue('interaction.mode') !== 'annotation') {{
+                        console.warn('🖊️ [Annotation] Mode is not annotation, returning early');
+                        return;
+                    }}
+                    MapState.update('interaction.isDrawing', true);
+                    
+                    // Debug: log input coordinates
+                    console.log('🖊️ [Annotation] Start drawing at screen:', screenX, screenY);
+                    
+                    const coords = MapCoordinateSystem.screenToWorld(screenX, screenY);
+                    
+                    // Debug: log converted coordinates
+                    console.log('🖊️ [Annotation] Converted to world:', coords.x, coords.y);
+                    
+                    // Debug: verify conversion by converting back
+                    const verifyScreen = MapCoordinateSystem.worldToScreen(coords.x, coords.y);
+                    console.log('🖊️ [Annotation] Verification - world back to screen:', verifyScreen.x, verifyScreen.y, 'vs original:', screenX, screenY);
+                    
+                    currentPath = {{
+                        id: Date.now(),
+                        points: [coords],
+                        color: '#9C27B0',
+                        width: 2
+                    }};
+                    const annotations = MapState.getValue('annotations');
+                    annotations.push(currentPath);
+                    MapState.update('annotations', annotations);
+                    
+                    // Render immediately to show first point
+                    render();
+                }}
+                
+                function addPoint(screenX, screenY) {{
+                    if (!MapState.getValue('interaction.isDrawing') || !currentPath) return;
+                    
+                    // Debug: log input coordinates
+                    console.log('🖊️ [Annotation] Add point at screen:', screenX, screenY);
+                    
+                    const coords = MapCoordinateSystem.screenToWorld(screenX, screenY);
+                    
+                    // Debug: log converted coordinates
+                    console.log('🖊️ [Annotation] Converted to world:', coords.x, coords.y);
+                    
+                    currentPath.points.push(coords);
+                    render();
+                }}
+                
+                function finish() {{
+                    if (MapState.getValue('interaction.isDrawing') && currentPath && currentPath.points.length > 1) {{
+                        MapDataManager.save();
+                    }}
+                    MapState.update('interaction.isDrawing', false);
+                    currentPath = null;
+                }}
+                
+                function render() {{
+                    const overlay = MapRenderer.getOverlay();
+                    if (!overlay) return;
+                    
+                    const existingPaths = overlay.querySelectorAll('.world-map-annotation');
+                    existingPaths.forEach(p => p.remove());
+                    
+                    const wrapper = document.getElementById('worldMapWrapper');
+                    if (!wrapper) return;
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    
+                    const annotations = MapState.getValue('annotations');
+                    const zoom = MapState.getValue('viewport.zoom');
+                    
+                    annotations.forEach(function(annotation) {{
+                        if (!annotation.points || annotation.points.length < 2) return;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        let pathData = 'M ';
+                        annotation.points.forEach(function(point, idx) {{
+                            const screenPos = MapCoordinateSystem.worldToScreen(point.x, point.y);
+                            // worldToScreen returns coordinates relative to wrapper top-left (0,0)
+                            // Overlay SVG is positioned to match the wrapper, so use coordinates directly
+                            const overlayX = screenPos.x;
+                            const overlayY = screenPos.y;
+                            
+                            // Debug: log rendering coordinates for first point of current path
+                            if (annotation === currentPath && idx === 0) {{
+                                console.log('🖊️ [Annotation] Rendering point:', {{
+                                    world: {{ x: point.x, y: point.y }},
+                                    screenPos: {{ x: screenPos.x, y: screenPos.y }},
+                                    overlay: {{ x: overlayX, y: overlayY }},
+                                    wrapperSize: {{ width: wrapperRect.width, height: wrapperRect.height }}
+                                }});
+                            }}
+                            
+                            pathData += (idx === 0 ? '' : ' L ') + overlayX + ',' + overlayY;
+                        }});
+                        path.setAttribute('d', pathData);
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke', annotation.color || '#9C27B0');
+                        path.setAttribute('stroke-width', Math.max(3, (annotation.width || 2) * zoom));
+                        path.setAttribute('class', 'world-map-annotation');
+                        path.setAttribute('data-annotation-id', annotation.id);
+                        path.style.pointerEvents = 'all';
+                        path.style.cursor = 'pointer';
+                        path.onclick = function(e) {{
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (confirm('Delete this drawing?')) {{
+                                const annotations = MapState.getValue('annotations');
+                                const filtered = annotations.filter(a => a.id !== annotation.id);
+                                MapState.update('annotations', filtered);
+                                MapDataManager.save();
+                                render();
+                            }}
+                        }};
+                        overlay.appendChild(path);
+                    }});
+                }}
+                
+                return {{
+                    start: start,
+                    addPoint: addPoint,
+                    finish: finish,
+                    render: render
+                }};
+            }})();
+            
+            // ========================================================================
+            // DATA MODULES
+            // ========================================================================
+            
+            // MapDataManager - Loading/saving
+            const MapDataManager = (function() {{
+                function load() {{
+                    loadFromFirebase('worldMapMarkers', function(data) {{
+                        if (data && Array.isArray(data)) {{
+                            MapState.update('markers', data);
+                        }}
+                        loadFromFirebase('worldMapAnnotations', function(annotData) {{
+                            if (annotData && Array.isArray(annotData)) {{
+                                MapState.update('annotations', annotData);
+                            }}
+                            MarkerSystem.render();
+                            AnnotationSystem.render();
+                            Sidebar.updateLocationList();
+                        }});
+                    }});
+                }}
+                
+                function save() {{
+                    saveToFirebase('worldMapMarkers', MapState.getValue('markers'));
+                    saveToFirebase('worldMapAnnotations', MapState.getValue('annotations'));
+                }}
+                
+                return {{
+                    load: load,
+                    save: save
+                }};
+            }})();
+            
+            // ========================================================================
+            // UI MODULES
+            // ========================================================================
+            
+            // ControlPanel - Buttons/controls
+            const ControlPanel = (function() {{
+                function updateModeButtons() {{
+                    const mode = MapState.getValue('interaction.mode');
+                    const panBtn = document.getElementById('worldMapPanModeBtn');
+                    const markerBtn = document.getElementById('worldMapMarkerModeBtn');
+                    const drawBtn = document.getElementById('worldMapDrawModeBtn');
+                    
+                    if (panBtn) {{
+                        panBtn.style.background = mode === 'pan' ? 'rgba(76,175,80,0.6)' : 'rgba(76,175,80,0.3)';
+                    }}
+                    if (markerBtn) {{
+                        markerBtn.style.background = mode === 'marker' ? 'rgba(33,150,243,0.6)' : 'rgba(33,150,243,0.3)';
+                        markerBtn.textContent = mode === 'marker' ? '📍 Cancel' : '📍 Add Marker';
+                    }}
+                    if (drawBtn) {{
+                        drawBtn.style.background = mode === 'annotation' ? 'rgba(156,39,176,0.6)' : 'rgba(156,39,176,0.3)';
+                        drawBtn.textContent = mode === 'annotation' ? '✏️ Cancel' : '✏️ Draw';
+                    }}
+                }}
+                
+                return {{
+                    updateModeButtons: updateModeButtons
+                }};
+            }})();
+            
+            // Sidebar - Markers list/filters
+            const Sidebar = (function() {{
+                function updateLocationList() {{
+                    const locationList = document.getElementById('worldMapLocationList');
+                    if (!locationList) return;
+                    
+                    const filter = document.getElementById('worldMapMarkerCategoryFilter')?.value || 'all';
+                    const searchTerm = (document.getElementById('worldMapMarkerSearchInput')?.value || '').toLowerCase().trim();
+                    const markers = MapState.getValue('markers');
+                    const markerCategories = MarkerSystem.getCategories();
+                    
+                    let filtered = filter === 'all' ? markers : markers.filter(m => m.category === filter);
+                    if (searchTerm) {{
+                        filtered = filtered.filter(m => 
+                            m.name.toLowerCase().includes(searchTerm) || 
+                            (m.notes && m.notes.toLowerCase().includes(searchTerm))
+                        );
+                    }}
+                    
+                    if (filtered.length === 0) {{
+                        locationList.innerHTML = '<p style="color: #666; font-size: 0.85em; font-style: italic;">No locations found.</p>';
+                        return;
+                    }}
+                    
+                    locationList.innerHTML = '';
+                    filtered.forEach(function(marker) {{
+                        const category = markerCategories[marker.category] || markerCategories['other'];
+                        const markerColor = marker.color || category.color;
+                        const item = document.createElement('div');
+                        item.style.cssText = 'padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; cursor: pointer; border-left: 3px solid ' + markerColor + '; margin-bottom: 5px;';
+                        const hasNotes = marker.notes ? '📝' : '';
+                        item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center;"><div style="flex: 1;"><span style="font-size: 1.2em; margin-right: 5px;">' + category.icon + '</span><strong style="color: #fff; font-size: 0.9em;">' + marker.name + '</strong>' + (hasNotes ? ' <span style="color: #aaa; font-size: 0.8em;">' + hasNotes + '</span>' : '') + '</div><button onclick="event.stopPropagation(); WorldMapModule.deleteMarkerById(' + marker.id + ')" style="background: rgba(244,67,54,0.3); border: 1px solid #F44336; border-radius: 3px; color: #fff; padding: 2px 6px; font-size: 0.75em; cursor: pointer;">×</button></div>';
+                        item.onclick = function(e) {{
+                            if (!e.target.closest('button')) {{
+                                MarkerSystem.zoomToById(marker.id);
+                            }}
+                        }};
+                        locationList.appendChild(item);
+                    }});
+                }}
+                
+                function initialize() {{
+                    const searchInput = document.getElementById('worldMapMarkerSearchInput');
+                    const categoryFilter = document.getElementById('worldMapMarkerCategoryFilter');
+                    
+                    if (searchInput) {{
+                        searchInput.oninput = updateLocationList;
+                    }}
+                    if (categoryFilter) {{
+                        categoryFilter.onchange = updateLocationList;
+                    }}
+                }}
+                
+                return {{
+                    initialize: initialize,
+                    updateLocationList: updateLocationList
+                }};
+            }})();
+            
+            // ========================================================================
+            // MAIN MODULE INITIALIZATION
+            // ========================================================================
+            
+            function init() {{
+                console.log('🌍 [WorldMap] Initializing World Map Module...');
+                console.log('🔧 [WorldMap] init() - MapRenderer:', typeof MapRenderer);
+                console.log('🔧 [WorldMap] init() - MapController:', typeof MapController);
+                console.log('🔧 [WorldMap] init() - Sidebar:', typeof Sidebar);
+                
+                // Initialize core modules
+                console.log('🔧 [WorldMap] Calling MapRenderer.initialize()...');
+                MapRenderer.initialize();
+                console.log('🔧 [WorldMap] Calling MapController.initialize()...');
+                MapController.initialize();
+                console.log('🔧 [WorldMap] Calling Sidebar.initialize()...');
+                Sidebar.initialize();
+                
+                // Load map data
+                MapDataManager.load();
+                
+                // Load and display map (get from scoped variable to prevent global access)
+                const mapContent = window.__WORLD_MAP_SVG_CONTENT__ || '';
+                if (mapContent) {{
+                    MapRenderer.loadMap(mapContent);
+                }} else {{
+                    console.error('🌍 [WorldMap] No map content available');
+                    const error = document.getElementById('worldMapError');
+                    if (error) error.style.display = 'block';
+                }}
+                
+                // Set up real-time sync for world map data
+                setupRealtimeSync();
+                
+                // Fit map to viewport after a short delay to ensure layout is ready
+                setTimeout(function() {{
+                    MapRenderer.fitToViewport();
+                }}, 100);
+                
+                console.log('🌍 [WorldMap] Module initialized successfully');
+            }}
+            
+            // Set up real-time Firebase sync for world map markers and annotations
+            function setupRealtimeSync() {{
+                // Access global database variable
+                const db = typeof database !== 'undefined' ? database : null;
+                if (!db) {{
+                    console.log('🌍 [WorldMap] No database connection - skipping real-time sync');
+                    // Try again after Firebase initializes
+                    setTimeout(setupRealtimeSync, 1000);
+                    return;
+                }}
+                
+                // Sync world map markers
+                const worldMapMarkersRef = db.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapMarkers`);
+                worldMapMarkersRef.on('value', function(snapshot) {{
+                    const data = snapshot.val();
+                    if (data && Array.isArray(data)) {{
+                        const currentMarkers = MapState.getValue('markers');
+                        const currentDataStr = JSON.stringify(currentMarkers);
+                        const newDataStr = JSON.stringify(data);
+                        if (currentDataStr !== newDataStr) {{
+                            MapState.update('markers', data);
+                            MarkerSystem.render();
+                            Sidebar.updateLocationList();
+                        }}
+                    }}
+                }}, function(error) {{
+                    console.error('🌍 [WorldMap] Error listening to markers:', error);
+                }});
+                
+                // Sync world map annotations
+                const worldMapAnnotationsRef = db.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapAnnotations`);
+                worldMapAnnotationsRef.on('value', function(snapshot) {{
+                    const data = snapshot.val();
+                    if (data && Array.isArray(data)) {{
+                        const currentAnnotations = MapState.getValue('annotations');
+                        const currentDataStr = JSON.stringify(currentAnnotations);
+                        const newDataStr = JSON.stringify(data);
+                        if (currentDataStr !== newDataStr) {{
+                            MapState.update('annotations', data);
+                            AnnotationSystem.render();
+                        }}
+                    }}
+                }}, function(error) {{
+                    console.error('🌍 [WorldMap] Error listening to annotations:', error);
+                }});
+            }}
+            
+            // Public API
+            return {{
+                init: init,
+                editMarkerById: MarkerSystem.editById,
+                deleteMarkerById: MarkerSystem.deleteById,
+                zoomToMarkerById: MarkerSystem.zoomToById
+            }};
+        }})();
+        
+        // Make WorldMapModule globally available
+        window.WorldMapModule = WorldMapModule;
         </script>
         
         <div id="editorTab" class="tab-content">
@@ -4000,7 +5731,7 @@ class NPCRelationshipMapper:
             let tabIndex = -1;
             if (tabName === 'cards') tabIndex = 0;
             else if (tabName === 'mindmap') tabIndex = 1;
-            else if (tabName === 'map') tabIndex = 2;
+            else if (tabName === 'worldMap') tabIndex = 2;
             else if (tabName === 'editor') tabIndex = 3;
             else if (tabName === 'inventory') tabIndex = 4;
             
@@ -4015,12 +5746,21 @@ class NPCRelationshipMapper:
                 content.classList.add('active');
                 content.style.display = 'block';
                 
-                // Initialize tab-specific functionality (will be defined later)
-                if (typeof window.initTabContent === 'function') {
-                    window.initTabContent(tabName);
-                }
-            }
-        }
+                // Initialize tab-specific functionality
+                if (tabName === 'cards' && typeof initCardView === 'function') {{
+                    initCardView();
+                }} else if (tabName === 'mindmap' && typeof initMindMap === 'function') {{
+                    initMindMap();
+                }} else if (tabName === 'worldMap' && typeof WorldMapModule !== 'undefined' && typeof WorldMapModule.init === 'function') {{
+                    // Initialize World Map Module
+                    WorldMapModule.init();
+                }} else if (tabName === 'editor' && typeof initEditor === 'function') {{
+                    initEditor();
+                }} else if (tabName === 'inventory' && typeof initInventory === 'function') {{
+                    initInventory();
+                }}
+            }}
+        }}
         
         // Make switchTab available globally immediately
         window.switchTab = switchTab;
@@ -4049,12 +5789,17 @@ class NPCRelationshipMapper:
         }
         
         function filterNPCs() {
-            // Refresh cards if DOM changed
+            // Refresh cards if DOM changed - query from entire document to find cards in groups
             npcCards = Array.from(document.querySelectorAll('.npc-card'));
+            
+            // Ensure we have the search box reference
+            if (!searchBox) {
+                searchBox = getEl('searchBox');
+            }
             
             const factionValue = factionFilter ? factionFilter.value : '';
             const statusValue = statusFilter ? statusFilter.value : '';
-            const searchValue = searchBox ? searchBox.value.toLowerCase() : '';
+            const searchValue = searchBox ? searchBox.value.toLowerCase().trim() : '';
             const groupBy = getEl('groupBy') ? getEl('groupBy').value : '';
             const sortBy = getEl('sortBy') ? getEl('sortBy').value : '';
             const spoilerFree = getEl('spoilerFreeMode') ? getEl('spoilerFreeMode').checked : false;
@@ -4062,19 +5807,20 @@ class NPCRelationshipMapper:
             const container = getEl('npcContainer');
             if (!container) return;
             
-            // Filter cards
+            // Filter cards - ensure we process all cards including those in group containers
             npcCards.forEach(function(card) {
-                const faction = card.dataset.faction;
-                const status = card.dataset.status;
-                const name = card.dataset.name;
-                const location = card.dataset.location || '';
-                const tags = card.dataset.tags || '';
+                const faction = card.dataset.faction || '';
+                const status = card.dataset.status || '';
+                const name = (card.dataset.name || '').toLowerCase();
+                const location = (card.dataset.location || '').toLowerCase();
+                const tags = (card.dataset.tags || '').toLowerCase();
                 const isSpoiler = card.dataset.spoiler === 'true';
                 
                 let show = true;
                 
                 if (factionValue && faction !== factionValue) show = false;
                 if (statusValue && status !== statusValue) show = false;
+                // Only filter by search if searchValue is not empty
                 if (searchValue && name.indexOf(searchValue) === -1 && location.indexOf(searchValue) === -1 && tags.indexOf(searchValue) === -1) show = false;
                 if (spoilerFree && isSpoiler) show = false;
                 
@@ -4085,12 +5831,11 @@ class NPCRelationshipMapper:
                 }
             });
             
-            // Sort cards
-            const visibleCards = Array.from(npcCards).filter(function(card) {
-                return !card.classList.contains('hidden');
-            });
-            
-            visibleCards.sort(function(a, b) {
+            // Sort ALL cards (not just visible).
+            // Critical: grouping rebuilds DOM using the provided list; if we only pass visible cards,
+            // hidden cards get removed from the DOM and can never come back when search is cleared.
+            const sortedCards = Array.from(npcCards);
+            sortedCards.sort(function(a, b) {
                 if (sortBy === 'name') {
                     return (a.dataset.name || '').localeCompare(b.dataset.name || '');
                 } else if (sortBy === 'name-desc') {
@@ -4110,17 +5855,32 @@ class NPCRelationshipMapper:
             
             // Group by location/faction/status
             if (groupBy === 'location') {
-                groupByLocation(visibleCards);
+                groupByLocation(sortedCards);
             } else if (groupBy === 'faction') {
-                groupByFaction(visibleCards);
+                groupByFaction(sortedCards);
             } else if (groupBy === 'status') {
-                groupByStatus(visibleCards);
+                groupByStatus(sortedCards);
             } else {
                 // No grouping - just sort
-                container.innerHTML = '<div class="npc-grid" id="npcGrid"></div>';
-                const newGrid = getEl('npcGrid');
-                visibleCards.forEach(function(card) {
-                    if (newGrid && card) newGrid.appendChild(card);
+                // Find or create the grid container
+                let newGrid = getEl('npcGrid');
+                if (!newGrid) {
+                    container.innerHTML = '<div class="npc-grid" id="npcGrid"></div>';
+                    newGrid = getEl('npcGrid');
+                } else {
+                    // Clear existing grid but keep the container element
+                    newGrid.innerHTML = '';
+                }
+                
+                // Append all cards (hidden stay hidden via CSS)
+                sortedCards.forEach(function(card) {
+                    if (newGrid && card) {
+                        // Remove card from its current parent if it has one (in case it was in a group)
+                        if (card.parentNode && card.parentNode !== newGrid) {
+                            card.parentNode.removeChild(card);
+                        }
+                        newGrid.appendChild(card);
+                    }
                 });
             }
             
@@ -4145,9 +5905,18 @@ class NPCRelationshipMapper:
                 groupDiv.innerHTML = '<div class="location-group-title">📍 ' + location + '</div><div class="npc-grid"></div>';
                 const groupGrid = groupDiv.querySelector('.npc-grid');
                 groups[location].forEach(function(card) {
-                    if (groupGrid && card) groupGrid.appendChild(card);
+                    if (groupGrid && card) {
+                        // Remove card from its current parent if it has one (prevents duplicate DOM nodes)
+                        if (card.parentNode && card.parentNode !== groupGrid) {
+                            card.parentNode.removeChild(card);
+                        }
+                        groupGrid.appendChild(card);
+                    }
                 });
-                container.appendChild(groupDiv);
+                // Skip empty groups (all cards hidden)
+                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    container.appendChild(groupDiv);
+                }
             });
         }
         
@@ -4169,9 +5938,18 @@ class NPCRelationshipMapper:
                 groupDiv.innerHTML = '<div class="location-group-title">🏛️ ' + faction + '</div><div class="npc-grid"></div>';
                 const groupGrid = groupDiv.querySelector('.npc-grid');
                 groups[faction].forEach(function(card) {
-                    if (groupGrid && card) groupGrid.appendChild(card);
+                    if (groupGrid && card) {
+                        // Remove card from its current parent if it has one (prevents duplicate DOM nodes)
+                        if (card.parentNode && card.parentNode !== groupGrid) {
+                            card.parentNode.removeChild(card);
+                        }
+                        groupGrid.appendChild(card);
+                    }
                 });
-                container.appendChild(groupDiv);
+                // Skip empty groups (all cards hidden)
+                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    container.appendChild(groupDiv);
+                }
             });
         }
         
@@ -4205,11 +5983,19 @@ class NPCRelationshipMapper:
                 const groupGrid = groupDiv.querySelector('.npc-grid');
                 if (groupGrid) {
                     groups[status].forEach(function(card) {
-                        if (card) groupGrid.appendChild(card);
+                        if (card) {
+                            // Remove card from its current parent if it has one (prevents duplicate DOM nodes)
+                            if (card.parentNode && card.parentNode !== groupGrid) {
+                                card.parentNode.removeChild(card);
+                            }
+                            groupGrid.appendChild(card);
+                        }
                     });
                 }
-                
-                container.appendChild(groupDiv);
+                // Skip empty groups (all cards hidden)
+                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    container.appendChild(groupDiv);
+                }
             });
         }
         
@@ -4683,8 +6469,6 @@ class NPCRelationshipMapper:
                 } else {
                     window.network.redraw();
                 }
-            } else if (tabName === 'map') {
-                // Map tab - no initialization needed, just display the SVG
             } else if (tabName === 'editor') {
                 if (typeof initEditor === 'function') {
                     initEditor();
@@ -4714,8 +6498,27 @@ class NPCRelationshipMapper:
                 statusFilter.addEventListener('change', filterNPCs);
             }
             if (searchBox) {
-                searchBox.addEventListener('input', filterNPCs);
-                searchBox.addEventListener('keyup', filterNPCs);
+                // Use multiple event types to catch all changes including deletion
+                searchBox.addEventListener('input', function() {
+                    filterNPCs();
+                });
+                searchBox.addEventListener('keyup', function() {
+                    filterNPCs();
+                });
+                searchBox.addEventListener('keydown', function(e) {
+                    // Catch delete/backspace keys
+                    if (e.key === 'Delete' || e.key === 'Backspace') {
+                        setTimeout(filterNPCs, 10);
+                    }
+                });
+                searchBox.addEventListener('paste', function() {
+                    setTimeout(filterNPCs, 10);
+                });
+                searchBox.addEventListener('cut', function() {
+                    setTimeout(filterNPCs, 10);
+                });
+                // Also listen for change event as fallback
+                searchBox.addEventListener('change', filterNPCs);
             }
             
             const groupByEl = getEl('groupBy');
@@ -7492,7 +9295,7 @@ class NPCRelationshipMapper:
         
         # Replace SVG placeholder with actual content
         # Base64 decoding will safely decode the string without any syntax issues
-        html = html.replace('PLACEHOLDER_SVG_CONTENT', svg_js_content)
+        html = html.replace('PLACEHOLDER_SVG_CONTENT_VALUE', svg_js_content)
         
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(html)
