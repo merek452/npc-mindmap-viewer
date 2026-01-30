@@ -5913,9 +5913,12 @@ class NPCRelationshipMapper:
                         groupGrid.appendChild(card);
                     }
                 });
-                // Skip empty groups (all cards hidden)
-                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
-                    container.appendChild(groupDiv);
+                // Always append so cards stay in DOM; hide group section when all cards are hidden
+                container.appendChild(groupDiv);
+                if (!groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    groupDiv.style.display = 'none';
+                } else {
+                    groupDiv.style.display = '';
                 }
             });
         }
@@ -5946,9 +5949,12 @@ class NPCRelationshipMapper:
                         groupGrid.appendChild(card);
                     }
                 });
-                // Skip empty groups (all cards hidden)
-                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
-                    container.appendChild(groupDiv);
+                // Always append so cards stay in DOM; hide group section when all cards are hidden
+                container.appendChild(groupDiv);
+                if (!groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    groupDiv.style.display = 'none';
+                } else {
+                    groupDiv.style.display = '';
                 }
             });
         }
@@ -5992,9 +5998,12 @@ class NPCRelationshipMapper:
                         }
                     });
                 }
-                // Skip empty groups (all cards hidden)
-                if (groupDiv.querySelector('.npc-card:not(.hidden)')) {
-                    container.appendChild(groupDiv);
+                // Always append so cards stay in DOM; hide group section when all cards are hidden
+                container.appendChild(groupDiv);
+                if (!groupDiv.querySelector('.npc-card:not(.hidden)')) {
+                    groupDiv.style.display = 'none';
+                } else {
+                    groupDiv.style.display = '';
                 }
             });
         }
