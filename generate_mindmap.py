@@ -1073,6 +1073,7 @@ class NPCRelationshipMapper:
         /* World Map Tab (New) Styles */
         /* IMPORTANT: keep tab hidden unless it has `.active` (tab-content is display:none by default) */
         #worldMapTab {{
+            display: flex;
             flex-direction: column;
             gap: 0;
             min-height: 60vh;
@@ -1080,12 +1081,22 @@ class NPCRelationshipMapper:
         
         #worldMapTab.active {{
             display: flex !important;
+            flex-direction: column !important;
         }}
         
+        /* Controls as a single compact bar above the map (no separate left window) */
         .worldmap-controls-panel {{
+            flex: 0 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
             background: rgba(0,0,0,0.3);
-            padding: 15px 20px;
+            padding: 8px 15px;
             border-bottom: 1px solid rgba(255,215,0,0.3);
+            box-sizing: border-box;
         }}
         
         .worldmap-main-area {{
@@ -1093,21 +1104,26 @@ class NPCRelationshipMapper:
             flex-direction: row;
             gap: 15px;
             flex: 1;
+            width: 100%;
+            min-width: 0;
             padding: 15px;
             min-height: 0;
+            overflow: hidden;
+            box-sizing: border-box;
         }}
         
         .worldmap-content {{
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             min-width: 0;
+            min-height: 0;
         }}
         
         #worldMapContainer {{
             flex: 1;
-            min-height: 500px;
+            min-height: 300px;
             overflow: hidden;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
@@ -1119,9 +1135,9 @@ class NPCRelationshipMapper:
         }}
         
         #worldMapContainer #worldMapWrapper {{
-            flex: 1;
-            min-height: 400px;
             width: 100%;
+            height: 100%;
+            min-height: 300px;
             overflow: hidden;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
@@ -1133,20 +1149,22 @@ class NPCRelationshipMapper:
         }}
         
         #worldMapSidebar {{
-            width: 280px;
-            min-width: 280px;
+            width: 260px;
+            min-width: 260px;
+            flex: 0 0 auto;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
             padding: 15px;
-            max-height: calc(100vh - 200px);
+            max-height: 100%;
             overflow-y: auto;
         }}
         
         .worldmap-tooltip {{
+            flex: 0 0 auto;
             background: rgba(0,0,0,0.2);
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 5px;
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #aaa;
         }}
         
@@ -1464,7 +1482,14 @@ class NPCRelationshipMapper:
             const content = document.getElementById(contentId);
             if (content) {{
                 content.classList.add('active');
-                content.style.display = 'block';
+                // World Map tab: force flex column so controls bar is above map, not left column
+                if (contentId === 'worldMapTab') {{
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
+                    content.style.width = '100%';
+                }} else {{
+                    content.style.display = 'block';
+                }}
                 
                 // Initialize tab-specific functionality
                 if (tabName === 'cards' && typeof initCardView === 'function') {{
@@ -1684,14 +1709,14 @@ class NPCRelationshipMapper:
         
         <div id="worldMapTab" class="tab-content">
             <div class="worldmap-controls-panel">
-                <h2 style="color: #FFD700; margin: 0 0 15px 0;">🌍 Genia World Map</h2>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <button id="worldMapResetBtn" style="padding: 8px 16px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">🔄 Reset View</button>
-                    <button id="worldMapPanModeBtn" style="padding: 8px 16px; background: rgba(76,175,80,0.6); border: 2px solid #4CAF50; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✋ Pan</button>
-                    <button id="worldMapMarkerModeBtn" style="padding: 8px 16px; background: rgba(33,150,243,0.3); border: 2px solid #2196F3; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">📍 Add Marker</button>
-                    <button id="worldMapDrawModeBtn" style="padding: 8px 16px; background: rgba(156,39,176,0.3); border: 2px solid #9C27B0; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9em;">✏️ Draw</button>
-                    <span id="worldMapZoomLevel" style="color: #aaa; font-size: 0.9em; margin-left: auto;">Zoom: 100%</span>
+                <h2 style="color: #FFD700; margin: 0; font-size: 1.2em; white-space: nowrap;">🌍 Genia World Map</h2>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button id="worldMapResetBtn" style="padding: 6px 12px; background: rgba(255,215,0,0.3); border: 2px solid #FFD700; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85em;">🔄 Reset</button>
+                    <button id="worldMapPanModeBtn" style="padding: 6px 12px; background: rgba(76,175,80,0.6); border: 2px solid #4CAF50; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85em;">✋ Pan</button>
+                    <button id="worldMapMarkerModeBtn" style="padding: 6px 12px; background: rgba(33,150,243,0.3); border: 2px solid #2196F3; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85em;">📍 Add Marker</button>
+                    <button id="worldMapDrawModeBtn" style="padding: 6px 12px; background: rgba(156,39,176,0.3); border: 2px solid #9C27B0; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85em;">✏️ Draw</button>
                 </div>
+                <span id="worldMapZoomLevel" style="color: #aaa; font-size: 0.85em; margin-left: auto;">Zoom: 100%</span>
             </div>
             
             <div class="worldmap-main-area">
@@ -5744,7 +5769,12 @@ class NPCRelationshipMapper:
             const content = document.getElementById(contentId);
             if (content) {
                 content.classList.add('active');
-                content.style.display = 'block';
+                if (contentId === 'worldMapTab') {
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
+                } else {
+                    content.style.display = 'block';
+                }
                 
                 // Initialize tab-specific functionality
                 if (tabName === 'cards' && typeof initCardView === 'function') {{
