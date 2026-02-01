@@ -270,6 +270,50 @@
                 min-width: 44px;
                 padding: 12px 20px;
             }
+            
+            /* World Map: maximise map space on mobile */
+            #worldMapTab {
+                min-height: calc(100vh - 140px);
+                height: calc(100vh - 140px);
+            }
+            #worldMapTab .worldmap-controls-panel {
+                padding: 6px 10px;
+                gap: 8px;
+            }
+            #worldMapTab .worldmap-controls-panel h2 {
+                font-size: 1em;
+            }
+            #worldMapTab .worldmap-main-area {
+                flex-direction: column;
+                padding: 8px;
+                gap: 8px;
+                min-height: 0;
+                flex: 1;
+            }
+            #worldMapTab .worldmap-content {
+                flex: 1;
+                min-height: 0;
+                gap: 4px;
+            }
+            #worldMapTab #worldMapContainer {
+                flex: 1;
+                min-height: 50vh;
+            }
+            #worldMapTab #worldMapContainer #worldMapWrapper {
+                min-height: 200px;
+            }
+            #worldMapTab #worldMapSidebar {
+                width: 100%;
+                min-width: 0;
+                max-height: 35vh;
+                flex: 0 0 auto;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            #worldMapTab .worldmap-tooltip {
+                padding: 4px 8px;
+                font-size: 0.75em;
+            }
         }
         
         @media (max-width: 480px) {
@@ -363,6 +407,21 @@
             .tab {
                 padding: 10px 15px !important;
                 font-size: 0.9em !important;
+            }
+            
+            /* World Map: even more space on small phones */
+            #worldMapTab {
+                min-height: calc(100vh - 120px);
+                height: calc(100vh - 120px);
+            }
+            #worldMapTab .worldmap-main-area {
+                padding: 6px;
+            }
+            #worldMapTab #worldMapContainer {
+                min-height: 55vh;
+            }
+            #worldMapTab #worldMapSidebar {
+                max-height: 28vh;
             }
         }
         
@@ -800,7 +859,7 @@
             display: flex;
             flex-direction: column;
             gap: 0;
-            min-height: 60vh;
+            min-height: 75vh;
         }
         
         #worldMapTab.active {
@@ -847,7 +906,7 @@
         
         #worldMapContainer {
             flex: 1;
-            min-height: 300px;
+            min-height: 400px;
             overflow: hidden;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
@@ -861,7 +920,7 @@
         #worldMapContainer #worldMapWrapper {
             width: 100%;
             height: 100%;
-            min-height: 300px;
+            min-height: 400px;
             overflow: hidden;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
