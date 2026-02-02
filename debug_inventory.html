@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .log {
+            background: #2a2a2a;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #4caf50;
+        }
+        .error {
+            border-left-color: #f44336;
+        }
+        .warning {
+            border-left-color: #ff9800;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .state {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Inventory System Debug</h1>
+    
+    <div>
+        <button onclick="testIsStackable()">Test isStackable()</button>
+        <button onclick="testAddArrow()">Add Arrow to Bag</button>
+        <button onclick="testAddSword()">Add Sword to Bag</button>
+        <button onclick="testConsolidate()">Test consolidateStacks()</button>
+        <button onclick="showState()">Show Current State</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <div id="state" class="state"></div>
+
+    <script>
+        // Copy the actual functions from the main file
+        let inventoryData = {
+            partyGold: 0,
+            players: [],
+            bagOfHolding: [],
+            version: 0
+        };
+
+        function log(message, type = 'info') {
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            document.getElementById('logs').appendChild(logDiv);
+            logDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        function showState() {
+            const stateDiv = document.getElementById('state');
+            stateDiv.innerHTML = `
+                <h3>Current Inventory State:</h3>
+                <pre>${JSON.stringify(inventoryData, null, 2)}</pre>
+            `;
+        }
+
+        // Test the isStackable function
+        function isStackable(item) {
+            if (!item) return false;
+            const category = (item.category || '').toLowerCase();
+            const stackableCategories = ['ammunition', 'consumable', 'potion', 'scroll', 'material', 'adventuring gear'];
+            const result = stackableCategories.some(cat => category.includes(cat));
+            log(`isStackable("${item.name}", category="${item.category}") = ${result}`);
+            return result;
+        }
+
+        function consolidateStacks(items) {
+            log(`<strong>consolidateStacks() called with ${items.length} items</strong>`);
+            const consolidated = [];
+            const seen = new Map();
+            
+            items.forEach(function(item) {
+                if (!item || !item.name) {
+                    log(`⚠ Skipping invalid item`, 'warning');
+                    return;
+                }
+                const key = item.name + '|' + (item.rarity || '') + '|' + (isStackable(item) ? 'stackable' : 'unique');
+                log(`Processing: ${item.name}, key="${key}", stackable=${isStackable(item)}`);
+                
+                if (isStackable(item) && seen.has(key)) {
+                    // Add to existing stack
+                    const existing = seen.get(key);
+                    const oldQty = existing.quantity;
+                    existing.quantity = (parseInt(existing.quantity) || 1) + (parseInt(item.quantity) || 1);
+                    log(`✅ Merged into existing stack: ${item.name} (${oldQty} + ${item.quantity || 1} = ${existing.quantity})`);
+                } else {
+                    // New item or non-stackable
+                    const itemCopy = JSON.parse(JSON.stringify(item));
+                    if (isStackable(itemCopy) && !itemCopy.quantity) {
+                        itemCopy.quantity = 1;
+                    }
+                    consolidated.push(itemCopy);
+                    if (isStackable(itemCopy)) {
+                        seen.set(key, itemCopy);
+                    }
+                    log(`➕ Added new item: ${item.name} (qty: ${itemCopy.quantity || 'none'})`);
+                }
+            });
+            
+            log(`<strong>consolidateStacks() result: ${items.length} items → ${consolidated.length} items</strong>`);
+            return consolidated;
+        }
+
+        function testIsStackable() {
+            log('<h3>=== Testing isStackable() ===</h3>');
+            
+            const testItems = [
+                { name: 'Arrow', category: 'Ammunition' },
+                { name: 'Potion of Healing', category: 'Potion' },
+                { name: 'Longsword', category: 'Weapon' },
+                { name: 'Rope', category: 'Adventuring Gear' },
+                { name: 'Shield', category: 'Armor' }
+            ];
+            
+            testItems.forEach(item => {
+                isStackable(item);
+            });
+        }
+
+        function testAddArrow() {
+            log('<h3>=== Testing Add Arrow ===</h3>');
+            
+            const arrow = {
+                name: 'Arrow',
+                category: 'Ammunition',
+                weight: '0.05',
+                rarity: 'Common',
+                quantity: 1
+            };
+            
+            log(`Current bag has ${inventoryData.bagOfHolding.length} items`);
+            
+            // Check for existing stack
+            const existingIndex = inventoryData.bagOfHolding.findIndex(function(existing) {
+                const match = existing.name === arrow.name && 
+                       (existing.rarity || '') === (arrow.rarity || '') &&
+                       isStackable(existing);
+                log(`Comparing with existing[${inventoryData.bagOfHolding.indexOf(existing)}]: ${existing.name}, match=${match}`);
+                return match;
+            });
+            
+            log(`Existing stack index: ${existingIndex}`);
+            
+            if (existingIndex >= 0 && isStackable(arrow)) {
+                const existing = inventoryData.bagOfHolding[existingIndex];
+                const oldQty = existing.quantity;
+                existing.quantity = (parseInt(existing.quantity) || 1) + 1;
+                log(`✅ Added to existing stack: ${oldQty} → ${existing.quantity}`, 'info');
+            } else {
+                inventoryData.bagOfHolding.push(arrow);
+                log(`➕ Created new stack with quantity: ${arrow.quantity}`, 'info');
+            }
+            
+            showState();
+        }
+
+        function testAddSword() {
+            log('<h3>=== Testing Add Sword (Non-stackable) ===</h3>');
+            
+            const sword = {
+                name: 'Longsword',
+                category: 'Weapon',
+                weight: '3',
+                rarity: 'Common'
+            };
+            
+            log(`isStackable result: ${isStackable(sword)}`);
+            inventoryData.bagOfHolding.push(sword);
+            log(`➕ Added sword (should NOT stack)`, 'info');
+            
+            showState();
+        }
+
+        function testConsolidate() {
+            log('<h3>=== Testing Consolidate ===</h3>');
+            
+            // Create test data with duplicates
+            inventoryData.bagOfHolding = [
+                { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 5 },
+                { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 3 },
+                { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
+                { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
+                { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 2 },
+                { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 1 }
+            ];
+            
+            log(`Before: ${inventoryData.bagOfHolding.length} items`);
+            inventoryData.bagOfHolding = consolidateStacks(inventoryData.bagOfHolding);
+            log(`After: ${inventoryData.bagOfHolding.length} items`);
+            
+            showState();
+        }
+
+        // Initial state display
+        showState();
+        log('🚀 Debug script loaded. Click buttons to test functionality.');
+    </script>
+</body>
+</html>

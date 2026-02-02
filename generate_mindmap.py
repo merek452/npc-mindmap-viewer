@@ -2047,6 +2047,14 @@ class NPCRelationshipMapper:
                             }}
                         }});
                         
+                        // Consolidate stacks in the incoming data
+                        data.bagOfHolding = consolidateStacks(data.bagOfHolding || []);
+                        data.players.forEach(function(player) {{
+                            if (player && Array.isArray(player.items)) {{
+                                player.items = consolidateStacks(player.items);
+                            }}
+                        }});
+                        
                         inventoryData = data;
                         if (typeof renderPlayers === 'function') {{
                             renderPlayers();
