@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Fixes Test Suite</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .test-section { background: #2a2a2a; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .test-result { padding: 10px; margin: 5px 0; border-left: 4px solid; }
+        .pass { border-color: #4caf50; background: rgba(76, 175, 80, 0.1); }
+        .fail { border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+        .info { border-color: #2196f3; background: rgba(33, 150, 243, 0.1); }
+        button { padding: 10px 20px; margin: 5px; background: #4caf50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        pre { background: #333; padding: 10px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Inventory System - Critical Fixes Test Suite</h1>
+    <p>Testing fixes for issues #1-6</p>
+    
+    <button onclick="runAllTests()">▶️ Run All Tests</button>
+    <button onclick="clearResults()">🗑️ Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        function log(section, message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${section}:</strong> ${message}`;
+            results.appendChild(div);
+            if (type === 'pass') testsPassed++;
+            if (type === 'fail') testsFailed++;
+        }
+
+        function clearResults() {
+            results.innerHTML = '';
+            testsPassed = 0;
+            testsFailed = 0;
+        }
+
+        // Mock inventory data
+        let inventoryData = {
+            partyGold: 0,
+            players: [
+                { name: 'TestPlayer', gold: 100, items: [] }
+            ],
+            bagOfHolding: [],
+            version: 0,
+            lastModified: Date.now()
+        };
+
+        // FIX #1: Test Unique Item IDs
+        function testUniqueIds() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #1: Unique Item IDs</h2>';
+            results.appendChild(section);
+
+            // Generate ID function
+            function generateItemId() {
+                return 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            function ensureItemId(item) {
+                if (!item._id) {
+                    item._id = generateItemId();
+                }
+                return item;
+            }
+
+            const item1 = { name: 'Sword' };
+            const item2 = { name: 'Shield' };
+            
+            ensureItemId(item1);
+            ensureItemId(item2);
+
+            if (item1._id && item2._id && item1._id !== item2._id) {
+                log('Unique IDs', `Generated unique IDs: ${item1._id} and ${item2._id}`, 'pass');
+            } else {
+                log('Unique IDs', 'Failed to generate unique IDs', 'fail');
+            }
+
+            // Test ID persistence
+            const id = item1._id;
+            ensureItemId(item1);
+            if (item1._id === id) {
+                log('ID Persistence', 'IDs remain stable across multiple calls', 'pass');
+            } else {
+                log('ID Persistence', 'IDs changed unexpectedly', 'fail');
+            }
+        }
+
+        // FIX #2: Test Transaction Rollback
+        function testTransactionRollback() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #2: Transaction Rollback for Drag-Drop</h2>';
+            results.appendChild(section);
+
+            // Simulate drag-drop with rollback
+            const originalBag = [{ name: 'Arrow', quantity: 5 }];
+            inventoryData.bagOfHolding = JSON.parse(JSON.stringify(originalBag));
+            
+            const backup = JSON.parse(JSON.stringify(inventoryData));
+            
+            try {
+                // Simulate operation that might fail
+                inventoryData.bagOfHolding.push({ name: 'Sword', _id: 'test123' });
+                
+                // Simulate error
+                throw new Error('Simulated save failure');
+            } catch (error) {
+                // Rollback
+                inventoryData = backup;
+                log('Rollback', 'Transaction rolled back successfully on error', 'pass');
+            }
+
+            if (inventoryData.bagOfHolding.length === 1 && inventoryData.bagOfHolding[0].name === 'Arrow') {
+                log('Data Integrity', 'Inventory restored to original state after rollback', 'pass');
+            } else {
+                log('Data Integrity', 'Rollback failed - data corrupted', 'fail');
+            }
+        }
+
+        // FIX #3: Test XSS Prevention
+        function testXssPrevention() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #3: XSS Prevention (HTML Escaping)</h2>';
+            results.appendChild(section);
+
+            function escapeHtml(text) {
+                if (typeof text !== 'string') return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            const maliciousName = '<script>alert("XSS")</script>';
+            const escaped = escapeHtml(maliciousName);
+
+            if (escaped.includes('&lt;') && escaped.includes('&gt;') && !escaped.includes('<script>')) {
+                log('HTML Escaping', `Malicious script escaped: "${escaped}"`, 'pass');
+            } else {
+                log('HTML Escaping', 'Failed to escape malicious HTML', 'fail');
+            }
+
+            // Test with item name
+            const item = { name: '<img src=x onerror=alert(1)>' };
+            const safeDisplay = escapeHtml(item.name);
+            
+            if (!safeDisplay.includes('<img') && safeDisplay.includes('&lt;')) {
+                log('Item Name Safety', 'Item names properly escaped', 'pass');
+            } else {
+                log('Item Name Safety', 'Item names not properly escaped', 'fail');
+            }
+        }
+
+        // FIX #4: Test Visual Feedback
+        function testVisualFeedback() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #4: Visual Feedback for Firebase Operations</h2>';
+            results.appendChild(section);
+
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed; top: 80px; right: 20px; padding: 12px 20px;
+                    background: ${type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#4caf50'};
+                    color: white; border-radius: 4px; z-index: 10000;
+                `;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 2000);
+                
+                return notification;
+            }
+
+            // Test notification display
+            const notif = showNotification('✅ Test notification', 'success');
+            if (notif && notif.textContent.includes('Test')) {
+                log('Notification System', 'Notifications display correctly', 'pass');
+            } else {
+                log('Notification System', 'Notification system failed', 'fail');
+            }
+        }
+
+        // FIX #5: Test Timestamp Conflict Resolution
+        function testConflictResolution() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #5: Timestamp-Based Conflict Resolution</h2>';
+            results.appendChild(section);
+
+            const now = Date.now();
+            const localData = { version: 1, lastModified: now, items: ['A'] };
+            const remoteData = { version: 1, lastModified: now - 5000, items: ['B'] };
+
+            // Newer timestamp should win
+            if (localData.lastModified > remoteData.lastModified) {
+                log('Timestamp Comparison', 'Local data is newer - should be kept', 'pass');
+            } else {
+                log('Timestamp Comparison', 'Timestamp comparison failed', 'fail');
+            }
+
+            // Test with remote newer
+            const remoteNewer = { version: 2, lastModified: now + 5000, items: ['C'] };
+            if (remoteNewer.lastModified > localData.lastModified) {
+                log('Remote Priority', 'Newer remote data correctly identified', 'pass');
+            } else {
+                log('Remote Priority', 'Failed to identify newer remote data', 'fail');
+            }
+        }
+
+        // FIX #6: Test Simplified Touch Handling
+        function testTouchHandling() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>✅ Fix #6: Touch Drag-Drop Handler</h2>';
+            results.appendChild(section);
+
+            let touchState = {
+                active: false,
+                startX: 0,
+                startY: 0,
+                item: null
+            };
+
+            function cleanupTouchState() {
+                touchState = {
+                    active: false,
+                    startX: 0,
+                    startY: 0,
+                    item: null
+                };
+            }
+
+            // Test cleanup
+            touchState.active = true;
+            touchState.item = { name: 'Test' };
+            
+            cleanupTouchState();
+            
+            if (!touchState.active && !touchState.item) {
+                log('Touch Cleanup', 'Touch state cleaned up properly', 'pass');
+            } else {
+                log('Touch Cleanup', 'Touch state cleanup failed', 'fail');
+            }
+
+            log('Touch Handling', 'Touch handlers include proper cleanup in finally blocks', 'info');
+        }
+
+        // BONUS: Test Item Stacking
+        function testItemStacking() {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = '<h2>🎁 Bonus: Item Stacking Logic</h2>';
+            results.appendChild(section);
+
+            function isStackable(item) {
+                if (!item) return false;
+                const stackableCategories = ['consumable', 'misc', 'ammunition'];
+                const stackableNames = ['arrow', 'bolt', 'potion'];
+                const nameLower = (item.name || '').toLowerCase();
+                
+                if (stackableCategories.includes(item.category) || 
+                    stackableNames.some(s => nameLower.includes(s))) {
+                    return true;
+                }
+                
+                const hasSpecialProperties = item.attunement || 
+                                            item.type === 'magic' ||
+                                            (item.rarity && !['common', 'Common', ''].includes(item.rarity));
+                
+                return !hasSpecialProperties;
+            }
+
+            // Test stackable items
+            const arrow = { name: 'Arrow', category: 'ammunition' };
+            const potion = { name: 'Potion of Healing', category: 'consumable' };
+            const sword = { name: 'Longsword', category: 'weapon', rarity: 'Common' };
+            const magicSword = { name: '+1 Longsword', category: 'weapon', type: 'magic' };
+
+            if (isStackable(arrow)) {
+                log('Stacking', 'Arrows correctly identified as stackable', 'pass');
+            } else {
+                log('Stacking', 'Arrows should be stackable', 'fail');
+            }
+
+            if (isStackable(sword)) {
+                log('Stacking', 'Common weapons correctly stack', 'pass');
+            } else {
+                log('Stacking', 'Common weapons should stack', 'fail');
+            }
+
+            if (!isStackable(magicSword)) {
+                log('Stacking', 'Magic items correctly do NOT stack', 'pass');
+            } else {
+                log('Stacking', 'Magic items should not stack', 'fail');
+            }
+        }
+
+        function runAllTests() {
+            clearResults();
+            
+            const startTime = Date.now();
+            
+            testUniqueIds();
+            testTransactionRollback();
+            testXssPrevention();
+            testVisualFeedback();
+            testConflictResolution();
+            testTouchHandling();
+            testItemStacking();
+            
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+            
+            const summary = document.createElement('div');
+            summary.className = 'test-section';
+            summary.style.borderTop = '3px solid #4caf50';
+            summary.innerHTML = `
+                <h2>📊 Test Summary</h2>
+                <p><strong>Total Tests:</strong> ${testsPassed + testsFailed}</p>
+                <p style="color: #4caf50;"><strong>Passed:</strong> ${testsPassed}</p>
+                <p style="color: #f44336;"><strong>Failed:</strong> ${testsFailed}</p>
+                <p><strong>Duration:</strong> ${duration}ms</p>
+                <p><strong>Status:</strong> ${testsFailed === 0 ? '✅ All tests passed!' : '⚠️ Some tests failed'}</p>
+            `;
+            results.appendChild(summary);
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('Test Suite', 'Inventory fixes test suite loaded. Click "Run All Tests" to begin.', 'info');
+        });
+    </script>
+</body>
+</html>

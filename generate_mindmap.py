@@ -8082,20 +8082,89 @@ class NPCRelationshipMapper:
             partyGold: 0,
             players: [],
             bagOfHolding: [],
-            version: 0  // For conflict detection
+            version: 0,  // For conflict detection
+            lastModified: Date.now()  // Timestamp for conflict resolution
         }};
         
-        // Debounce helper for Firebase saves
+        // Generate unique ID for items
+        function generateItemId() {{
+            return 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }}
+        
+        // Add unique ID to item if it doesn't have one
+        function ensureItemId(item) {{
+            if (!item._id) {{
+                item._id = generateItemId();
+            }}
+            return item;
+        }}
+        
+        // User feedback notification system
+        function showNotification(message, type = 'info') {{
+            const notification = document.createElement('div');
+            notification.className = 'inventory-notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 12px 20px;
+                background: ${{type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#4caf50'}};
+                color: white;
+                border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                z-index: 10000;
+                font-size: 14px;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {{
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(function() {{
+                    if (notification.parentNode) {{
+                        notification.parentNode.removeChild(notification);
+                    }}
+                }}, 300);
+            }}, 3000);
+        }}
+        
+        // Debounce helper for Firebase saves with feedback
         let saveInventoryTimeout = null;
+        let savePending = false;
         function debouncedSaveInventoryData() {{
             if (saveInventoryTimeout) {{
                 clearTimeout(saveInventoryTimeout);
             }}
+            
+            if (!savePending) {{
+                savePending = true;
+                showNotification('💾 Saving...', 'info');
+            }}
+            
             saveInventoryTimeout = setTimeout(function() {{
-                inventoryData.version = (inventoryData.version || 0) + 1;
-                saveToFirebase('inventory_data', inventoryData);
+                try {{
+                    inventoryData.version = (inventoryData.version || 0) + 1;
+                    inventoryData.lastModified = Date.now();
+                    saveToFirebase('inventory_data', inventoryData);
+                    showNotification('✅ Saved successfully', 'success');
+                    savePending = false;
+                }} catch(e) {{
+                    console.error('Save failed:', e);
+                    showNotification('❌ Save failed: ' + e.message, 'error');
+                    savePending = false;
+                }}
                 saveInventoryTimeout = null;
             }}, 500);  // Wait 500ms after last change
+        }}
+        
+        // Escape HTML to prevent XSS (use this for ALL user data in innerHTML)
+        function escapeHtml(text) {{
+            if (typeof text !== 'string') return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }}
         
         // Sanitize user input to prevent XSS and formatting issues
@@ -8118,6 +8187,10 @@ class NPCRelationshipMapper:
             
             items.forEach(function(item) {{
                 if (!item || !item.name) return;
+                
+                // Ensure item has unique ID
+                ensureItemId(item);
+                
                 const key = item.name + '|' + (item.rarity || '') + '|' + (isStackable(item) ? 'stackable' : 'unique');
                 
                 if (isStackable(item) && seen.has(key)) {{
@@ -8127,6 +8200,7 @@ class NPCRelationshipMapper:
                 }} else {{
                     // New item or non-stackable
                     const itemCopy = JSON.parse(JSON.stringify(item));
+                    ensureItemId(itemCopy);  // Ensure copy has ID
                     if (isStackable(itemCopy) && !itemCopy.quantity) {{
                         itemCopy.quantity = 1;
                     }}
@@ -8455,7 +8529,7 @@ class NPCRelationshipMapper:
                 playerDiv.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                            <span style="color: #FFD700; font-weight: bold; font-size: 0.9em;">${{player.name}}</span>
+                            <span style="color: #FFD700; font-weight: bold; font-size: 0.9em;">${{escapeHtml(player.name)}}</span>
                             <span style="background: rgba(76,175,80,0.3); color: #4caf50; padding: 2px 6px; border-radius: 10px; font-size: 0.7em; font-weight: bold;">${{itemCount}} items</span>
                             <input type="number" value="${{player.gold || 0}}" min="0" step="0.01" 
                                    onchange="updatePlayerGold(${{index}}, this.value)"
@@ -8535,7 +8609,7 @@ class NPCRelationshipMapper:
                      style="position: relative; padding: 6px; margin: 3px 0; background: rgba(255,255,255,0.1); border-radius: 4px; border-left: 3px solid ${{rarityColor}}; font-size: 0.85em; touch-action: pan-y;">
                     <div style="flex: 1; min-width: 0; position: relative;">
                         <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; position: relative;">
-                            <strong style="color: #fff; font-size: 0.9em; line-height: 1.2;">${{item.name}}</strong>
+                            <strong style="color: #fff; font-size: 0.9em; line-height: 1.2;">${{escapeHtml(item.name)}}</strong>
                             <button onclick="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;" 
                                     ontouchstart="event.stopPropagation(); event.preventDefault(); removeItem('${{containerIdEscaped}}', ${{index}}); return false;"
                                     style="position: absolute; top: 0; right: 0; padding: 2px 6px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75em; touch-action: manipulation; -webkit-tap-highlight-color: rgba(244, 67, 54, 0.3); min-width: 28px; min-height: 20px; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3); line-height: 1;">✕</button>
@@ -8788,7 +8862,7 @@ class NPCRelationshipMapper:
                 itemDiv.innerHTML = `
                     ${{checkboxHtml}}
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                        <div style="font-weight: bold; color: #fff; font-size: 0.9em;">${{item.name}}</div>
+                        <div style="font-weight: bold; color: #fff; font-size: 0.9em;">${{escapeHtml(item.name)}}</div>
                         ${{item.rarity ? `<span style="color: ${{rarityColor}}; font-size: 0.7em; font-weight: bold;">${{item.rarity}}</span>` : ''}}
                         ${{item.type === 'magic' ? ' <span style="color: #9C27B0;">✨</span>' : ''}}
                     </div>
@@ -9459,8 +9533,12 @@ class NPCRelationshipMapper:
             
             if (!item) return;
             
-            // Add to target with stacking logic
-            if (targetContainer === 'bagOfHolding') {{
+            // Create backup for transaction rollback in case of failure
+            const inventoryBackup = JSON.parse(JSON.stringify(inventoryData));
+            
+            try {{
+                // Add to target with stacking logic
+                if (targetContainer === 'bagOfHolding') {{
                 if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
                     inventoryData.bagOfHolding = [];
                 }}
@@ -9522,7 +9600,19 @@ class NPCRelationshipMapper:
                 }}
             }}
             
-            saveInventoryData();
+                // Transaction successful - save
+                saveInventoryData();
+            }} catch (error) {{
+                // Rollback on failure
+                console.error('Error during drag-drop operation:', error);
+                inventoryData = inventoryBackup;
+                showNotification('❌ Failed to move item - changes reverted', 'error');
+                
+                // Re-render to show rollback
+                renderPlayers();
+                renderBagOfHolding();
+                updateBagWeight();
+            }}
         }
     </script>
 </body>
