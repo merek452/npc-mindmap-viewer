@@ -9396,9 +9396,8 @@ class NPCRelationshipMapper:
                     return;
                 }}
                 item = inventoryData.bagOfHolding[itemIndex];
-                    if (item) {{
+                if (item) {{
                     inventoryData.bagOfHolding.splice(itemIndex, 1);
-                    }}
                 }}
             }} else if (sourceContainer.startsWith('player_')) {{
                 const playerIndex = parseInt(sourceContainer.split('_')[1]);
