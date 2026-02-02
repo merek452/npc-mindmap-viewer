@@ -8073,8 +8073,88 @@ class NPCRelationshipMapper:
         let inventoryData = {{
             partyGold: 0,
             players: [],
-            bagOfHolding: []
+            bagOfHolding: [],
+            version: 0  // For conflict detection
         }};
+        
+        // Debounce helper for Firebase saves
+        let saveInventoryTimeout = null;
+        function debouncedSaveInventoryData() {{
+            if (saveInventoryTimeout) {{
+                clearTimeout(saveInventoryTimeout);
+            }}
+            saveInventoryTimeout = setTimeout(function() {{
+                inventoryData.version = (inventoryData.version || 0) + 1;
+                saveToFirebase('inventory_data', inventoryData);
+                saveInventoryTimeout = null;
+            }}, 500);  // Wait 500ms after last change
+        }}
+        
+        // Sanitize user input to prevent XSS and formatting issues
+        function sanitizeInput(input) {{
+            if (typeof input !== 'string') return '';
+            return input
+                .trim()
+                .slice(0, 50)  // Max 50 characters
+                .replace(/[<>\"'&]/g, function(char) {{
+                    const escapes = {{'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'}};
+                    return escapes[char] || char;
+                }})
+                .replace(/player_/gi, 'player-');  // Prevent ID conflicts
+        }}
+        
+        // Consolidate duplicate item stacks
+        function consolidateStacks(items) {{
+            const consolidated = [];
+            const seen = new Map();
+            
+            items.forEach(function(item) {{
+                if (!item || !item.name) return;
+                const key = item.name + '|' + (item.rarity || '') + '|' + (isStackable(item) ? 'stackable' : 'unique');
+                
+                if (isStackable(item) && seen.has(key)) {{
+                    // Add to existing stack
+                    const existing = seen.get(key);
+                    existing.quantity = (parseInt(existing.quantity) || 1) + (parseInt(item.quantity) || 1);
+                }} else {{
+                    // New item or non-stackable
+                    const itemCopy = JSON.parse(JSON.stringify(item));
+                    if (isStackable(itemCopy) && !itemCopy.quantity) {{
+                        itemCopy.quantity = 1;
+                    }}
+                    consolidated.push(itemCopy);
+                    if (isStackable(itemCopy)) {{
+                        seen.set(key, itemCopy);
+                    }}
+                }}
+            }});
+            
+            return consolidated;
+        }}
+        
+        // Validate inventoryData structure and repair if needed
+        function validateInventoryData() {{
+            if (!inventoryData || typeof inventoryData !== 'object') {{
+                console.error('inventoryData is invalid, resetting to default');
+                inventoryData = {{ partyGold: 0, players: [], bagOfHolding: [], version: 0 }};
+                return false;
+            }}
+            if (!Array.isArray(inventoryData.players)) {{
+                console.warn('inventoryData.players is not an array, fixing');
+                inventoryData.players = [];
+            }}
+            if (!Array.isArray(inventoryData.bagOfHolding)) {{
+                console.warn('inventoryData.bagOfHolding is not an array, fixing');
+                inventoryData.bagOfHolding = [];
+            }}
+            if (typeof inventoryData.partyGold !== 'number') {{
+                inventoryData.partyGold = parseFloat(inventoryData.partyGold) || 0;
+            }}
+            if (typeof inventoryData.version !== 'number') {{
+                inventoryData.version = 0;
+            }}
+            return true;
+        }}
         
         // Helper functions for rarity colors and item management
         function getRarityColor(rarity) {
@@ -8117,33 +8197,61 @@ class NPCRelationshipMapper:
             updateBagWeight();
         }
         
-        function loadInventoryData() {
-            loadFromFirebase('inventory_data', function(data) {
-                if (data) {
-                    inventoryData = data;
-            }
-            
-            // Initialize default players if none exist
-            if (inventoryData.players.length === 0) {
-                const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
-                inventoryData.players = defaultPlayers.map(name => ({
-                    name: name,
-                    gold: 0,
-                    items: []
-                }));
-            }
-            
-            // Set party gold
-            const partyGoldEl = getEl('partyGold');
-            if (partyGoldEl) {
-                partyGoldEl.value = inventoryData.partyGold || 0;
-            }
-            });
-        }
+        function loadInventoryData() {{
+            loadFromFirebase('inventory_data', function(data) {{
+                if (data) {{
+                    // Check for version conflicts
+                    const remoteVersion = data.version || 0;
+                    const localVersion = inventoryData.version || 0;
+                    
+                    if (remoteVersion > localVersion) {{
+                        // Remote is newer, use it
+                        inventoryData = data;
+                    }} else if (localVersion > remoteVersion) {{
+                        // Local is newer, keep local (will sync on next save)
+                        console.log('Local inventory is newer, keeping local changes');
+                    }} else {{
+                        // Same version, use remote as source of truth
+                        inventoryData = data;
+                    }}
+                }}
+                
+                // Validate and repair structure
+                validateInventoryData();
+                
+                // Consolidate any duplicate stacks
+                inventoryData.bagOfHolding = consolidateStacks(inventoryData.bagOfHolding);
+                inventoryData.players.forEach(function(player) {{
+                    if (player && Array.isArray(player.items)) {{
+                        player.items = consolidateStacks(player.items);
+                    }}
+                }});
+                
+                // Initialize default players if none exist
+                if (inventoryData.players.length === 0) {{
+                    const defaultPlayers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
+                    inventoryData.players = defaultPlayers.map(name => ({{
+                        name: name,
+                        gold: 0,
+                        items: []
+                    }}));
+                }}
+                
+                // Set party gold
+                const partyGoldEl = getEl('partyGold');
+                if (partyGoldEl) {{
+                    partyGoldEl.value = inventoryData.partyGold || 0;
+                }}
+            }});
+        }}
         
-        function saveInventoryData() {
-            saveToFirebase('inventory_data', inventoryData);
-        }
+        function saveInventoryData() {{
+            if (!validateInventoryData()) {{
+                console.error('Cannot save invalid inventory data');
+                return;
+            }}
+            debouncedSaveInventoryData();
+        }}
         
         // Multi-select state
         let selectedItems = new Set();
@@ -8828,21 +8936,22 @@ class NPCRelationshipMapper:
                 items = inventoryData.bagOfHolding;
             }} else if (containerId.startsWith('player_')) {{
                 const playerIndex = parseInt(containerId.replace('player_', ''));
+                if (!inventoryData.players[playerIndex]) return;
                 items = inventoryData.players[playerIndex].items;
             }} else {{
                 return;
             }}
             
-            if (index < 0 || index >= items.length) return;
+            if (!items || index < 0 || index >= items.length) return;
             
             const item = items[index];
-            const currentQty = parseInt(item.quantity) || 1;
-            const newQty = Math.max(1, currentQty + delta);
+            if (!item) return;
             
-            if (newQty === 1) {{
-                delete item.quantity;
-            }} else {{
-                item.quantity = newQty;
+            // Always keep quantity explicit for stackable items
+            if (isStackable(item)) {{
+                const currentQty = parseInt(item.quantity) || 1;
+                const newQty = Math.max(1, currentQty + delta);
+                item.quantity = newQty;  // Keep explicit even if 1
             }}
             
             saveInventoryData();
@@ -8869,18 +8978,34 @@ class NPCRelationshipMapper:
             }
         }
         
-        function addPlayer() {
-            const name = prompt('Enter player name:');
-            if (name) {
-                inventoryData.players.push({
-                    name: name,
-                    gold: 0,
-                    items: []
-                });
-                saveInventoryData();
-                renderPlayers();
-            }
-        }
+        function addPlayer() {{
+            const rawName = prompt('Enter player name (max 50 characters):');
+            if (!rawName) return;
+            
+            const name = sanitizeInput(rawName);
+            if (!name || name.length === 0) {{
+                alert('Invalid player name. Please use only letters, numbers, and basic punctuation.');
+                return;
+            }}
+            
+            // Check for duplicate names
+            const duplicate = inventoryData.players.find(function(p) {{
+                return p.name.toLowerCase() === name.toLowerCase();
+            }});
+            
+            if (duplicate) {{
+                alert('A player with that name already exists.');
+                return;
+            }}
+            
+            inventoryData.players.push({{
+                name: name,
+                gold: 0,
+                items: []
+            }});
+            saveInventoryData();
+            renderPlayers();
+        }}
         
         function removePlayer(index) {
             if (confirm('Remove this player and all their items?')) {
@@ -9014,9 +9139,23 @@ class NPCRelationshipMapper:
             }
         }
         
+        // Mobile: Cleanup touch state (called in finally block)
+        function cleanupTouchState() {{
+            if (activeTouchElement) {{
+                try {{
+                    activeTouchElement.style.opacity = '';
+                    activeTouchElement.style.transform = '';
+                }} catch(e) {{
+                    console.error('Error cleaning up touch element style:', e);
+                }}
+            }}
+            activeTouchElement = null;
+            activeTouchData = null;
+        }}
+        
         // Mobile: Handle drop - use global state
-        function handleTouchEnd(ev) {
-            try {
+        function handleTouchEnd(ev) {{
+            try {{
                 if (!activeTouchData || !ev.changedTouches || !ev.changedTouches[0]) {
                     // Cleanup
                     if (activeTouchElement) {
@@ -9136,34 +9275,23 @@ class NPCRelationshipMapper:
                     }
                 }
                 
-                // Cleanup
-                activeTouchElement = null;
-                activeTouchData = null;
-            } catch(e) {
+            }} catch(e) {{
                 console.error('handleTouchEnd error:', e);
-                // Ensure cleanup
-                if (activeTouchElement) {
-                    activeTouchElement.style.opacity = '';
-                    activeTouchElement.style.transform = '';
-                }
-                activeTouchElement = null;
-                activeTouchData = null;
-            }
-        }
+                alert('Error: ' + e.message);
+            }} finally {{
+                // Always cleanup, even if error occurred
+                cleanupTouchState();
+            }}
+        }}
         
         function drop(ev, targetContainer) {{
             ev.preventDefault();
             
-            // Ensure inventoryData structure is valid
-            if (!inventoryData) {{
-                console.error("inventoryData is undefined in drop function");
+            // Validate inventory structure before proceeding
+            if (!validateInventoryData()) {{
+                console.error("inventoryData validation failed in drop function");
+                alert('Error: Inventory data is corrupted. Please refresh the page.');
                 return;
-            }}
-            if (!inventoryData.players || !Array.isArray(inventoryData.players)) {{
-                inventoryData.players = [];
-            }}
-            if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
-                inventoryData.bagOfHolding = [];
             }}
             
             // Check if dragging from lookup table or inventory
@@ -9249,11 +9377,24 @@ class NPCRelationshipMapper:
             const containerType = parts[0] + '_' + parts[1];
             const itemIndex = parseInt(parts[2]);
             
+            // Validate index
+            if (isNaN(itemIndex) || itemIndex < 0) {{
+                console.error('Invalid item index for move:', itemIndex);
+                return;
+            }}
+            
             let item = null;
             
-            // Get item from source
+            // Get item from source with bounds checking
             if (sourceContainer === 'bagOfHolding') {{
-                if (inventoryData.bagOfHolding && Array.isArray(inventoryData.bagOfHolding)) {{
+                if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
+                    console.error('Bag of Holding is not a valid array');
+                    return;
+                }}
+                if (itemIndex >= inventoryData.bagOfHolding.length) {{
+                    console.error('Item index out of bounds for Bag');
+                    return;
+                }}
                 item = inventoryData.bagOfHolding[itemIndex];
                     if (item) {{
                     inventoryData.bagOfHolding.splice(itemIndex, 1);
