@@ -8217,10 +8217,14 @@ class NPCRelationshipMapper:
                 }}
                 
                 // Validate and repair structure
-                validateInventoryData();
+                const wasInvalid = !validateInventoryData();
                 
                 // Consolidate any duplicate stacks
+                const bagBefore = inventoryData.bagOfHolding.length;
                 inventoryData.bagOfHolding = consolidateStacks(inventoryData.bagOfHolding);
+                const bagAfter = inventoryData.bagOfHolding.length;
+                const hadDuplicates = bagBefore !== bagAfter;
+                
                 inventoryData.players.forEach(function(player) {{
                     if (player && Array.isArray(player.items)) {{
                         player.items = consolidateStacks(player.items);
@@ -8247,6 +8251,12 @@ class NPCRelationshipMapper:
                 renderPlayers();
                 renderBagOfHolding();
                 updateBagWeight();
+                
+                // If we fixed any data issues or consolidated stacks, save the corrected data
+                if (wasInvalid || hadDuplicates) {{
+                    console.log('🔧 Data was repaired on load, saving corrected version to Firebase');
+                    debouncedSaveInventoryData();
+                }}
             }});
         }}
         
@@ -9420,12 +9430,34 @@ class NPCRelationshipMapper:
             
             if (!item) return;
             
-            // Add to target
+            // Add to target with stacking logic
             if (targetContainer === 'bagOfHolding') {{
                 if (!inventoryData.bagOfHolding || !Array.isArray(inventoryData.bagOfHolding)) {{
                     inventoryData.bagOfHolding = [];
                 }}
-                inventoryData.bagOfHolding.push(item);
+                
+                // Check for existing stack
+                if (isStackable(item)) {{
+                    const existingIndex = inventoryData.bagOfHolding.findIndex(function(existing) {{
+                        return existing.name === item.name && 
+                               (existing.rarity || '') === (item.rarity || '') &&
+                               isStackable(existing);
+                    }});
+                    
+                    if (existingIndex >= 0) {{
+                        // Add to existing stack
+                        const existing = inventoryData.bagOfHolding[existingIndex];
+                        const itemQty = parseInt(item.quantity) || 1;
+                        existing.quantity = (parseInt(existing.quantity) || 1) + itemQty;
+                    }} else {{
+                        // New stack
+                        if (!item.quantity) item.quantity = 1;
+                        inventoryData.bagOfHolding.push(item);
+                    }}
+                }} else {{
+                    // Non-stackable item
+                    inventoryData.bagOfHolding.push(item);
+                }}
                 updateBagWeight();
             }} else if (targetContainer.startsWith('player_')) {{
                 const playerIndex = parseInt(targetContainer.split('_')[1]);
@@ -9434,7 +9466,29 @@ class NPCRelationshipMapper:
                     if (!inventoryData.players[playerIndex].items || !Array.isArray(inventoryData.players[playerIndex].items)) {{
                         inventoryData.players[playerIndex].items = [];
                     }}
-                    inventoryData.players[playerIndex].items.push(item);
+                    
+                    // Check for existing stack
+                    if (isStackable(item)) {{
+                        const existingIndex = inventoryData.players[playerIndex].items.findIndex(function(existing) {{
+                            return existing.name === item.name && 
+                                   (existing.rarity || '') === (item.rarity || '') &&
+                                   isStackable(existing);
+                        }});
+                        
+                        if (existingIndex >= 0) {{
+                            // Add to existing stack
+                            const existing = inventoryData.players[playerIndex].items[existingIndex];
+                            const itemQty = parseInt(item.quantity) || 1;
+                            existing.quantity = (parseInt(existing.quantity) || 1) + itemQty;
+                        }} else {{
+                            // New stack
+                            if (!item.quantity) item.quantity = 1;
+                            inventoryData.players[playerIndex].items.push(item);
+                        }}
+                    }} else {{
+                        // Non-stackable item
+                        inventoryData.players[playerIndex].items.push(item);
+                    }}
                     renderPlayers();
                 }}
             }}
