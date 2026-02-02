@@ -2026,6 +2026,9 @@ class NPCRelationshipMapper:
                     if (currentDataStr !== newDataStr) {{
                         console.log("📦 Inventory data updated from Firebase (real-time sync)");
                         
+                        // Set flag to prevent save loop
+                        isSyncingFromFirebase = true;
+                        
                         // Ensure data structure is valid
                         if (!data.players || !Array.isArray(data.players)) {{
                             data.players = [];
@@ -2061,6 +2064,9 @@ class NPCRelationshipMapper:
                             renderBagOfHolding();
                             updateBagWeight();
                         }}
+                        
+                        // Clear flag after sync complete
+                        isSyncingFromFirebase = false;
                     }}
                 }}
             }}, function(error) {{
@@ -8133,7 +8139,15 @@ class NPCRelationshipMapper:
         // Debounce helper for Firebase saves with feedback
         let saveInventoryTimeout = null;
         let savePending = false;
+        let isSyncingFromFirebase = false;  // Flag to prevent save loops during sync
+        
         function debouncedSaveInventoryData() {{
+            // Don't save if we're currently syncing from Firebase
+            if (isSyncingFromFirebase) {{
+                console.log('⏸️ Skipping save during Firebase sync');
+                return;
+            }}
+            
             if (saveInventoryTimeout) {{
                 clearTimeout(saveInventoryTimeout);
             }}
@@ -8355,10 +8369,10 @@ class NPCRelationshipMapper:
                 renderBagOfHolding();
                 updateBagWeight();
                 
-                // If we fixed any data issues or consolidated stacks, save the corrected data
+                // Note: We don't auto-save here because real-time sync handles consolidation
+                // This prevents save loops between loadInventoryData and real-time sync
                 if (wasInvalid || hadDuplicates) {{
-                    console.log('🔧 Data was repaired on load, saving corrected version to Firebase');
-                    debouncedSaveInventoryData();
+                    console.log('🔧 Data was repaired on load (will sync automatically)');
                 }}
             }});
         }}
