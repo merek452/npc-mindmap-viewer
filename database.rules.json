@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "campaigns": {
+      "$campaignId": {
+        ".read": "auth == null || auth != null",
+        ".write": "auth == null || auth != null",
+        
+        "inventory_data": {
+          ".validate": "newData.hasChildren(['partyGold', 'players', 'bagOfHolding', 'version'])",
+          ".indexOn": ["version", "lastModified"]
+        },
+        
+        "mapMarkers": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.child('id').exists())"
+        },
+        
+        "mapAnnotations": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.child('id').exists())"
+        },
+        
+        "worldMapMarkers": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.child('id').exists())"
+        },
+        
+        "worldMapAnnotations": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.child('id').exists())"
+        }
+      }
+    }
+  }
+}
