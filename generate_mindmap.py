@@ -286,6 +286,7 @@ class NPCRelationshipMapper:
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>NPC Relationship Mind Map - Genia Campaign</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Firebase SDK -->
