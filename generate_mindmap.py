@@ -8179,11 +8179,32 @@ class NPCRelationshipMapper:
         
         // Check if item is stackable
         function isStackable(item) {{
-            const stackableCategories = ['consumable', 'misc'];
+            if (!item) return false;
+            
+            // Always stackable categories
+            const stackableCategories = ['consumable', 'misc', 'ammunition'];
             const stackableNames = ['arrow', 'bolt', 'ration', 'coin', 'potion', 'scroll', 'ammunition'];
             const nameLower = (item.name || '').toLowerCase();
-            return stackableCategories.includes(item.category) || 
-                   stackableNames.some(s => nameLower.includes(s));
+            
+            // Check by category or name
+            if (stackableCategories.includes(item.category) || 
+                stackableNames.some(s => nameLower.includes(s))) {{
+                return true;
+            }}
+            
+            // Mundane items (no special properties) can stack
+            // Don't stack if: has attunement, magic type, special properties, or is uncommon+
+            const hasSpecialProperties = item.attunement || 
+                                        item.type === 'magic' ||
+                                        (item.properties && item.properties.length > 0) ||
+                                        (item.rarity && !['common', 'Common', ''].includes(item.rarity));
+            
+            // If it's a mundane/common item with no special properties, allow stacking
+            if (!hasSpecialProperties) {{
+                return true;
+            }}
+            
+            return false;
         }}
         
         // Calculate total weight including quantities

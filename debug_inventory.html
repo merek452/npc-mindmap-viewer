@@ -52,7 +52,9 @@
         <button onclick="testIsStackable()">Test isStackable()</button>
         <button onclick="testAddArrow()">Add Arrow to Bag</button>
         <button onclick="testAddSword()">Add Sword to Bag</button>
-        <button onclick="testConsolidate()">Test consolidateStacks()</button>
+        <button onclick="testAdd3Swords()">Add 3 Swords (Should NOT Stack)</button>
+        <button onclick="testConsolidate()">Consolidate Current Bag</button>
+        <button onclick="clearBag()">Clear Bag</button>
         <button onclick="showState()">Show Current State</button>
         <button onclick="clearLogs()">Clear Logs</button>
     </div>
@@ -90,14 +92,35 @@
             `;
         }
 
-        // Test the isStackable function
+        // Test the isStackable function (UPDATED LOGIC)
         function isStackable(item) {
             if (!item) return false;
-            const category = (item.category || '').toLowerCase();
-            const stackableCategories = ['ammunition', 'consumable', 'potion', 'scroll', 'material', 'adventuring gear'];
-            const result = stackableCategories.some(cat => category.includes(cat));
-            log(`isStackable("${item.name}", category="${item.category}") = ${result}`);
-            return result;
+            
+            // Always stackable categories
+            const stackableCategories = ['consumable', 'misc', 'ammunition'];
+            const stackableNames = ['arrow', 'bolt', 'ration', 'coin', 'potion', 'scroll', 'ammunition'];
+            const nameLower = (item.name || '').toLowerCase();
+            
+            // Check by category or name
+            if (stackableCategories.includes(item.category) || 
+                stackableNames.some(s => nameLower.includes(s))) {
+                log(`isStackable("${item.name}") = TRUE (by category/name)`);
+                return true;
+            }
+            
+            // Mundane items (no special properties) can stack
+            const hasSpecialProperties = item.attunement || 
+                                        item.type === 'magic' ||
+                                        (item.properties && item.properties.length > 0) ||
+                                        (item.rarity && !['common', 'Common', ''].includes(item.rarity));
+            
+            if (!hasSpecialProperties) {
+                log(`isStackable("${item.name}") = TRUE (mundane/common item)`);
+                return true;
+            }
+            
+            log(`isStackable("${item.name}") = FALSE (unique/magic item)`);
+            return false;
         }
 
         function consolidateStacks(items) {
@@ -207,22 +230,88 @@
             showState();
         }
 
+        function testAdd3Swords() {
+            log('<h3>=== Testing Add 3 Identical Common Swords ===</h3>');
+            log('💡 NEW LOGIC: Common/mundane items SHOULD stack (cleaner inventory)');
+            log('💡 Magic/unique items will NOT stack');
+            
+            for (let i = 0; i < 3; i++) {
+                const sword = {
+                    name: 'Longsword',
+                    category: 'Weapon',
+                    weight: '3',
+                    rarity: 'Common'
+                };
+                
+                // Simulate the stacking logic
+                const existingIndex = inventoryData.bagOfHolding.findIndex(function(existing) {
+                    return existing.name === sword.name && 
+                           (existing.rarity || '') === (sword.rarity || '') &&
+                           isStackable(existing);
+                });
+                
+                if (existingIndex >= 0 && isStackable(sword)) {
+                    const existing = inventoryData.bagOfHolding[existingIndex];
+                    existing.quantity = (parseInt(existing.quantity) || 1) + 1;
+                    log(`➕ Stacked Longsword (quantity now: ${existing.quantity})`);
+                } else {
+                    if (isStackable(sword)) {
+                        sword.quantity = 1;
+                    }
+                    inventoryData.bagOfHolding.push(sword);
+                    log(`➕ Added new Longsword stack`);
+                }
+            }
+            
+            const swordStacks = inventoryData.bagOfHolding.filter(item => item.name === 'Longsword');
+            log(`<strong>Result: ${swordStacks.length} Longsword stack(s) with total quantity: ${swordStacks.reduce((sum, s) => sum + (s.quantity || 1), 0)}</strong>`);
+            
+            showState();
+        }
+
+        function clearBag() {
+            inventoryData.bagOfHolding = [];
+            log('🗑️ Bag cleared');
+            showState();
+        }
+
         function testConsolidate() {
-            log('<h3>=== Testing Consolidate ===</h3>');
+            log('<h3>=== Testing Consolidate on CURRENT Bag ===</h3>');
             
-            // Create test data with duplicates
-            inventoryData.bagOfHolding = [
-                { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 5 },
-                { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 3 },
-                { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
-                { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
-                { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 2 },
-                { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 1 }
-            ];
+            if (inventoryData.bagOfHolding.length === 0) {
+                log('⚠ Bag is empty! Creating test data...', 'warning');
+                
+                // Create test data with duplicates for demo
+                inventoryData.bagOfHolding = [
+                    { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 5 },
+                    { name: 'Arrow', category: 'Ammunition', weight: '0.05', rarity: 'Common', quantity: 3 },
+                    { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
+                    { name: 'Longsword', category: 'Weapon', weight: '3', rarity: 'Common' },
+                    { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 2 },
+                    { name: 'Potion of Healing', category: 'Potion', weight: '0.5', quantity: 1 }
+                ];
+                log('📦 Added demo items for testing');
+            }
             
-            log(`Before: ${inventoryData.bagOfHolding.length} items`);
+            const before = inventoryData.bagOfHolding.length;
+            log(`<strong>Before consolidation: ${before} items</strong>`);
+            
+            // Show what will be consolidated
+            inventoryData.bagOfHolding.forEach((item, i) => {
+                const stackable = isStackable(item);
+                log(`Item ${i}: "${item.name}" | Category: "${item.category}" | Stackable: ${stackable} | Qty: ${item.quantity || 'none'}`);
+            });
+            
             inventoryData.bagOfHolding = consolidateStacks(inventoryData.bagOfHolding);
-            log(`After: ${inventoryData.bagOfHolding.length} items`);
+            const after = inventoryData.bagOfHolding.length;
+            
+            log(`<strong>After consolidation: ${after} items (reduced by ${before - after})</strong>`);
+            
+            if (before === after) {
+                log('ℹ️ No change - items are already consolidated or are magic/unique', 'warning');
+            } else {
+                log('✅ Items consolidated successfully!', 'info');
+            }
             
             showState();
         }
