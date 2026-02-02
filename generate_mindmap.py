@@ -8242,6 +8242,11 @@ class NPCRelationshipMapper:
                 if (partyGoldEl) {{
                     partyGoldEl.value = inventoryData.partyGold || 0;
                 }}
+                
+                // Render the UI with validated and consolidated data
+                renderPlayers();
+                renderBagOfHolding();
+                updateBagWeight();
             }});
         }}
         
