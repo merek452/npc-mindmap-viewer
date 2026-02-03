@@ -4740,25 +4740,16 @@
             
             // Clean up the original variable to prevent accidental access
             PLACEHOLDER_SVG_CONTENT = null;
-            // Also delete the placeholder value to prevent it from appearing anywhere
-            // Use a try-catch to safely clean up
-            try {
-                if (typeof '' !== 'undefined') {
-                    // Set to empty string instead of deleting to prevent any rendering
-                    window.'' = '';
-                }
-            } catch(e) {
-                // Ignore if can't modify
-            }
+            // Cleanup completed
         })();
         
-        // Ensure '' is not accessible after initialization
-        if (typeof '' !== 'undefined') {
-            try {
+        // Additional cleanup for placeholder variable
+        try {
+            if (typeof window !== 'undefined' && '''' in window) {
                 delete window.'';
-            } catch(e) {
-                // Ignore
             }
+        } catch(e) {
+            // Ignore cleanup errors
         }
         
         // Firebase initialization

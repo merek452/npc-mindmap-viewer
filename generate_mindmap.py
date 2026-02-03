@@ -1865,25 +1865,16 @@ class NPCRelationshipMapper:
             
             // Clean up the original variable to prevent accidental access
             PLACEHOLDER_SVG_CONTENT = null;
-            // Also delete the placeholder value to prevent it from appearing anywhere
-            // Use a try-catch to safely clean up
-            try {{
-                if (typeof PLACEHOLDER_SVG_CONTENT_VALUE !== 'undefined') {{
-                    // Set to empty string instead of deleting to prevent any rendering
-                    window.PLACEHOLDER_SVG_CONTENT_VALUE = '';
-                }}
-            }} catch(e) {{
-                // Ignore if can't modify
-            }}
+            // Cleanup completed
         }})();
         
-        // Ensure PLACEHOLDER_SVG_CONTENT_VALUE is not accessible after initialization
-        if (typeof PLACEHOLDER_SVG_CONTENT_VALUE !== 'undefined') {{
-            try {{
+        // Additional cleanup for placeholder variable
+        try {{
+            if (typeof window !== 'undefined' && 'PLACEHOLDER_SVG_CONTENT_VALUE' in window) {{
                 delete window.PLACEHOLDER_SVG_CONTENT_VALUE;
-            }} catch(e) {{
-                // Ignore
             }}
+        }} catch(e) {{
+            // Ignore cleanup errors
         }}
         
         // Firebase initialization
