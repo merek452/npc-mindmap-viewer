@@ -100,7 +100,7 @@
       "faction": "Neutral/Mystical",
       "location": "Asmelhorion / Dreams",
       "status": "alive",
-      "portrait": "../Images/Elaris.png",
+      "portrait": "Images/Elaris.png",
       "tags": [
         "seer",
         "mystical",
@@ -149,7 +149,7 @@
       "faction": "Feywild / Great Green",
       "location": "Great Green / Feywild",
       "status": "alive",
-      "portrait": "../Images/Sylwen.png",
+      "portrait": "Images/Sylwen.png",
       "tags": [
         "nymph",
         "feywild",
@@ -200,7 +200,7 @@
       "faction": "Independent / Psionic",
       "location": "Unknown",
       "status": "alive",
-      "portrait": "../Images/Yelthar'xun..png",
+      "portrait": "Images/Yelthar'xun..png",
       "tags": [
         "mind-flayer",
         "psionic",
@@ -237,7 +237,7 @@
       "faction": "Cinderfang Tribe",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Goruk.bmp",
+      "portrait": "Images/Goruk.png",
       "tags": [
         "hobgoblin",
         "warlord",
@@ -280,7 +280,7 @@
       "faction": "Cinderfang Tribe",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Bolg & Wren.bmp",
+      "portrait": "Images/Bolg & Wren.png",
       "tags": [
         "bugbear",
         "twin",
@@ -316,7 +316,7 @@
       "faction": "Cinderfang Tribe / The Crone",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Sketra.bmp",
+      "portrait": "Images/Sketra.png",
       "tags": [
         "goblin",
         "witch",
@@ -485,7 +485,7 @@
       "faction": "Love Vault",
       "location": "Love Vault",
       "status": "alive",
-      "portrait": "../Images/Cupid McSparkles.png",
+      "portrait": "Images/Cupid McSparkles.png",
       "tags": [
         "entity",
         "host",
@@ -537,7 +537,7 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Fear Vault",
       "status": "alive (transformed)",
-      "portrait": "../Images/Dr. Sylv'thir.png",
+      "portrait": "Images/Dr. Sylv'thir.png",
       "tags": [
         "archivist",
         "transformed",
@@ -596,7 +596,7 @@
       "faction": "Unknown",
       "location": "Unknown",
       "status": "alive",
-      "portrait": "../Images/Mistress of Veils.bmp",
+      "portrait": "Images/Mistress of Veils.png",
       "tags": [
         "mysterious",
         "powerful",
@@ -726,7 +726,7 @@
       "faction": "Civilians / Merchants",
       "location": "Asmelhorion",
       "status": "alive",
-      "portrait": "../Images/Durn Greathammer.bmp",
+      "portrait": "Images/Durn Greathammer.png",
       "tags": [
         "dwarf",
         "blacksmith",
@@ -865,7 +865,7 @@
       "faction": "Diabolist / Independent",
       "location": "Asmelhorion",
       "status": "alive",
-      "portrait": "../Images/Tivannis Fal.png",
+      "portrait": "Images/Tivannis Fal.png",
       "tags": [
         "tiefling",
         "diabolist",
@@ -906,7 +906,7 @@
       "faction": "Independent / Scholar",
       "location": "Unknown",
       "status": "alive",
-      "portrait": "../Images/Veris the Ex-Sorcerer.bmp",
+      "portrait": "Images/Veris the Ex-Sorcerer.png",
       "tags": [
         "human",
         "scholar",
@@ -932,7 +932,7 @@
       "faction": "Independent / Gladiator",
       "location": "Cinderfang Camp / Falia",
       "status": "alive",
-      "portrait": "../Images/Seyra the Quick.bmp",
+      "portrait": "Images/Seyra the Quick.png",
       "tags": [
         "elf",
         "gladiator",
@@ -959,7 +959,7 @@
       "faction": "Civilians",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Kaelith the Mother.bmp",
+      "portrait": "Images/Kaelith the Mother.png",
       "tags": [
         "human",
         "mother",
@@ -990,7 +990,7 @@
       "faction": "Unknown / Twisted",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Caenin.bmp",
+      "portrait": "Images/Caenin.png",
       "tags": [
         "twisted",
         "returned",
@@ -1023,7 +1023,7 @@
       "faction": "Independent / Scholar",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Rix.bmp",
+      "portrait": "Images/Rix.png",
       "tags": [
         "kobold",
         "scholar",
@@ -1043,7 +1043,7 @@
       "faction": "Underclasp",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Althessa the Rogue.bmp",
+      "portrait": "Images/Althessa the Rogue.png",
       "tags": [
         "tiefling",
         "rogue",
@@ -1144,7 +1144,7 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Joy Vault",
       "status": "alive (transformed)",
-      "portrait": "../Images/Archivist Bliss.png",
+      "portrait": "Images/Archivist Bliss.png",
       "tags": [
         "archivist",
         "transformed",
@@ -1224,7 +1224,7 @@
       "faction": "Fey Palace Archive",
       "location": "Fey Palace Archive, Betrayal Vault",
       "status": "deceased (spirit bound)",
-      "portrait": "../Images/Archivist Veritas.png",
+      "portrait": "Images/Archivist Veritas.png",
       "tags": [
         "scholar",
         "spirit",
@@ -1805,7 +1805,7 @@
       "faction": "Temple of Balance (Selune & Shar)",
       "location": "Asmelhorion, Temple of Balance",
       "status": "alive",
-      "portrait": "../Images/High Seeker Yvonne.png",
+      "portrait": "Images/High Seeker Yvonne.png",
       "tags": [
         "cleric",
         "temple",
@@ -2024,7 +2024,7 @@
       "faction": "Cinderfang Tribe",
       "location": "Cinderfang Camp",
       "status": "alive",
-      "portrait": "../Images/Bolg & Wren.bmp",
+      "portrait": "Images/Bolg & Wren.png",
       "tags": [
         "bugbear",
         "twin",
@@ -2133,7 +2133,7 @@
       "faction": "Independent",
       "location": "Variable",
       "status": "alive",
-      "portrait": "../Images/Lorchka.png",
+      "portrait": "Images/Lorchka.png",
       "tags": [
         "fey",
         "cat",
