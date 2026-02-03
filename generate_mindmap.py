@@ -1868,15 +1868,6 @@ class NPCRelationshipMapper:
             // Cleanup completed
         }})();
         
-        // Additional cleanup for placeholder variable
-        try {{
-            if (typeof window !== 'undefined' && 'PLACEHOLDER_SVG_CONTENT_VALUE' in window) {{
-                delete window.PLACEHOLDER_SVG_CONTENT_VALUE;
-            }}
-        }} catch(e) {{
-            // Ignore cleanup errors
-        }}
-        
         // Firebase initialization
         let firebaseInitialized = false;
         let database = null;

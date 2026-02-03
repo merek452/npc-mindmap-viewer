@@ -4743,15 +4743,6 @@
             // Cleanup completed
         })();
         
-        // Additional cleanup for placeholder variable
-        try {
-            if (typeof window !== 'undefined' && '''' in window) {
-                delete window.'';
-            }
-        } catch(e) {
-            // Ignore cleanup errors
-        }
-        
         // Firebase initialization
         let firebaseInitialized = false;
         let database = null;
