@@ -4882,6 +4882,236 @@
             }
         }
         
+        // NPC Firebase Functions
+        let isSyncingNPCsFromFirebase = false;
+        
+        function loadNPCsFromFirebase(callback) {
+            if (!database) {
+                console.log("📂 No database - loading NPCs from static data");
+                callback(null);
+                return;
+            }
+            
+            try {
+                const ref = database.ref(`campaigns/${CAMPAIGN_ID}/npc_data`);
+                ref.once('value').then(function(snapshot) {
+                    const data = snapshot.val();
+                    if (data && typeof data === 'object') {
+                        console.log("📂 Loaded NPCs from Firebase:", Object.keys(data).length, "NPCs");
+                        callback(data);
+                    } else {
+                        console.log("📂 No NPC data in Firebase - using static data");
+                        callback(null);
+                    }
+                }).catch(function(error) {
+                    console.error("❌ Error loading NPCs from Firebase:", error);
+                    callback(null);
+                });
+            } catch(e) {
+                console.error("Failed to load NPCs from Firebase:", e);
+                callback(null);
+            }
+        }
+        
+        function cleanNPCData(data) {
+            // Remove undefined values - Firebase doesn't accept them
+            const cleaned = {};
+            Object.keys(data).forEach(function(npcId) {
+                const npc = data[npcId];
+                if (!npc || typeof npc !== 'object') return;
+                
+                const cleanedNPC = {};
+                Object.keys(npc).forEach(function(key) {
+                    const value = npc[key];
+                    // Skip undefined values
+                    if (value === undefined) return;
+                    // Skip null values
+                    if (value === null) return;
+                    // Skip empty strings for optional fields
+                    if (value === '' && (key === 'faction' || key === 'location' || key === 'portrait' || key === 'notes')) return;
+                    // Skip empty arrays
+                    if (Array.isArray(value) && value.length === 0) return;
+                    // Skip empty objects
+                    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return;
+                    
+                    cleanedNPC[key] = value;
+                });
+                
+                // Ensure name exists
+                if (!cleanedNPC.name) {
+                    cleanedNPC.name = npcId;
+                }
+                
+                cleaned[npcId] = cleanedNPC;
+            });
+            
+            return cleaned;
+        }
+        
+        function saveNPCsToFirebase(npcData) {
+            if (!database) {
+                console.log("💾 No database - NPCs not synced to Firebase");
+                return;
+            }
+            
+            if (isSyncingNPCsFromFirebase) {
+                console.log("🔄 Skipping NPC save - currently syncing from Firebase");
+                return;
+            }
+            
+            try {
+                // Clean data before saving (remove undefined values)
+                const cleanedData = cleanNPCData(npcData);
+                
+                const ref = database.ref(`campaigns/${CAMPAIGN_ID}/npc_data`);
+                ref.set(cleanedData).then(function() {
+                    console.log("✅ NPCs saved to Firebase:", Object.keys(cleanedData).length, "NPCs");
+                }).catch(function(error) {
+                    console.error("❌ Error saving NPCs to Firebase:", error);
+                });
+            } catch(e) {
+                console.error("Failed to save NPCs to Firebase:", e);
+            }
+        }
+        
+        function migrateNPCsToFirebase() {
+            if (!database) {
+                console.log("No database - skipping NPC migration");
+                return;
+            }
+            
+            // Check if NPCs already exist in Firebase
+            loadNPCsFromFirebase(function(firebaseData) {
+                if (firebaseData && Object.keys(firebaseData).length > 0) {
+                    console.log("✅ NPCs already in Firebase - no migration needed");
+                    return;
+                }
+                
+                // Migrate from static npcData to Firebase
+                if (typeof npcData !== 'undefined' && npcData && Object.keys(npcData).length > 0) {
+                    console.log("🔄 Migrating", Object.keys(npcData).length, "NPCs to Firebase...");
+                    saveNPCsToFirebase(npcData);
+                    console.log("✅ NPC migration complete");
+                } else {
+                    console.log("⚠️ No static NPC data to migrate");
+                }
+            });
+        }
+        
+        // Dynamic NPC Card Rendering
+        function renderNPCCards() {
+            const npcGrid = document.getElementById('npcGrid');
+            if (!npcGrid) {
+                console.log("NPC grid not found - skipping render");
+                return;
+            }
+            
+            console.log("🎴 Rendering NPC cards from editorNPCData:", Object.keys(editorNPCData).length, "NPCs");
+            
+            // Clear existing cards
+            npcGrid.innerHTML = '';
+            
+            // Sort NPCs alphabetically by name
+            const sortedNPCs = Object.keys(editorNPCData).sort(function(a, b) {
+                const nameA = (editorNPCData[a].name || a).toLowerCase();
+                const nameB = (editorNPCData[b].name || b).toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            
+            sortedNPCs.forEach(function(npcId) {
+                const npc = editorNPCData[npcId];
+                if (!npc || typeof npc !== 'object') return;
+                
+                const name = npc.name || npcId;
+                const faction = npc.faction || 'Unknown';
+                const location = npc.location || 'Unknown';
+                const status = npc.status || 'unknown';
+                const notes = npc.notes || '';
+                const tags = npc.tags || [];
+                const portrait = npc.portrait || '';
+                const spoiler = npc.spoiler || false;
+                const relationships = npc.relationships || {};
+                
+                // Get faction color
+                const factionColors = {
+                    'The Veil': '#9C27B0',
+                    'Duskkeep Guild': '#3F51B5',
+                    'The Forgotten Assembly': '#F44336',
+                    'Thenmere Council': '#2196F3',
+                    'Thenmere Guard': '#4CAF50',
+                    'Independent': '#FF9800',
+                    'Party Members': '#FFD700',
+                    'Unknown': '#808080'
+                };
+                const factionColor = factionColors[faction] || '#808080';
+                
+                // Build portrait HTML
+                let portraitHtml = '';
+                let portraitStyle = '';
+                if (portrait) {
+                    const encodedPath = encodeURI(portrait);
+                    portraitHtml = '<img src="' + encodedPath + '" alt="' + name + '" onerror="this.style.display=\'none\'; this.parentElement.style.backgroundImage=\'none\'; this.onerror=null;" loading="lazy">';
+                    portraitStyle = 'background-image: url(\'' + encodedPath + '\');';
+                } else {
+                    portraitHtml = '<div class="portrait-placeholder">📷</div>';
+                }
+                
+                // Build tags HTML
+                let tagsHtml = '';
+                if (tags && tags.length > 0) {
+                    const tagsList = tags.map(function(t) { return '<span class="tag">' + t + '</span>'; }).join('');
+                    tagsHtml = '<div class="npc-tags"><span class="tag-label">Tags:</span> ' + tagsList + '</div>';
+                }
+                
+                // Build relationships HTML
+                let relationshipsHtml = '';
+                const relCount = Object.keys(relationships).reduce(function(sum, key) {
+                    const rels = relationships[key];
+                    return sum + (Array.isArray(rels) ? rels.length : 0);
+                }, 0);
+                
+                if (relCount > 0) {
+                    relationshipsHtml = '<div class="npc-relationships"><strong>Relationships:</strong> <span class="relationship-count">' + relCount + '</span></div>';
+                }
+                
+                // Create card element
+                const card = document.createElement('div');
+                card.className = 'npc-card';
+                card.setAttribute('data-faction', faction);
+                card.setAttribute('data-status', status);
+                card.setAttribute('data-name', name.toLowerCase());
+                card.setAttribute('data-location', location.toLowerCase());
+                card.setAttribute('data-tags', tags.join(',').toLowerCase());
+                card.setAttribute('data-spoiler', spoiler.toString());
+                card.setAttribute('data-portrait', portrait);
+                
+                const notesHtml = notes ? '<div class="npc-notes"><strong>📝 Notes:</strong> ' + notes + '</div>' : '';
+                
+                card.innerHTML = '<div class="npc-header">' +
+                    '<div class="npc-portrait-container">' +
+                    '<div class="npc-portrait" style="' + portraitStyle + '">' +
+                    portraitHtml +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="npc-name-container">' +
+                    '<h3 class="npc-name">' + name + '</h3>' +
+                    '<span class="npc-faction" style="background-color: ' + factionColor + ';">' + faction + '</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="npc-details">' +
+                    '<p class="npc-location"><strong>📍 Location:</strong> ' + location + '</p>' +
+                    '<p class="npc-status"><strong>💚 Status:</strong> ' + status + '</p>' +
+                    tagsHtml +
+                    relationshipsHtml +
+                    notesHtml +
+                    '</div>';
+                
+                npcGrid.appendChild(card);
+            });
+            
+            console.log("✅ NPC cards rendered successfully");
+        }
+        
         // Set up real-time sync listeners
         function setupRealtimeSync() {
             if (!database) {
@@ -4890,6 +5120,43 @@
             }
             
             console.log("Setting up real-time sync for campaign:", CAMPAIGN_ID);
+            
+            // Sync NPC data
+            const npcRef = database.ref(`campaigns/${CAMPAIGN_ID}/npc_data`);
+            npcRef.on('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data && typeof data === 'object') {
+                    // Only update if data changed (avoid infinite loops)
+                    const currentDataStr = JSON.stringify(editorNPCData);
+                    const newDataStr = JSON.stringify(data);
+                    if (currentDataStr !== newDataStr) {
+                        console.log("👥 NPC data updated from Firebase (real-time sync)");
+                        
+                        // Set flag to prevent save loop
+                        isSyncingNPCsFromFirebase = true;
+                        
+                        // Update editorNPCData
+                        editorNPCData = data;
+                        
+                        // Update NPC list in editor if it's open
+                        if (typeof populateNPCList === 'function') {
+                            populateNPCList();
+                        }
+                        
+                        // Re-render NPC cards in main view
+                        if (typeof renderNPCCards === 'function') {
+                            renderNPCCards();
+                        }
+                        
+                        // Clear flag after sync complete
+                        isSyncingNPCsFromFirebase = false;
+                        
+                        showNotification("👥 NPC data updated");
+                    }
+                }
+            }, function(error) {
+                console.error("❌ Error listening to NPC data:", error);
+            });
             
             // Sync inventory data
             const inventoryRef = database.ref(`campaigns/${CAMPAIGN_ID}/inventory_data`);
@@ -9539,20 +9806,49 @@
         // Editor Functions
         let currentEditingNPC = null;
         let editorNPCData = {};
-        if (typeof npcData !== 'undefined' && npcData && Object.keys(npcData).length > 0) {
-            editorNPCData = JSON.parse(JSON.stringify(npcData)); // Working copy
-            console.log('Editor initialized with', Object.keys(editorNPCData).length, 'NPCs');
-            // Debug: Check if party members are in editorNPCData
-            const partyMembers = ['Olpha', 'Felwin', 'Julior', 'Cooker', 'Thenn', 'Amok', 'Wren', 'Primevera'];
-            partyMembers.forEach(function(name) {
-                if (editorNPCData[name]) {
-                    console.log('Party member found in editorNPCData:', name, editorNPCData[name]);
+        
+        // Load NPCs from Firebase, fallback to static data
+        function initializeNPCData() {
+            loadNPCsFromFirebase(function(firebaseData) {
+                if (firebaseData && Object.keys(firebaseData).length > 0) {
+                    // Use Firebase data
+                    editorNPCData = firebaseData;
+                    console.log('✅ Editor initialized with Firebase NPCs:', Object.keys(editorNPCData).length, 'NPCs');
+                } else if (typeof npcData !== 'undefined' && npcData && Object.keys(npcData).length > 0) {
+                    // Fallback to static data and migrate to Firebase
+                    editorNPCData = JSON.parse(JSON.stringify(npcData)); // Working copy
+                    console.log('✅ Editor initialized with static NPCs:', Object.keys(editorNPCData).length, 'NPCs');
+                    console.log('🔄 Migrating NPCs to Firebase...');
+                    migrateNPCsToFirebase();
                 } else {
-                    console.warn('Party member NOT found in editorNPCData:', name);
+                    console.error('❌ No NPC data available');
+                    editorNPCData = {};
+                }
+                
+                // Populate NPC list in editor if tab is open
+                if (typeof populateNPCList === 'function') {
+                    populateNPCList();
+                }
+                
+                // Render NPC cards in main view
+                if (typeof renderNPCCards === 'function') {
+                    renderNPCCards();
                 }
             });
+        }
+        
+        // Initialize NPC data on load
+        if (typeof database !== 'undefined' && database) {
+            // Wait for Firebase to be ready
+            setTimeout(initializeNPCData, 500);
         } else {
-            console.error('npcData is not available for editor initialization');
+            // No Firebase - use static data immediately
+            if (typeof npcData !== 'undefined' && npcData && Object.keys(npcData).length > 0) {
+                editorNPCData = JSON.parse(JSON.stringify(npcData)); // Working copy
+                console.log('Editor initialized with', Object.keys(editorNPCData).length, 'NPCs (no Firebase)');
+            } else {
+                console.error('npcData is not available for editor initialization');
+            }
         }
         let hasUnsavedChanges = false;
         let bulkMode = false;
@@ -10085,30 +10381,45 @@
                 }
             });
             
-            // Create or update NPC
-            editorNPCData[npcId] = {
-                name: name,
-                faction: faction || undefined,
-                location: location || undefined,
-                status: status || 'alive',
-                portrait: portrait || undefined,
-                tags: tags.length > 0 ? tags : undefined,
-                notes: notes || undefined,
-                spoiler: spoiler || undefined,
-                relationships: Object.keys(relationships).length > 0 ? relationships : undefined
-            };
+            // Create or update NPC (only include defined values - Firebase doesn't accept undefined)
+            const npcObj = { name: name };
+            
+            if (faction && faction.trim()) npcObj.faction = faction;
+            if (location && location.trim()) npcObj.location = location;
+            npcObj.status = status || 'alive';
+            if (portrait && portrait.trim()) npcObj.portrait = portrait;
+            if (tags && tags.length > 0) npcObj.tags = tags;
+            if (notes && notes.trim()) npcObj.notes = notes;
+            if (spoiler) npcObj.spoiler = true; // Only include if true
+            if (Object.keys(relationships).length > 0) npcObj.relationships = relationships;
+            
+            editorNPCData[npcId] = npcObj;
             
             // If ID changed, remove old entry
             if (currentEditingNPC && currentEditingNPC !== npcId) {
                 delete editorNPCData[currentEditingNPC];
             }
             
+            // Save to Firebase (real-time sync!)
+            saveNPCsToFirebase(editorNPCData);
+            
             populateNPCList();
             populateFactionList();
             populateTagSuggestions();
             populateNPCDatalist();
             markSaved();
-            alert('NPC saved! Remember to export the JSON and regenerate the mind map.');
+            
+            // Re-render NPC cards in main view
+            if (typeof renderNPCCards === 'function') {
+                renderNPCCards();
+            }
+            
+            // Show success message with Firebase sync info
+            if (database) {
+                showNotification('✅ NPC saved and synced to all players!');
+            } else {
+                alert('NPC saved locally (Firebase not available)');
+            }
         }
         
         function cancelEdit() {
@@ -10129,13 +10440,33 @@
             if (!confirm('Are you sure you want to delete this NPC?')) return;
             
             delete editorNPCData[currentEditingNPC];
+            
+            // Save to Firebase (real-time sync!)
+            saveNPCsToFirebase(editorNPCData);
+            
             markUnsaved();
             populateNPCList();
             populateFactionList();
             populateTagSuggestions();
             populateNPCDatalist();
             cancelEdit();
-            alert('NPC deleted! Remember to export the JSON and regenerate the mind map.');
+            
+            // Re-render NPC cards in main view
+            if (typeof renderNPCCards === 'function') {
+                renderNPCCards();
+            }
+            
+            // Show success message
+            if (database) {
+                showNotification('🗑️ NPC deleted and synced to all players');
+            }
+            
+            // Show success message with Firebase sync info
+            if (database) {
+                showNotification('✅ NPC deleted and synced to all players!');
+            } else {
+                alert('NPC deleted locally (Firebase not available)');
+            }
         }
         
         function exportJSON() {
