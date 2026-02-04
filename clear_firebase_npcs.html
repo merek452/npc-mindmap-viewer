@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Firebase NPC Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        .warning {
+            background: #ff9800;
+            color: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .info {
+            background: #2196F3;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #4CAF50;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #d32f2f;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #1976D2;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        code {
+            background: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: #333;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Clear Firebase NPC Data</h1>
+        
+        <div class="info">
+            <strong>Why do this?</strong><br>
+            Firebase currently has old NPC data with incorrect image paths (pointing to <code>../Images/*.bmp</code>).
+            This tool will delete the Firebase NPC data so it reloads from your fixed <code>npc_relationships.json</code> file.
+        </div>
+
+        <div class="warning">
+            ⚠️ This will delete ALL NPC data from Firebase!<br>
+            The app will automatically reload NPCs from <code>npc_relationships.json</code> on next page load.
+        </div>
+
+        <div class="step">
+            <strong>Step 1:</strong> Click "Clear Firebase NPC Data" below
+        </div>
+        <div class="step">
+            <strong>Step 2:</strong> Reload <code>npc_mindmap_viewer.html</code>
+        </div>
+        <div class="step">
+            <strong>Step 3:</strong> Check console - should see "Migrating NPCs to Firebase..."
+        </div>
+        <div class="step">
+            <strong>Step 4:</strong> All images should now load correctly! ✅
+        </div>
+
+        <button onclick="clearNPCData()">Clear Firebase NPC Data</button>
+        <button class="secondary" onclick="viewCurrentData()">View Current Firebase Data</button>
+
+        <div id="status"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWPfKyLy69BgWmLqHo1SfTdwc9-NHdE9A",
+            authDomain: "genia-campaign.firebaseapp.com",
+            databaseURL: "https://genia-campaign-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "genia-campaign",
+            storageBucket: "genia-campaign.firebasestorage.app",
+            messagingSenderId: "721223626942",
+            appId: "1:721223626942:web:d4b62e9ab0a5cc9f72c5a2"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const npcRef = database.ref('campaigns/genia/npc_data');
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            statusDiv.className = type;
+        }
+
+        async function clearNPCData() {
+            if (!confirm('Are you sure you want to clear ALL NPC data from Firebase?\n\nThe app will reload NPCs from npc_relationships.json on next page load.')) {
+                return;
+            }
+
+            try {
+                showStatus('Clearing Firebase NPC data...', 'info');
+                
+                await npcRef.remove();
+                
+                showStatus('✅ SUCCESS! Firebase NPC data has been cleared.\n\nNext steps:\n1. Reload npc_mindmap_viewer.html\n2. Check console for "Migrating NPCs to Firebase..."\n3. All images should now use correct paths!', 'success');
+                
+                console.log('Firebase NPC data cleared successfully!');
+            } catch (error) {
+                showStatus('❌ ERROR: ' + error.message, 'warning');
+                console.error('Error clearing Firebase data:', error);
+            }
+        }
+
+        async function viewCurrentData() {
+            try {
+                showStatus('Loading Firebase data...', 'info');
+                
+                const snapshot = await npcRef.once('value');
+                const data = snapshot.val();
+                
+                if (!data) {
+                    showStatus('No NPC data in Firebase (already cleared or never set)', 'info');
+                    console.log('No Firebase NPC data found');
+                    return;
+                }
+
+                const npcCount = Object.keys(data).length;
+                let message = `Found ${npcCount} NPCs in Firebase\n\n`;
+                
+                // Check for problematic paths
+                let badPaths = [];
+                for (const [name, npc] of Object.entries(data)) {
+                    if (npc.portrait) {
+                        if (npc.portrait.includes('../Images') || npc.portrait.endsWith('.bmp')) {
+                            badPaths.push(`${name}: ${npc.portrait}`);
+                        }
+                    }
+                }
+
+                if (badPaths.length > 0) {
+                    message += `⚠️ Found ${badPaths.length} NPCs with OLD paths:\n\n`;
+                    badPaths.slice(0, 10).forEach(path => {
+                        message += `- ${path}\n`;
+                    });
+                    if (badPaths.length > 10) {
+                        message += `... and ${badPaths.length - 10} more\n`;
+                    }
+                    message += '\n👉 You should clear Firebase data to fix this!';
+                } else {
+                    message += '✅ All portrait paths look correct!';
+                }
+
+                showStatus(message, badPaths.length > 0 ? 'warning' : 'success');
+                console.log('Firebase NPC data:', data);
+                
+            } catch (error) {
+                showStatus('❌ ERROR: ' + error.message, 'warning');
+                console.error('Error reading Firebase data:', error);
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            console.log('Checking Firebase NPC data...');
+            viewCurrentData();
+        });
+    </script>
+</body>
+</html>

@@ -292,6 +292,7 @@ class NPCRelationshipMapper:
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <style>
         * {{
             margin: 0;
@@ -1894,8 +1895,10 @@ class NPCRelationshipMapper:
                 console.log("Initializing Firebase with config:", FIREBASE_CONFIG.projectId);
                 firebase.initializeApp(FIREBASE_CONFIG);
                 database = firebase.database();
+                window.firebaseStorage = firebase.storage();
                 firebaseInitialized = true;
                 console.log("✅ Firebase initialized successfully");
+                console.log("✅ Firebase Storage initialized");
                 
                 // Set up real-time listeners
                 setupRealtimeSync();
@@ -5890,10 +5893,20 @@ class NPCRelationshipMapper:
                             </div>
                             
                             <div class="form-group">
-                                <label>Portrait Path</label>
-                                <div style="display: flex; gap: 10px;">
-                                    <input type="text" id="npcPortrait" placeholder="../Images/filename.png" onchange="markUnsaved(); previewPortrait()" style="flex: 1;" />
-                                    <div id="portraitPreview" style="width: 80px; height: 80px; border: 2px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(0,0,0,0.3); display: none; background-size: cover; background-position: center;"></div>
+                                <label>Portrait</label>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <input type="text" id="npcPortrait" placeholder="Images/filename.png or URL" onchange="markUnsaved(); previewPortrait()" style="flex: 1;" />
+                                        <button type="button" onclick="uploadPortraitImage()" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">📤 Upload</button>
+                                        <div id="portraitPreview" style="width: 80px; height: 80px; border: 2px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(0,0,0,0.3); display: none; background-size: cover; background-position: center;"></div>
+                                    </div>
+                                    <div id="uploadStatus" style="font-size: 12px; color: #4CAF50; display: none;"></div>
+                                    <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: -5px;">
+                                        💡 Recommended: Use external URL (imgur.com) or "Images/file.png" path
+                                    </div>
+                                    <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 5px; padding: 8px; background: rgba(33,150,243,0.1); border-radius: 4px; border-left: 3px solid #2196F3;">
+                                        <strong>Quick Image Hosting:</strong> Upload to <a href="https://imgur.com/upload" target="_blank" style="color: #4CAF50;">imgur.com</a>, copy link, paste above
+                                    </div>
                                 </div>
                             </div>
                             
@@ -7904,6 +7917,199 @@ class NPCRelationshipMapper:
                 preview.style.backgroundImage = 'url(' + path + ')';
             } else {
                 preview.style.display = 'none';
+            }
+        }
+        
+        // Upload portrait image to Firebase Storage
+        function uploadPortraitImage() {
+            // Check if Firebase Storage is available
+            if (!window.firebaseStorage) {
+                alert('Firebase Storage not initialized. Please refresh the page.');
+                return;
+            }
+            
+            // Show info about storage setup
+            const infoMessage = 'Note: Firebase Storage upload requires security rules to be configured.\\n\\n' +
+                'For now, you can:\\n' +
+                '1. Upload images to imgur.com and paste the URL\\n' +
+                '2. Use local Images/ folder (requires Git access)\\n' +
+                '3. Ask DM to configure Firebase Storage rules\\n\\n' +
+                'Continue with upload attempt?';
+            
+            if (!confirm(infoMessage)) {
+                return;
+            }
+            
+            // Create file input
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Check file size (warn if > 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    if (!confirm('Image is larger than 5MB. It will be compressed. Continue?')) {
+                        return;
+                    }
+                }
+                
+                showUploadStatus('Processing image...', 'info');
+                
+                // Process and upload image
+                processAndUploadImage(file);
+            };
+            
+            input.click();
+        }
+        
+        function showUploadStatus(message, type) {
+            const statusEl = getEl('uploadStatus');
+            if (!statusEl) return;
+            
+            statusEl.style.display = 'block';
+            statusEl.textContent = message;
+            
+            if (type === 'error') {
+                statusEl.style.color = '#f44336';
+            } else if (type === 'success') {
+                statusEl.style.color = '#4CAF50';
+            } else {
+                statusEl.style.color = '#2196F3';
+            }
+            
+            // Auto-hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(function() {
+                    statusEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function processAndUploadImage(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Create canvas for resizing
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Calculate dimensions (max 500x500, maintain aspect ratio)
+                    let width = img.width;
+                    let height = img.height;
+                    const maxSize = 500;
+                    
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = Math.round((height * maxSize) / width);
+                            width = maxSize;
+                        } else {
+                            width = Math.round((width * maxSize) / height);
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Convert to blob (PNG format, 0.8 quality for compression)
+                    canvas.toBlob(function(blob) {
+                        if (!blob) {
+                            showUploadStatus('Error: Failed to process image', 'error');
+                            return;
+                        }
+                        
+                        // Show file size reduction
+                        const originalSize = (file.size / 1024).toFixed(1);
+                        const newSize = (blob.size / 1024).toFixed(1);
+                        console.log('Image compressed:', originalSize + 'KB → ' + newSize + 'KB');
+                        
+                        showUploadStatus('Uploading to Firebase... (' + newSize + 'KB)', 'info');
+                        
+                        // Upload to Firebase Storage
+                        uploadToFirebase(blob);
+                    }, 'image/png', 0.8);
+                };
+                
+                img.onerror = function() {
+                    showUploadStatus('Error: Invalid image file', 'error');
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.onerror = function() {
+                showUploadStatus('Error: Failed to read file', 'error');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function uploadToFirebase(blob) {
+            try {
+                // Get current NPC name for filename
+                const npcNameEl = getEl('npcName');
+                let filename = 'portrait.png';
+                
+                if (npcNameEl && npcNameEl.value && npcNameEl.value.trim() !== '') {
+                    // Sanitize filename (remove special characters)
+                    filename = npcNameEl.value.trim()
+                        .replace(/[^a-zA-Z0-9\\s-]/g, '')
+                        .replace(/\\s+/g, '_') + '.png';
+                } else {
+                    filename = 'npc_' + Date.now() + '.png';
+                }
+                
+                // Create storage reference
+                const storageRef = window.firebaseStorage.ref('npc_portraits/' + filename);
+                
+                // Upload file
+                const uploadTask = storageRef.put(blob, {
+                    contentType: 'image/png',
+                    cacheControl: 'public, max-age=31536000'
+                });
+                
+                // Monitor upload progress
+                uploadTask.on('state_changed',
+                    function(snapshot) {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        showUploadStatus('Uploading... ' + Math.round(progress) + '%', 'info');
+                    },
+                    function(error) {
+                        console.error('Upload error:', error);
+                        showUploadStatus('Error: Upload failed - ' + error.message, 'error');
+                    },
+                    function() {
+                        // Upload complete - get download URL
+                        uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                            console.log('✅ Image uploaded successfully:', downloadURL);
+                            
+                            // Update portrait field
+                            const portraitEl = getEl('npcPortrait');
+                            if (portraitEl) {
+                                portraitEl.value = downloadURL;
+                                markUnsaved();
+                                previewPortrait();
+                            }
+                            
+                            showUploadStatus('✅ Image uploaded successfully!', 'success');
+                        }).catch(function(error) {
+                            console.error('Error getting download URL:', error);
+                            showUploadStatus('Error: Failed to get image URL', 'error');
+                        });
+                    }
+                );
+            } catch (error) {
+                console.error('Upload error:', error);
+                showUploadStatus('Error: ' + error.message, 'error');
             }
         }
         
