@@ -1983,27 +1983,47 @@ class NPCRelationshipMapper:
             const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/inventory_data`);
             
             ref.transaction(function(currentData) {{
-                // If no data exists yet, use local data
+                // If no data exists yet, use local data (with safe defaults)
                 if (!currentData) {{
                     console.log("🔄 First save - using local data");
-                    return localInventoryData;
+                    return {{
+                        partyGold: localInventoryData.partyGold || 0,
+                        players: Array.isArray(localInventoryData.players) ? localInventoryData.players : [],
+                        bagOfHolding: Array.isArray(localInventoryData.bagOfHolding) ? localInventoryData.bagOfHolding : [],
+                        version: 1,
+                        lastModified: Date.now()
+                    }};
                 }}
+                
+                // Ensure local data has valid structure
+                const safeLocal = {{
+                    partyGold: typeof localInventoryData.partyGold === 'number' ? localInventoryData.partyGold : 0,
+                    players: Array.isArray(localInventoryData.players) ? localInventoryData.players : [],
+                    bagOfHolding: Array.isArray(localInventoryData.bagOfHolding) ? localInventoryData.bagOfHolding : []
+                }};
+                
+                // Ensure current data has valid structure
+                const safeCurrent = {{
+                    partyGold: typeof currentData.partyGold === 'number' ? currentData.partyGold : 0,
+                    players: Array.isArray(currentData.players) ? currentData.players : [],
+                    bagOfHolding: Array.isArray(currentData.bagOfHolding) ? currentData.bagOfHolding : []
+                }};
                 
                 // Merge logic: intelligently combine local and remote changes
                 const merged = {{
-                    partyGold: localInventoryData.partyGold || currentData.partyGold || 0,
-                    players: mergePlayers(currentData.players || [], localInventoryData.players || []),
-                    bagOfHolding: mergeItems(currentData.bagOfHolding || [], localInventoryData.bagOfHolding || []),
+                    partyGold: safeLocal.partyGold,
+                    players: mergePlayers(safeCurrent.players, safeLocal.players),
+                    bagOfHolding: mergeItems(safeCurrent.bagOfHolding, safeLocal.bagOfHolding),
                     version: (currentData.version || 0) + 1,
                     lastModified: Date.now()
                 }};
                 
                 console.log("🔄 Merging inventory data:", {{
-                    remotePlayers: currentData.players?.length || 0,
-                    localPlayers: localInventoryData.players?.length || 0,
+                    remotePlayers: safeCurrent.players.length,
+                    localPlayers: safeLocal.players.length,
                     mergedPlayers: merged.players.length,
-                    remoteBag: currentData.bagOfHolding?.length || 0,
-                    localBag: localInventoryData.bagOfHolding?.length || 0,
+                    remoteBag: safeCurrent.bagOfHolding.length,
+                    localBag: safeLocal.bagOfHolding.length,
                     mergedBag: merged.bagOfHolding.length
                 }});
                 
@@ -2034,19 +2054,23 @@ class NPCRelationshipMapper:
             const merged = [];
             const playerMap = {{}};
             
+            // Ensure arrays exist
+            const safeRemote = Array.isArray(remotePlayers) ? remotePlayers : [];
+            const safeLocal = Array.isArray(localPlayers) ? localPlayers : [];
+            
             // Add all remote players first
-            remotePlayers.forEach(function(player) {{
+            safeRemote.forEach(function(player) {{
                 if (player && player.name) {{
                     playerMap[player.name] = {{
                         name: player.name,
-                        items: player.items || [],
-                        gold: player.gold || 0
+                        items: Array.isArray(player.items) ? player.items : [],
+                        gold: typeof player.gold === 'number' ? player.gold : 0
                     }};
                 }}
             }});
             
             // Merge local players
-            localPlayers.forEach(function(player) {{
+            safeLocal.forEach(function(player) {{
                 if (player && player.name) {{
                     if (playerMap[player.name]) {{
                         // Player exists - merge items
@@ -2055,12 +2079,16 @@ class NPCRelationshipMapper:
                             player.items || []
                         );
                         // Use local gold if different (assume local is more recent)
-                        if (player.gold !== playerMap[player.name].gold) {{
+                        if (typeof player.gold === 'number' && player.gold !== playerMap[player.name].gold) {{
                             playerMap[player.name].gold = player.gold;
                         }}
                     }} else {{
-                        // New player - add it
-                        playerMap[player.name] = player;
+                        // New player - add it (with safe defaults)
+                        playerMap[player.name] = {{
+                            name: player.name,
+                            items: Array.isArray(player.items) ? player.items : [],
+                            gold: typeof player.gold === 'number' ? player.gold : 0
+                        }};
                     }}
                 }}
             }});
@@ -2078,15 +2106,19 @@ class NPCRelationshipMapper:
             const merged = [];
             const itemMap = {{}};
             
+            // Ensure arrays exist
+            const safeRemote = Array.isArray(remoteItems) ? remoteItems : [];
+            const safeLocal = Array.isArray(localItems) ? localItems : [];
+            
             // Add all remote items
-            remoteItems.forEach(function(item) {{
+            safeRemote.forEach(function(item) {{
                 if (item && item._id) {{
                     itemMap[item._id] = item;
                 }}
             }});
             
             // Add/update local items
-            localItems.forEach(function(item) {{
+            safeLocal.forEach(function(item) {{
                 if (item && item._id) {{
                     itemMap[item._id] = item; // Local version wins for same item
                 }}
@@ -2097,7 +2129,13 @@ class NPCRelationshipMapper:
                 merged.push(itemMap[id]);
             }}
             
-            return consolidateStacks(merged);
+            // Consolidate stacks safely
+            try {{
+                return consolidateStacks(merged);
+            }} catch(e) {{
+                console.error("Error consolidating stacks:", e);
+                return merged; // Return un-consolidated if consolidate fails
+            }}
         }}
         
         function loadFromFirebase(path, callback) {{
