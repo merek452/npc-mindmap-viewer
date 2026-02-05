@@ -4914,12 +4914,28 @@
                     // Update local data with merged result
                     const mergedData = snapshot.val();
                     if (mergedData) {
-                        inventoryData = mergedData;
-                        renderPlayers();
-                        renderBagOfHolding();
+                        // Ensure merged data has valid structure before assigning
+                        inventoryData = {
+                            partyGold: typeof mergedData.partyGold === 'number' ? mergedData.partyGold : 0,
+                            players: Array.isArray(mergedData.players) ? mergedData.players : [],
+                            bagOfHolding: Array.isArray(mergedData.bagOfHolding) ? mergedData.bagOfHolding : [],
+                            version: mergedData.version || 0,
+                            lastModified: mergedData.lastModified || Date.now()
+                        };
+                        
+                        // Validate and render
+                        if (typeof validateInventoryData === 'function') {
+                            validateInventoryData();
+                        }
+                        if (typeof renderPlayers === 'function') {
+                            renderPlayers();
+                        }
+                        if (typeof renderBagOfHolding === 'function') {
+                            renderBagOfHolding();
+                        }
                     }
                 } else {
-                    console.log("⚠️ Transaction aborted (concurrent edit detected)");
+                    console.log("⚠️ Transaction aborted (no changes committed)");
                 }
             }, false); // applyLocally = false
         }
