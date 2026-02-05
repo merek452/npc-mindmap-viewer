@@ -1967,6 +1967,9 @@ class NPCRelationshipMapper:
             }}
         }}
         
+        // Flag to prevent sync listener from overwriting during transaction
+        let isSavingInventoryTransaction = false;
+        
         // NEW: Transaction-based inventory save that prevents data loss
         function saveInventoryTransaction(localInventoryData) {{
             if (!database) {{
@@ -1979,6 +1982,9 @@ class NPCRelationshipMapper:
                 }}
                 return;
             }}
+            
+            // Set flag to prevent sync listener from overwriting
+            isSavingInventoryTransaction = true;
             
             const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/inventory_data`);
             
@@ -2032,6 +2038,7 @@ class NPCRelationshipMapper:
                 if (error) {{
                     console.error("❌ Inventory transaction failed:", error);
                     showNotification('⚠️ Save failed - retrying...', 'error');
+                    isSavingInventoryTransaction = false;
                     // Retry once
                     setTimeout(function() {{ saveInventoryTransaction(localInventoryData); }}, 1000);
                 }} else if (committed) {{
@@ -2048,6 +2055,8 @@ class NPCRelationshipMapper:
                             lastModified: mergedData.lastModified || Date.now()
                         }};
                         
+                        console.log("✅ Transaction result - Bag has", inventoryData.bagOfHolding.length, "items");
+                        
                         // Validate and render
                         if (typeof validateInventoryData === 'function') {{
                             validateInventoryData();
@@ -2059,8 +2068,15 @@ class NPCRelationshipMapper:
                             renderBagOfHolding();
                         }}
                     }}
+                    
+                    // Clear flag after a delay to allow Firebase to propagate
+                    setTimeout(function() {{
+                        isSavingInventoryTransaction = false;
+                        console.log("🔓 Transaction flag cleared");
+                    }}, 2000); // Wait 2 seconds
                 }} else {{
                     console.log("⚠️ Transaction aborted (no changes committed)");
+                    isSavingInventoryTransaction = false;
                 }}
             }}, false); // applyLocally = false
         }}
@@ -2487,6 +2503,12 @@ class NPCRelationshipMapper:
             inventoryRef.on('value', function(snapshot) {{
                 const data = snapshot.val();
                 if (data && typeof inventoryData !== 'undefined') {{
+                    // Don't update if we're in the middle of a transaction save
+                    if (isSavingInventoryTransaction) {{
+                        console.log("🔒 Skipping sync update - transaction in progress");
+                        return;
+                    }}
+                    
                     // Only update if data changed (avoid infinite loops)
                     const currentDataStr = JSON.stringify(inventoryData);
                     const newDataStr = JSON.stringify(data);
