@@ -114,14 +114,29 @@ alert('NPC saved! Remember to export the JSON and regenerate the mind map.');
 
 ## 🟠 **HIGH PRIORITY ISSUES**
 
-### 5. ⚠️ **No Transaction Support**
+### 5. ✅ **No Transaction Support** [MOSTLY FIXED]
 
-**Problem:** Firebase writes aren't atomic
-- If save partially fails, database can be corrupted
-- No rollback mechanism
-- Uses `ref.set()` instead of `ref.transaction()`
+**Original Problem:** Concurrent edits cause data loss (last-write-wins)
+- Multiple users editing simultaneously overwrites data
+- No merge mechanism for concurrent changes
 
-**Impact:** Partial writes possible, data corruption risk
+**Clarification:** Firebase `ref.set()` IS atomic (never partial writes)
+- Entire write succeeds or fails as one operation
+- "Data corruption" from partial writes is not possible
+- Real issue was concurrent modification conflicts
+
+**Solution Implemented:**
+- ✅ Inventory uses transactions with intelligent merge
+- ✅ Map markers use transactions with ID-based merge
+- ✅ Map annotations use transactions with ID-based merge
+- ✅ Deletions use `.set()` for replace logic (correct approach)
+
+**Remaining `.set()` Usage (Acceptable):**
+- ✅ NPCs use `.set()` + real-time sync (rapid propagation, single source per edit)
+- ✅ Immediate saves (deletions) use `.set()` (need replace, not merge)
+- ✅ All have retry mechanism + error notifications
+
+**Impact:** ✅ Data loss from concurrent edits prevented for inventory and maps
 
 ---
 
