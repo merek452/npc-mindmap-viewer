@@ -5045,6 +5045,121 @@
             }
         }
         
+        // Transaction-based save for map markers (mini-map)
+        function saveMarkersTransaction(localMarkers) {
+            if (!database) {
+                try {
+                    localStorage.setItem('mapMarkers', JSON.stringify(localMarkers));
+                    console.log("💾 Saved markers to localStorage");
+                } catch(e) {
+                    console.error("Failed to save markers to localStorage:", e);
+                }
+                return;
+            }
+            
+            const ref = database.ref(`campaigns/${CAMPAIGN_ID}/mapMarkers`);
+            ref.transaction(function(currentData) {
+                if (!currentData) {
+                    console.log("🔄 First save - using local markers");
+                    return Array.isArray(localMarkers) ? localMarkers : [];
+                }
+                
+                // Merge markers by id
+                const safeRemote = Array.isArray(currentData) ? currentData : [];
+                const safeLocal = Array.isArray(localMarkers) ? localMarkers : [];
+                const merged = mergeMarkers(safeRemote, safeLocal);
+                
+                console.log("🔄 Merging map markers:", {
+                    remote: safeRemote.length,
+                    local: safeLocal.length,
+                    merged: merged.length
+                });
+                
+                return merged;
+            }, function(error, committed) {
+                if (error) {
+                    console.error("❌ Marker transaction failed:", error);
+                } else if (committed) {
+                    console.log("✅ Markers saved with transaction (no data loss!)");
+                } else {
+                    console.log("⚠️ Marker transaction aborted");
+                }
+            }, false);
+        }
+        
+        // Transaction-based save for map annotations (mini-map)
+        function saveAnnotationsTransaction(localAnnotations) {
+            if (!database) {
+                try {
+                    localStorage.setItem('mapAnnotations', JSON.stringify(localAnnotations));
+                    console.log("💾 Saved annotations to localStorage");
+                } catch(e) {
+                    console.error("Failed to save annotations to localStorage:", e);
+                }
+                return;
+            }
+            
+            const ref = database.ref(`campaigns/${CAMPAIGN_ID}/mapAnnotations`);
+            ref.transaction(function(currentData) {
+                if (!currentData) {
+                    console.log("🔄 First save - using local annotations");
+                    return Array.isArray(localAnnotations) ? localAnnotations : [];
+                }
+                
+                // Merge annotations by id
+                const safeRemote = Array.isArray(currentData) ? currentData : [];
+                const safeLocal = Array.isArray(localAnnotations) ? localAnnotations : [];
+                const merged = mergeMarkers(safeRemote, safeLocal);
+                
+                console.log("🔄 Merging annotations:", {
+                    remote: safeRemote.length,
+                    local: safeLocal.length,
+                    merged: merged.length
+                });
+                
+                return merged;
+            }, function(error, committed) {
+                if (error) {
+                    console.error("❌ Annotation transaction failed:", error);
+                } else if (committed) {
+                    console.log("✅ Annotations saved with transaction (no data loss!)");
+                } else {
+                    console.log("⚠️ Annotation transaction aborted");
+                }
+            }, false);
+        }
+        
+        // Merge markers/annotations by id
+        function mergeMarkers(remoteMarkers, localMarkers) {
+            const merged = [];
+            const markerMap = {};
+            
+            // Ensure arrays exist
+            const safeRemote = Array.isArray(remoteMarkers) ? remoteMarkers : [];
+            const safeLocal = Array.isArray(localMarkers) ? localMarkers : [];
+            
+            // Add all remote markers
+            safeRemote.forEach(function(marker) {
+                if (marker && marker.id) {
+                    markerMap[marker.id] = marker;
+                }
+            });
+            
+            // Add/update local markers (local wins for same id)
+            safeLocal.forEach(function(marker) {
+                if (marker && marker.id) {
+                    markerMap[marker.id] = marker;
+                }
+            });
+            
+            // Convert map back to array
+            for (const id in markerMap) {
+                merged.push(markerMap[id]);
+            }
+            
+            return merged;
+        }
+        
         function loadFromFirebase(path, callback) {
             if (!database) {
                 // Fallback to localStorage
@@ -6550,10 +6665,10 @@
             
             // Mini-map functions
             
-            // Save markers and annotations to Firebase (with localStorage fallback)
+            // Save markers and annotations to Firebase (with transaction-based saves)
             function saveMapData() {
-                saveToFirebase('mapMarkers', markers);
-                saveToFirebase('mapAnnotations', annotations);
+                saveMarkersTransaction(markers);
+                saveAnnotationsTransaction(annotations);
                 // Save to history
                 saveToHistory();
             }
@@ -8707,8 +8822,8 @@
                 }
                 
                 function save() {
-                    saveToFirebase('worldMapMarkers', MapState.getValue('markers'));
-                    saveToFirebase('worldMapAnnotations', MapState.getValue('annotations'));
+                    saveMarkersTransaction(MapState.getValue('markers'));
+                    saveAnnotationsTransaction(MapState.getValue('annotations'));
                 }
                 
                 return {
