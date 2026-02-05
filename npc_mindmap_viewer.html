@@ -8801,10 +8801,7 @@
                                     </div>
                                     <div id="uploadStatus" style="font-size: 12px; color: #4CAF50; display: none;"></div>
                                     <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: -5px;">
-                                        💡 Recommended: Use external URL (imgur.com) or "Images/file.png" path
-                                    </div>
-                                    <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 5px; padding: 8px; background: rgba(33,150,243,0.1); border-radius: 4px; border-left: 3px solid #2196F3;">
-                                        <strong>Quick Image Hosting:</strong> Upload to <a href="https://imgur.com/upload" target="_blank" style="color: #4CAF50;">imgur.com</a>, copy link, paste above
+                                        💡 Click Upload to add images directly, or enter URL/path manually
                                     </div>
                                 </div>
                             </div>
@@ -10827,18 +10824,6 @@
                 return;
             }
             
-            // Show info about storage setup
-            const infoMessage = 'Note: Firebase Storage upload requires security rules to be configured.\n\n' +
-                'For now, you can:\n' +
-                '1. Upload images to imgur.com and paste the URL\n' +
-                '2. Use local Images/ folder (requires Git access)\n' +
-                '3. Ask DM to configure Firebase Storage rules\n\n' +
-                'Continue with upload attempt?';
-            
-            if (!confirm(infoMessage)) {
-                return;
-            }
-            
             // Create file input
             const input = document.createElement('input');
             input.type = 'file';
@@ -10999,7 +10984,19 @@
                                 previewPortrait();
                             }
                             
-                            showUploadStatus('✅ Image uploaded successfully!', 'success');
+                            // Update the NPC data with new portrait URL
+                            if (currentEditingNPC && editorNPCData[currentEditingNPC]) {
+                                editorNPCData[currentEditingNPC].portrait = downloadURL;
+                                // Save to Firebase immediately
+                                saveNPCsToFirebase(editorNPCData);
+                                // Update card view
+                                if (typeof renderNPCCards === 'function') {
+                                    renderNPCCards();
+                                }
+                                console.log('✅ Portrait updated in card view');
+                            }
+                            
+                            showUploadStatus('✅ Image uploaded and card updated!', 'success');
                         }).catch(function(error) {
                             console.error('Error getting download URL:', error);
                             showUploadStatus('Error: Failed to get image URL', 'error');
