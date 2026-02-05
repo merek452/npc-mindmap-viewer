@@ -2291,6 +2291,30 @@ class NPCRelationshipMapper:
             return merged;
         }}
         
+        // Retry mechanism for failed Firebase operations
+        const maxRetries = 3;
+        const retryDelays = [1000, 3000, 5000]; // Exponential backoff: 1s, 3s, 5s
+        
+        function retryFirebaseOperation(operation, operationName, attempt = 0) {{
+            return operation().catch(function(error) {{
+                console.error(`❌ ${{operationName}} failed (attempt ${{attempt + 1}}/${{maxRetries}}):`, error);
+                
+                if (attempt < maxRetries - 1) {{
+                    const delay = retryDelays[attempt];
+                    showNotification(`⚠️ ${{operationName}} failed - retrying in ${{delay/1000}}s...`, 'warning');
+                    
+                    return new Promise(function(resolve) {{
+                        setTimeout(function() {{
+                            resolve(retryFirebaseOperation(operation, operationName, attempt + 1));
+                        }}, delay);
+                    }});
+                }} else {{
+                    showNotification(`❌ ${{operationName}} failed after ${{maxRetries}} attempts. Data saved locally only.`, 'error');
+                    throw error;
+                }}
+            }});
+        }}
+        
         // Debounce timers for map saves (prevents excessive Firebase writes)
         let saveMapTimeout = null;
         
@@ -2321,8 +2345,10 @@ class NPCRelationshipMapper:
                 try {{
                     localStorage.setItem('mapMarkers', JSON.stringify(markersData));
                     localStorage.setItem('mapAnnotations', JSON.stringify(annotationsData));
+                    showNotification('💾 Saved locally (Firebase offline)', 'warning');
                 }} catch(e) {{
                     console.error("Failed to save to localStorage:", e);
+                    showNotification('❌ Save failed!', 'error');
                 }}
                 return;
             }}
@@ -2331,14 +2357,28 @@ class NPCRelationshipMapper:
             const markersRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapMarkers`);
             const annotationsRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapAnnotations`);
             
-            markersRef.set(markersData).catch(function(error) {{
-                console.error("❌ Failed to save markers:", error);
+            // Use retry mechanism for both saves
+            Promise.all([
+                retryFirebaseOperation(
+                    function() {{ return markersRef.set(markersData); }},
+                    'Map markers save'
+                ),
+                retryFirebaseOperation(
+                    function() {{ return annotationsRef.set(annotationsData); }},
+                    'Map annotations save'
+                )
+            ]).then(function() {{
+                console.log("💾 Map data saved (immediate - replaced)");
+            }}).catch(function(error) {{
+                // Final fallback to localStorage
+                try {{
+                    localStorage.setItem('mapMarkers', JSON.stringify(markersData));
+                    localStorage.setItem('mapAnnotations', JSON.stringify(annotationsData));
+                    console.log("💾 Fallback: Saved to localStorage");
+                }} catch(e) {{
+                    console.error("Failed to save to localStorage:", e);
+                }}
             }});
-            annotationsRef.set(annotationsData).catch(function(error) {{
-                console.error("❌ Failed to save annotations:", error);
-            }});
-            
-            console.log("💾 Map data saved (immediate - replaced)");
         }}
         
         // Debounced save for world map (for frequent changes like dragging)
@@ -2368,8 +2408,10 @@ class NPCRelationshipMapper:
                 try {{
                     localStorage.setItem('worldMapMarkers', JSON.stringify(markersData));
                     localStorage.setItem('worldMapAnnotations', JSON.stringify(annotationsData));
+                    showNotification('💾 Saved locally (Firebase offline)', 'warning');
                 }} catch(e) {{
                     console.error("Failed to save to localStorage:", e);
+                    showNotification('❌ Save failed!', 'error');
                 }}
                 return;
             }}
@@ -2378,14 +2420,28 @@ class NPCRelationshipMapper:
             const markersRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapMarkers`);
             const annotationsRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapAnnotations`);
             
-            markersRef.set(markersData).catch(function(error) {{
-                console.error("❌ Failed to save world map markers:", error);
+            // Use retry mechanism for both saves
+            Promise.all([
+                retryFirebaseOperation(
+                    function() {{ return markersRef.set(markersData); }},
+                    'World map markers save'
+                ),
+                retryFirebaseOperation(
+                    function() {{ return annotationsRef.set(annotationsData); }},
+                    'World map annotations save'
+                )
+            ]).then(function() {{
+                console.log("💾 World map data saved (immediate - replaced)");
+            }}).catch(function(error) {{
+                // Final fallback to localStorage
+                try {{
+                    localStorage.setItem('worldMapMarkers', JSON.stringify(markersData));
+                    localStorage.setItem('worldMapAnnotations', JSON.stringify(annotationsData));
+                    console.log("💾 Fallback: Saved to localStorage");
+                }} catch(e) {{
+                    console.error("Failed to save to localStorage:", e);
+                }}
             }});
-            annotationsRef.set(annotationsData).catch(function(error) {{
-                console.error("❌ Failed to save world map annotations:", error);
-            }});
-            
-            console.log("💾 World map data saved (immediate - replaced)");
         }}
         
         function loadFromFirebase(path, callback) {{
@@ -2508,6 +2564,7 @@ class NPCRelationshipMapper:
         function saveNPCsToFirebase(npcData) {{
             if (!database) {{
                 console.log("💾 No database - NPCs not synced to Firebase");
+                showNotification('⚠️ Firebase offline - NPCs saved locally only', 'warning');
                 return;
             }}
             
@@ -2519,15 +2576,19 @@ class NPCRelationshipMapper:
             try {{
                 // Clean data before saving (remove undefined values)
                 const cleanedData = cleanNPCData(npcData);
-                
                 const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/npc_data`);
-                ref.set(cleanedData).then(function() {{
+                
+                retryFirebaseOperation(
+                    function() {{ return ref.set(cleanedData); }},
+                    'NPC save'
+                ).then(function() {{
                     console.log("✅ NPCs saved to Firebase:", Object.keys(cleanedData).length, "NPCs");
                 }}).catch(function(error) {{
-                    console.error("❌ Error saving NPCs to Firebase:", error);
+                    console.error("❌ Error saving NPCs to Firebase after retries:", error);
                 }});
             }} catch(e) {{
                 console.error("Failed to save NPCs to Firebase:", e);
+                showNotification('❌ NPC save failed: ' + e.message, 'error');
             }}
         }}
         
