@@ -9182,6 +9182,8 @@ class NPCRelationshipMapper:
             
             itemsToAdd.forEach(function(item) {{
                 const itemCopy = JSON.parse(JSON.stringify(item));
+                ensureItemId(itemCopy);  // Ensure item has unique ID for merging
+                
                 if (container.toLowerCase() === 'bag') {{
                     // Auto-stack if item already exists
                     const existingIndex = inventoryData.bagOfHolding.findIndex(function(existing) {{
@@ -9715,6 +9717,7 @@ class NPCRelationshipMapper:
             if (!container) return;
             
             const itemCopy = JSON.parse(JSON.stringify(item));
+            ensureItemId(itemCopy);  // Ensure item has unique ID for merging
             
             if (container.toLowerCase() === 'bag') {{
                 // Auto-stack if item already exists
@@ -10192,7 +10195,8 @@ class NPCRelationshipMapper:
                 logger.log('Processing drop from lookup table');
                 const item = JSON.parse(itemData);
                 const itemCopy = JSON.parse(JSON.stringify(item));
-                logger.log('Item to add:', itemCopy.name);
+                ensureItemId(itemCopy);  // Ensure item has unique ID for merging
+                logger.log('Item to add:', itemCopy.name, 'ID:', itemCopy._id);
                 
                 if (targetContainer === 'bagOfHolding') {{
                     // Auto-stack if item already exists
