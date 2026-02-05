@@ -463,3 +463,34 @@ These are **nice-to-have** features, not critical issues:
 **The app is ready for your D&D campaign!** 🎲
 
 No warnings needed - concurrent editing is now safe. The remaining missing features (user identification, presence indicators) are UX enhancements, not critical functionality.
+
+---
+
+## 🔒 **SECURITY & SCALABILITY AUDIT**
+
+A second-pass audit identified additional issues related to **security, privacy, and scalability**.
+
+**See `NEW_ISSUES_IDENTIFIED.md` for full details.**
+
+### Critical Issues (For Public Use):
+1. ❌ **No Campaign Isolation** - Everyone shares same data
+2. ❌ **No Access Control** - Anyone can edit everything  
+3. ⚠️ **XSS Vulnerability** - Marker names not escaped
+
+### For Private Use (Your Trusted D&D Group):
+**Status: ✅ ACCEPTABLE AS-IS**
+- Group trusts each other (access control not needed)
+- Single campaign (isolation not needed)
+- Known users only (XSS risk minimal)
+
+### For Public/Multi-Campaign Use:
+**Status: ❌ NEEDS SECURITY HARDENING**
+
+**Required Before Public Launch:**
+1. Campaign isolation (URL-based or selection)
+2. Access control (campaign codes or auth)
+3. Fix XSS vulnerability
+4. Firebase Security Rules
+5. Data validation & size limits
+
+**See `NEW_ISSUES_IDENTIFIED.md` for implementation guidance.**
