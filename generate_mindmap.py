@@ -2294,7 +2294,7 @@ class NPCRelationshipMapper:
         // Debounce timers for map saves (prevents excessive Firebase writes)
         let saveMapTimeout = null;
         
-        // Debounced save for mini-map
+        // Debounced save for mini-map (for frequent changes like dragging)
         function debouncedSaveMapData(markersData, annotationsData) {{
             if (saveMapTimeout) {{
                 clearTimeout(saveMapTimeout);
@@ -2308,7 +2308,40 @@ class NPCRelationshipMapper:
             }}, 500);  // Wait 500ms after last change
         }}
         
-        // Debounced save for world map
+        // Immediate save for mini-map (for critical operations like delete)
+        // Uses direct .set() to replace data, not merge (needed for deletions)
+        function immediateSaveMapData(markersData, annotationsData) {{
+            // Cancel any pending debounced save
+            if (saveMapTimeout) {{
+                clearTimeout(saveMapTimeout);
+                saveMapTimeout = null;
+            }}
+            
+            if (!database) {{
+                try {{
+                    localStorage.setItem('mapMarkers', JSON.stringify(markersData));
+                    localStorage.setItem('mapAnnotations', JSON.stringify(annotationsData));
+                }} catch(e) {{
+                    console.error("Failed to save to localStorage:", e);
+                }}
+                return;
+            }}
+            
+            // Save immediately with .set() (not transaction) so deletions work
+            const markersRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapMarkers`);
+            const annotationsRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapAnnotations`);
+            
+            markersRef.set(markersData).catch(function(error) {{
+                console.error("❌ Failed to save markers:", error);
+            }});
+            annotationsRef.set(annotationsData).catch(function(error) {{
+                console.error("❌ Failed to save annotations:", error);
+            }});
+            
+            console.log("💾 Map data saved (immediate - replaced)");
+        }}
+        
+        // Debounced save for world map (for frequent changes like dragging)
         function debouncedSaveWorldMapData(markersData, annotationsData) {{
             if (saveMapTimeout) {{
                 clearTimeout(saveMapTimeout);
@@ -2320,6 +2353,39 @@ class NPCRelationshipMapper:
                 console.log("💾 World map data saved (debounced)");
                 saveMapTimeout = null;
             }}, 500);  // Wait 500ms after last change
+        }}
+        
+        // Immediate save for world map (for critical operations like delete)
+        // Uses direct .set() to replace data, not merge (needed for deletions)
+        function immediateSaveWorldMapData(markersData, annotationsData) {{
+            // Cancel any pending debounced save
+            if (saveMapTimeout) {{
+                clearTimeout(saveMapTimeout);
+                saveMapTimeout = null;
+            }}
+            
+            if (!database) {{
+                try {{
+                    localStorage.setItem('worldMapMarkers', JSON.stringify(markersData));
+                    localStorage.setItem('worldMapAnnotations', JSON.stringify(annotationsData));
+                }} catch(e) {{
+                    console.error("Failed to save to localStorage:", e);
+                }}
+                return;
+            }}
+            
+            // Save immediately with .set() (not transaction) so deletions work
+            const markersRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapMarkers`);
+            const annotationsRef = database.ref(`campaigns/${{CAMPAIGN_ID}}/worldMapAnnotations`);
+            
+            markersRef.set(markersData).catch(function(error) {{
+                console.error("❌ Failed to save world map markers:", error);
+            }});
+            annotationsRef.set(annotationsData).catch(function(error) {{
+                console.error("❌ Failed to save world map annotations:", error);
+            }});
+            
+            console.log("💾 World map data saved (immediate - replaced)");
         }}
         
         function loadFromFirebase(path, callback) {{
@@ -4123,7 +4189,7 @@ class NPCRelationshipMapper:
                         e.preventDefault();
                         if (confirm('Delete this drawing?')) {{
                             annotations = annotations.filter(a => a.id !== annotation.id);
-                            saveMapData();
+                            immediateSaveMapData(markers, annotations);
                             renderAnnotations();
                         }}
                     }};
@@ -4148,7 +4214,7 @@ class NPCRelationshipMapper:
                         e.preventDefault();
                         if (confirm('Delete this drawing?')) {{
                             annotations = annotations.filter(a => a.id !== annotation.id);
-                            saveMapData();
+                            immediateSaveMapData(markers, annotations);
                             renderAnnotations();
                         }}
                     }};
@@ -4380,7 +4446,7 @@ class NPCRelationshipMapper:
             function deleteMarker(id) {{
                 if (confirm('Delete this marker?')) {{
                     markers = markers.filter(m => m.id !== id);
-                    saveMapData();
+                    immediateSaveMapData(markers, annotations);
                     renderMarkers();
                     updateLocationList();
                 }}
@@ -5796,7 +5862,7 @@ class NPCRelationshipMapper:
                         const markers = MapState.getValue('markers');
                         const filtered = markers.filter(m => m.id !== id);
                         MapState.update('markers', filtered);
-                        MapDataManager.save();
+                        immediateSaveWorldMapData(MapState.getValue('markers'), MapState.getValue('annotations'));
                         render();
                         Sidebar.updateLocationList();
                     }}
@@ -5944,7 +6010,7 @@ class NPCRelationshipMapper:
                                 const annotations = MapState.getValue('annotations');
                                 const filtered = annotations.filter(a => a.id !== annotation.id);
                                 MapState.update('annotations', filtered);
-                                MapDataManager.save();
+                                immediateSaveWorldMapData(MapState.getValue('markers'), MapState.getValue('annotations'));
                                 render();
                             }}
                         }};
