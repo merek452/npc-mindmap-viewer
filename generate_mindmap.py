@@ -223,17 +223,17 @@ class NPCRelationshipMapper:
         svg_map_content = ""
         map_file_path = None
         
-        # Prioritize SVG for maximum detail (will convert to canvas)
-        svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
+        # Look for SVG map (check parent directory first, then Images subdirectory)
+        svg_map_path = Path(__file__).parent.parent / "Gienia World Map.svg"
         if svg_map_path.exists():
             map_file_path = svg_map_path
             print(f"Found SVG map: {svg_map_path.name} (will convert to high-res canvas)")
         else:
-            # Fallback to HTML/Canvas version
-            html_map_path = Path(__file__).parent / "Images" / "Gienia-World-Map.html"
-            if html_map_path.exists():
-                map_file_path = html_map_path
-                print(f"Found HTML/Canvas map: {html_map_path.name}")
+            # Check Images subdirectory
+            svg_map_path = Path(__file__).parent / "Images" / "Gienia World Map.svg"
+            if svg_map_path.exists():
+                map_file_path = svg_map_path
+                print(f"Found SVG map: {svg_map_path.name} (will convert to high-res canvas)")
         
         if map_file_path and map_file_path.exists():
             try:
