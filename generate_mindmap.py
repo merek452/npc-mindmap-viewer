@@ -2183,9 +2183,10 @@ class NPCRelationshipMapper:
                 let portraitHtml = '';
                 let portraitStyle = '';
                 if (portrait) {{
-                    const encodedPath = encodeURI(portrait);
-                    portraitHtml = '<img src="' + encodedPath + '" alt="' + name + '" onerror="this.style.display=\\'none\\'; this.parentElement.style.backgroundImage=\\'none\\'; this.onerror=null;" loading="lazy">';
-                    portraitStyle = 'background-image: url(\\'' + encodedPath + '\\');';
+                    // Don't encode Firebase Storage URLs (already encoded) or full URLs
+                    const portraitPath = portrait.startsWith('http://') || portrait.startsWith('https://') ? portrait : encodeURI(portrait);
+                    portraitHtml = '<img src="' + portraitPath + '" alt="' + name + '" onerror="this.style.display=\\'none\\'; this.parentElement.style.backgroundImage=\\'none\\'; this.onerror=null;" loading="lazy">';
+                    portraitStyle = 'background-image: url(\\'' + portraitPath + '\\');';
                 }} else {{
                     portraitHtml = '<div class="portrait-placeholder">📷</div>';
                 }}
