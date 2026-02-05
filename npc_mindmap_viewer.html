@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <style>
@@ -4775,8 +4776,31 @@
                 console.log("✅ Firebase initialized successfully");
                 console.log("✅ Firebase Storage initialized");
                 
-                // Set up real-time listeners
-                setupRealtimeSync();
+                // Sign in anonymously for authentication
+                console.log("🔐 Attempting anonymous sign-in...");
+                firebase.auth().signInAnonymously()
+                    .then(function(userCredential) {
+                        console.log("✅ Signed in anonymously:", userCredential.user.uid);
+                        console.log("🔐 Auth token available for uploads");
+                        // Set up real-time listeners after authentication
+                        setupRealtimeSync();
+                    })
+                    .catch(function(error) {
+                        console.error("❌ Anonymous sign-in failed:", error);
+                        console.error("Error code:", error.code);
+                        console.error("Error message:", error.message);
+                        console.log("⚠️ Continuing without authentication - uploads will fail!");
+                        setupRealtimeSync();
+                    });
+                
+                // Also listen for auth state changes
+                firebase.auth().onAuthStateChanged(function(user) {
+                    if (user) {
+                        console.log("🔐 Auth state: User is signed in -", user.uid);
+                    } else {
+                        console.log("⚠️ Auth state: No user signed in");
+                    }
+                });
             } catch(e) {
                 console.error("❌ Failed to initialize Firebase:", e);
                 console.error("Error details:", e.message, e.stack);
