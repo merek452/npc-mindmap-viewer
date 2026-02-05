@@ -212,12 +212,79 @@
 
 ---
 
-### 10. ⚠️ **Inefficient Change Detection**
+### 10. ⚠️ **Inefficient Change Detection** [ACCEPTABLE]
 
 **Problem:** Uses `JSON.stringify()` comparison
 - Location: Lines 2025-2027, 2082-2084, 2101-2103
-- Slow with large datasets
+- Could be slow with very large datasets
 - Can miss subtle changes
+
+**Current Mitigation:**
+- ✅ Works fine for typical campaign sizes (< 100 NPCs, < 500 markers)
+- ✅ Prevents unnecessary renders/saves
+- ✅ Simple and reliable
+
+**Impact:** Low - only becomes an issue at very large scale (thousands of items)
+
+**Possible Enhancement:** Deep equality check or change tracking system
+
+---
+
+## 🆕 **NEWLY IDENTIFIED ISSUES**
+
+### 11. ❌ **No Campaign Isolation**
+
+**Severity:** CRITICAL - Privacy Risk (if sharing publicly)
+
+**Problem:**
+- `CAMPAIGN_ID` is hardcoded to `"genia"`
+- Everyone who visits the URL shares the same data
+- No way to create separate campaigns
+
+**Impact:**
+- ❌ Cannot host multiple campaigns
+- ❌ Anyone with URL can see/edit your data
+
+**Status:** Acceptable for private use, critical for public hosting
+
+**See:** `NEW_ISSUES_IDENTIFIED.md` for full security audit
+
+---
+
+### 12. ❌ **No Access Control**
+
+**Severity:** HIGH - Security Risk (if sharing publicly)
+
+**Problem:**
+- Anyone with URL has full edit access
+- No DM-only features
+- No read-only player mode
+
+**Impact:**
+- ❌ Players can edit NPCs (should be DM-only)
+- ❌ Trolls could delete everything
+- ❌ Cannot restrict sensitive information
+
+**Status:** Acceptable for trusted groups, critical for public sharing
+
+**See:** `NEW_ISSUES_IDENTIFIED.md` for access control strategies
+
+---
+
+### 13. ⚠️ **XSS Vulnerability in Marker Names**
+
+**Severity:** MEDIUM - Security Risk
+
+**Problem:**
+- Marker names directly concatenated into `innerHTML`
+- Could execute malicious JavaScript
+
+**Impact:**
+- ⚠️ Malicious marker name could steal data or delete campaign
+
+**Fix Required:** Use `escapeHtml()` for all user-provided strings
+
+**See:** `NEW_ISSUES_IDENTIFIED.md` for details and fix
 
 ---
 
