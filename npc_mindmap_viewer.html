@@ -4809,7 +4809,9 @@
         }
         
         // Firebase data sync functions
+        // DEPRECATED: Old function that causes data loss - use saveInventoryTransaction instead
         function saveToFirebase(path, data) {
+            console.warn("⚠️ saveToFirebase is deprecated - causes last-write-wins data loss");
             if (!database) {
                 // Fallback to localStorage
                 try {
@@ -4838,6 +4840,139 @@
             } catch(e) {
                 console.error("Error in saveToFirebase:", e);
             }
+        }
+        
+        // NEW: Transaction-based inventory save that prevents data loss
+        function saveInventoryTransaction(localInventoryData) {
+            if (!database) {
+                // Fallback to localStorage
+                try {
+                    localStorage.setItem('inventory_data', JSON.stringify(localInventoryData));
+                    console.log("💾 Saved inventory to localStorage");
+                } catch(e) {
+                    console.error("Failed to save to localStorage:", e);
+                }
+                return;
+            }
+            
+            const ref = database.ref(`campaigns/${CAMPAIGN_ID}/inventory_data`);
+            
+            ref.transaction(function(currentData) {
+                // If no data exists yet, use local data
+                if (!currentData) {
+                    console.log("🔄 First save - using local data");
+                    return localInventoryData;
+                }
+                
+                // Merge logic: intelligently combine local and remote changes
+                const merged = {
+                    partyGold: localInventoryData.partyGold || currentData.partyGold || 0,
+                    players: mergePlayers(currentData.players || [], localInventoryData.players || []),
+                    bagOfHolding: mergeItems(currentData.bagOfHolding || [], localInventoryData.bagOfHolding || []),
+                    version: (currentData.version || 0) + 1,
+                    lastModified: Date.now()
+                };
+                
+                console.log("🔄 Merging inventory data:", {
+                    remotePlayers: currentData.players?.length || 0,
+                    localPlayers: localInventoryData.players?.length || 0,
+                    mergedPlayers: merged.players.length,
+                    remoteBag: currentData.bagOfHolding?.length || 0,
+                    localBag: localInventoryData.bagOfHolding?.length || 0,
+                    mergedBag: merged.bagOfHolding.length
+                });
+                
+                return merged;
+            }, function(error, committed, snapshot) {
+                if (error) {
+                    console.error("❌ Inventory transaction failed:", error);
+                    showNotification('⚠️ Save failed - retrying...', 'error');
+                    // Retry once
+                    setTimeout(function() { saveInventoryTransaction(localInventoryData); }, 1000);
+                } else if (committed) {
+                    console.log("✅ Inventory saved with transaction (no data loss!)");
+                    // Update local data with merged result
+                    const mergedData = snapshot.val();
+                    if (mergedData) {
+                        inventoryData = mergedData;
+                        renderPlayers();
+                        renderBagOfHolding();
+                    }
+                } else {
+                    console.log("⚠️ Transaction aborted (concurrent edit detected)");
+                }
+            }, false); // applyLocally = false
+        }
+        
+        // Merge player arrays intelligently
+        function mergePlayers(remotePlayers, localPlayers) {
+            const merged = [];
+            const playerMap = {};
+            
+            // Add all remote players first
+            remotePlayers.forEach(function(player) {
+                if (player && player.name) {
+                    playerMap[player.name] = {
+                        name: player.name,
+                        items: player.items || [],
+                        gold: player.gold || 0
+                    };
+                }
+            });
+            
+            // Merge local players
+            localPlayers.forEach(function(player) {
+                if (player && player.name) {
+                    if (playerMap[player.name]) {
+                        // Player exists - merge items
+                        playerMap[player.name].items = mergeItems(
+                            playerMap[player.name].items || [],
+                            player.items || []
+                        );
+                        // Use local gold if different (assume local is more recent)
+                        if (player.gold !== playerMap[player.name].gold) {
+                            playerMap[player.name].gold = player.gold;
+                        }
+                    } else {
+                        // New player - add it
+                        playerMap[player.name] = player;
+                    }
+                }
+            });
+            
+            // Convert map back to array
+            for (const name in playerMap) {
+                merged.push(playerMap[name]);
+            }
+            
+            return merged;
+        }
+        
+        // Merge item arrays intelligently (by _id)
+        function mergeItems(remoteItems, localItems) {
+            const merged = [];
+            const itemMap = {};
+            
+            // Add all remote items
+            remoteItems.forEach(function(item) {
+                if (item && item._id) {
+                    itemMap[item._id] = item;
+                }
+            });
+            
+            // Add/update local items
+            localItems.forEach(function(item) {
+                if (item && item._id) {
+                    itemMap[item._id] = item; // Local version wins for same item
+                }
+            });
+            
+            // Convert map back to array
+            for (const id in itemMap) {
+                merged.push(itemMap[id]);
+            }
+            
+            return consolidateStacks(merged);
         }
         
         function loadFromFirebase(path, callback) {
@@ -11578,8 +11713,9 @@
                 try {
                     inventoryData.version = (inventoryData.version || 0) + 1;
                     inventoryData.lastModified = Date.now();
-                    saveToFirebase('inventory_data', inventoryData);
-                    showNotification('✅ Saved successfully', 'success');
+                    // Use transaction-based save to prevent data loss
+                    saveInventoryTransaction(inventoryData);
+                    showNotification('✅ Saved (transaction-safe)', 'success');
                     savePending = false;
                 } catch(e) {
                     console.error('Save failed:', e);
