@@ -2291,6 +2291,37 @@ class NPCRelationshipMapper:
             return merged;
         }}
         
+        // Debounce timers for map saves (prevents excessive Firebase writes)
+        let saveMapTimeout = null;
+        
+        // Debounced save for mini-map
+        function debouncedSaveMapData(markersData, annotationsData) {{
+            if (saveMapTimeout) {{
+                clearTimeout(saveMapTimeout);
+            }}
+            
+            saveMapTimeout = setTimeout(function() {{
+                saveMarkersTransaction(markersData);
+                saveAnnotationsTransaction(annotationsData);
+                console.log("💾 Map data saved (debounced)");
+                saveMapTimeout = null;
+            }}, 500);  // Wait 500ms after last change
+        }}
+        
+        // Debounced save for world map
+        function debouncedSaveWorldMapData(markersData, annotationsData) {{
+            if (saveMapTimeout) {{
+                clearTimeout(saveMapTimeout);
+            }}
+            
+            saveMapTimeout = setTimeout(function() {{
+                saveMarkersTransaction(markersData, 'worldMapMarkers');
+                saveAnnotationsTransaction(annotationsData, 'worldMapAnnotations');
+                console.log("💾 World map data saved (debounced)");
+                saveMapTimeout = null;
+            }}, 500);  // Wait 500ms after last change
+        }}
+        
         function loadFromFirebase(path, callback) {{
             if (!database) {{
                 // Fallback to localStorage
@@ -3796,11 +3827,10 @@ class NPCRelationshipMapper:
             
             // Mini-map functions
             
-            // Save markers and annotations to Firebase (with transaction-based saves)
+            // Save markers and annotations to Firebase (debounced to prevent excessive writes)
             function saveMapData() {{
-                saveMarkersTransaction(markers);
-                saveAnnotationsTransaction(annotations);
-                // Save to history
+                debouncedSaveMapData(markers, annotations);
+                // Save to history immediately (local only)
                 saveToHistory();
             }}
             
@@ -5953,8 +5983,7 @@ class NPCRelationshipMapper:
                 }}
                 
                 function save() {{
-                    saveMarkersTransaction(MapState.getValue('markers'), 'worldMapMarkers');
-                    saveAnnotationsTransaction(MapState.getValue('annotations'), 'worldMapAnnotations');
+                    debouncedSaveWorldMapData(MapState.getValue('markers'), MapState.getValue('annotations'));
                 }}
                 
                 return {{
