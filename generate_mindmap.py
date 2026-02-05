@@ -2170,22 +2170,25 @@ class NPCRelationshipMapper:
             }}
         }}
         
-        // Transaction-based save for map markers (mini-map)
-        function saveMarkersTransaction(localMarkers) {{
+        // Transaction-based save for map markers (works for both mini-map and world map)
+        function saveMarkersTransaction(localMarkers, pathKey) {{
+            // Default to mini-map path if not specified
+            pathKey = pathKey || 'mapMarkers';
+            
             if (!database) {{
                 try {{
-                    localStorage.setItem('mapMarkers', JSON.stringify(localMarkers));
-                    console.log("💾 Saved markers to localStorage");
+                    localStorage.setItem(pathKey, JSON.stringify(localMarkers));
+                    console.log(`💾 Saved ${{pathKey}} to localStorage`);
                 }} catch(e) {{
-                    console.error("Failed to save markers to localStorage:", e);
+                    console.error(`Failed to save ${{pathKey}} to localStorage:`, e);
                 }}
                 return;
             }}
             
-            const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapMarkers`);
+            const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{pathKey}}`);
             ref.transaction(function(currentData) {{
                 if (!currentData) {{
-                    console.log("🔄 First save - using local markers");
+                    console.log(`🔄 [${{pathKey}}] First save - using local markers`);
                     return Array.isArray(localMarkers) ? localMarkers : [];
                 }}
                 
@@ -2194,7 +2197,7 @@ class NPCRelationshipMapper:
                 const safeLocal = Array.isArray(localMarkers) ? localMarkers : [];
                 const merged = mergeMarkers(safeRemote, safeLocal);
                 
-                console.log("🔄 Merging map markers:", {{
+                console.log(`🔄 [${{pathKey}}] Merging markers:`, {{
                     remote: safeRemote.length,
                     local: safeLocal.length,
                     merged: merged.length
@@ -2203,31 +2206,34 @@ class NPCRelationshipMapper:
                 return merged;
             }}, function(error, committed) {{
                 if (error) {{
-                    console.error("❌ Marker transaction failed:", error);
+                    console.error(`❌ [${{pathKey}}] Marker transaction failed:`, error);
                 }} else if (committed) {{
-                    console.log("✅ Markers saved with transaction (no data loss!)");
+                    console.log(`✅ [${{pathKey}}] Markers saved with transaction (no data loss!)`);
                 }} else {{
-                    console.log("⚠️ Marker transaction aborted");
+                    console.log(`⚠️ [${{pathKey}}] Marker transaction aborted`);
                 }}
             }}, false);
         }}
         
-        // Transaction-based save for map annotations (mini-map)
-        function saveAnnotationsTransaction(localAnnotations) {{
+        // Transaction-based save for map annotations (works for both mini-map and world map)
+        function saveAnnotationsTransaction(localAnnotations, pathKey) {{
+            // Default to mini-map path if not specified
+            pathKey = pathKey || 'mapAnnotations';
+            
             if (!database) {{
                 try {{
-                    localStorage.setItem('mapAnnotations', JSON.stringify(localAnnotations));
-                    console.log("💾 Saved annotations to localStorage");
+                    localStorage.setItem(pathKey, JSON.stringify(localAnnotations));
+                    console.log(`💾 Saved ${{pathKey}} to localStorage`);
                 }} catch(e) {{
-                    console.error("Failed to save annotations to localStorage:", e);
+                    console.error(`Failed to save ${{pathKey}} to localStorage:`, e);
                 }}
                 return;
             }}
             
-            const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/mapAnnotations`);
+            const ref = database.ref(`campaigns/${{CAMPAIGN_ID}}/${{pathKey}}`);
             ref.transaction(function(currentData) {{
                 if (!currentData) {{
-                    console.log("🔄 First save - using local annotations");
+                    console.log(`🔄 [${{pathKey}}] First save - using local annotations`);
                     return Array.isArray(localAnnotations) ? localAnnotations : [];
                 }}
                 
@@ -2236,7 +2242,7 @@ class NPCRelationshipMapper:
                 const safeLocal = Array.isArray(localAnnotations) ? localAnnotations : [];
                 const merged = mergeMarkers(safeRemote, safeLocal);
                 
-                console.log("🔄 Merging annotations:", {{
+                console.log(`🔄 [${{pathKey}}] Merging annotations:`, {{
                     remote: safeRemote.length,
                     local: safeLocal.length,
                     merged: merged.length
@@ -2245,11 +2251,11 @@ class NPCRelationshipMapper:
                 return merged;
             }}, function(error, committed) {{
                 if (error) {{
-                    console.error("❌ Annotation transaction failed:", error);
+                    console.error(`❌ [${{pathKey}}] Annotation transaction failed:`, error);
                 }} else if (committed) {{
-                    console.log("✅ Annotations saved with transaction (no data loss!)");
+                    console.log(`✅ [${{pathKey}}] Annotations saved with transaction (no data loss!)`);
                 }} else {{
-                    console.log("⚠️ Annotation transaction aborted");
+                    console.log(`⚠️ [${{pathKey}}] Annotation transaction aborted`);
                 }}
             }}, false);
         }}
@@ -5947,8 +5953,8 @@ class NPCRelationshipMapper:
                 }}
                 
                 function save() {{
-                    saveMarkersTransaction(MapState.getValue('markers'));
-                    saveAnnotationsTransaction(MapState.getValue('annotations'));
+                    saveMarkersTransaction(MapState.getValue('markers'), 'worldMapMarkers');
+                    saveAnnotationsTransaction(MapState.getValue('annotations'), 'worldMapAnnotations');
                 }}
                 
                 return {{
