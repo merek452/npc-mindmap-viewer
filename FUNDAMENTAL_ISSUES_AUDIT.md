@@ -67,25 +67,31 @@ alert('NPC saved! Remember to export the JSON and regenerate the mind map.');
 
 ---
 
-### 3. ❌ **No Version Control for Maps/Markers**
+### 3. ✅ **No Version Control for Maps/Markers** [FIXED]
 
-**Severity:** HIGH - Data loss in specific scenarios
+**Severity:** HIGH - Data loss in specific scenarios [RESOLVED]
 
-**Problem:**
+**Original Problem:**
 - Inventory has version/timestamp conflict resolution
-- Maps, markers, annotations have **NO conflict resolution**
+- Maps, markers, annotations had **NO conflict resolution**
 - Two users editing maps simultaneously = data loss
 
-**What Has Protection:**
-- ✅ `inventory_data` (version + lastModified timestamp)
+**Solution Implemented:**
+- ✅ `mapMarkers` - Now uses Firebase Transactions
+- ✅ `mapAnnotations` - Now uses Firebase Transactions
+- ✅ `worldMapMarkers` - Now uses Firebase Transactions
+- ✅ `worldMapAnnotations` - Now uses Firebase Transactions
 
-**What Has NO Protection:**
-- ❌ `mapMarkers`
-- ❌ `mapAnnotations`
-- ❌ `worldMapMarkers`
-- ❌ `worldMapAnnotations`
+**How It Works:**
+- Transaction-based saves with `saveMarkersTransaction()`
+- Transaction-based saves with `saveAnnotationsTransaction()`
+- Intelligent merge by unique marker `id`
+- Concurrent edits are merged, not overwritten
+- Local version wins for same `id` (last edit)
 
-**Impact:** Map edits are lost if two players edit simultaneously
+**Impact:** ✅ No more map data loss from concurrent edits!
+
+**Documentation:** See `MAP_TRANSACTION_FIX.md` for full details
 
 ---
 
